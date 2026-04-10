@@ -208,8 +208,27 @@ const cpiChartData = {
       label: "Current",
       data: sortedCurrentRows.map((row) => toNumber(row.CPI)),
       borderColor: "#4f46e5",
+      backgroundColor: "rgba(79,70,229,0.12)",
       tension: 0.3,
+      borderWidth: 2,
+      pointRadius: 3,
+      pointHoverRadius: 5,
     },
+    ...(previousRows.length
+      ? [
+          {
+            label: "Previous",
+            data: previousRows.map((row) => toNumber(row.CPI)),
+            borderColor: "#94a3b8",
+            backgroundColor: "rgba(148,163,184,0.10)",
+            tension: 0.3,
+            borderWidth: 2,
+            borderDash: [6, 6],
+            pointRadius: 2,
+            pointHoverRadius: 4,
+          },
+        ]
+      : []),
   ],
 };
 
@@ -220,14 +239,61 @@ const d1ChartData = {
       label: "Current",
       data: sortedCurrentRows.map((row) => toNumber(row["D1 Retention"])),
       borderColor: "#059669",
+      backgroundColor: "rgba(5,150,105,0.12)",
       tension: 0.3,
+      borderWidth: 2,
+      pointRadius: 3,
+      pointHoverRadius: 5,
     },
+    ...(previousRows.length
+      ? [
+          {
+            label: "Previous",
+            data: previousRows.map((row) => toNumber(row["D1 Retention"])),
+            borderColor: "#94a3b8",
+            backgroundColor: "rgba(148,163,184,0.10)",
+            tension: 0.3,
+            borderWidth: 2,
+            borderDash: [6, 6],
+            pointRadius: 2,
+            pointHoverRadius: 4,
+          },
+        ]
+      : []),
   ],
 };
 
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
+  interaction: {
+    mode: "index",
+    intersect: false,
+  },
+  plugins: {
+    legend: {
+      position: "top",
+    },
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      ticks: {
+        color: "#6b7280",
+      },
+      grid: {
+        color: "#e5e7eb",
+      },
+    },
+    x: {
+      ticks: {
+        color: "#6b7280",
+      },
+      grid: {
+        display: false,
+      },
+    },
+  },
 };
 
   return (
