@@ -1,4 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Line } from "react-chartjs-2";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend
+);
 
 const SHEET_ID = "1pBJWVce2CgrPBlFMGbS2yCp6tBQnNn4gkEHz7jG3LZk";
 const SHEET_NAME = "sheet1";
@@ -175,6 +194,42 @@ export default function App() {
     String(a.Date || "").localeCompare(String(b.Date || ""))
   );
 
+  const previousRows = useMemo(() => {
+  if (!previousSummary) return [];
+  return projectRows
+    .filter((row) => row.Iteration === previousSummary.iteration)
+    .sort((a, b) => String(a.Date || "").localeCompare(String(b.Date || "")));
+}, [projectRows, previousSummary]);
+
+const cpiChartData = {
+  labels: sortedCurrentRows.map((row) => row.Date || "-"),
+  datasets: [
+    {
+      label: "Current",
+      data: sortedCurrentRows.map((row) => toNumber(row.CPI)),
+      borderColor: "#4f46e5",
+      tension: 0.3,
+    },
+  ],
+};
+
+const d1ChartData = {
+  labels: sortedCurrentRows.map((row) => row.Date || "-"),
+  datasets: [
+    {
+      label: "Current",
+      data: sortedCurrentRows.map((row) => toNumber(row["D1 Retention"])),
+      borderColor: "#059669",
+      tension: 0.3,
+    },
+  ],
+};
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+};
+
   return (
     <div className="wrap">
       <div className="topbar">
@@ -339,15 +394,20 @@ export default function App() {
           </div>
 
           <div className="chart-grid">
-            <div className="card">
-              <h3 className="chart-title">CPI Trend</h3>
-              <div className="chart-placeholder">차트는 다음 단계에서 바로 붙이자</div>
-            </div>
-            <div className="card">
-              <h3 className="chart-title">D1 Retention Trend</h3>
-              <div className="chart-placeholder">차트는 다음 단계에서 바로 붙이자</div>
-            </div>
-          </div>
+  <div className="card">
+    <h3 className="chart-title">CPI Trend</h3>
+    <div className="chart-box">
+      <Line data={cpiChartData} options={chartOptions} />
+    </div>
+  </div>
+
+  <div className="card">
+    <h3 className="chart-title">D1 Retention Trend</h3>
+    <div className="chart-box">
+      <Line data={d1ChartData} options={chartOptions} />
+    </div>
+  </div>
+</div>
 
           <div className="card">
             <h3 className="table-title">Iteration Comparison</h3>

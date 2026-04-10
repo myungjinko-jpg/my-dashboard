@@ -267,15 +267,8 @@ select {
   color: var(--muted);
 }
 
-.chart-placeholder {
-  height: 220px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  background: #f8fafc;
-  color: var(--muted);
-  border: 1px dashed var(--line);
+.chart-box {
+  height: 260px;
 }
 
 table {
