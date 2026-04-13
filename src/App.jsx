@@ -414,10 +414,14 @@ const sortedProjects = [...projects].sort((a, b) => {
       <section className="section-block">
         <div className="section-header">
           <div className="section-eyebrow">Portfolio</div>
-          <h2 className="section-heading">전체 프로젝트</h2>
-          <p className="section-desc">
-            현재 트래킹 중인 프로젝트 포트폴리오를 한눈에 보는 요약 영역입니다.
-          </p>
+
+            {/* 🔥 제목 영어로 변경 */}
+            <h2 className="section-heading">All Projects</h2>
+
+            {/* 🔥 설명 영어로 변경 */}
+            <p className="section-desc">
+              A summary view of all currently tracked projects.
+            </p>
         </div>
 
         <div className="overview-grid">
@@ -470,9 +474,12 @@ const sortedProjects = [...projects].sort((a, b) => {
       <section className="section-block">
         <div className="section-header">
           <div className="section-eyebrow">Project Detail</div>
-          <h2 className="section-heading">개별 프로젝트</h2>
+          {/* 🔥 제목을 영어로 변경 */}
+          <h2 className="section-heading">Project Analysis</h2>
+
+          {/* 🔥 설명도 영어로 변경 */}
           <p className="section-desc">
-            선택한 프로젝트의 iteration별 성과와 추이를 비교하는 상세 분석 영역입니다.
+            Detailed analysis comparing performance and trends across iterations.
           </p>
         </div>
 
