@@ -207,23 +207,30 @@ export default function App() {
 }
 
 
+// 테이블용 (최신 날짜 → 과거)
 const sortedCurrentRows = [...currentRows].sort(
   (a, b) => parseDateValue(b.Date) - parseDateValue(a.Date)
 );
 
-  const previousRows = useMemo(() => {
+// 차트용 (과거 → 최신)
+const chartCurrentRows = [...currentRows].sort(
+  (a, b) => parseDateValue(a.Date) - parseDateValue(b.Date)
+);
+
+
+const previousRows = useMemo(() => {
   if (!previousSummary) return [];
   return projectRows
     .filter((row) => row.Iteration === previousSummary.iteration)
-    .sort((a, b) => String(a.Date || "").localeCompare(String(b.Date || "")));
+    .sort((a, b) => parseDateValue(a.Date) - parseDateValue(b.Date));
 }, [projectRows, previousSummary]);
 
 const cpiChartData = {
-  labels: sortedCurrentRows.map((row) => row.Date || "-"),
+  labels: chartCurrentRows.map((row) => row.Date || "-"),
   datasets: [
     {
       label: "Current",
-      data: sortedCurrentRows.map((row) => toNumber(row.CPI)),
+      data: chartCurrentRows.map((row) => toNumber(row.CPI)),
       borderColor: "#4f46e5",
       backgroundColor: "rgba(79,70,229,0.12)",
       tension: 0.3,
@@ -250,11 +257,11 @@ const cpiChartData = {
 };
 
 const d1ChartData = {
-  labels: sortedCurrentRows.map((row) => row.Date || "-"),
+  labels: chartCurrentRows.map((row) => row.Date || "-"),
   datasets: [
     {
       label: "Current",
-      data: sortedCurrentRows.map((row) => toNumber(row["D1 Retention"])),
+      data: chartCurrentRows.map((row) => toNumber(row["D1 Retention"])),
       borderColor: "#059669",
       backgroundColor: "rgba(5,150,105,0.12)",
       tension: 0.3,
