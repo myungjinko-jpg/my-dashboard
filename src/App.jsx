@@ -131,7 +131,7 @@ export default function App() {
 
   const iterations = useMemo(() => {
     return [...new Set(projectRows.map((d) => d.Iteration).filter(Boolean))].sort(
-      (a, b) => getIterationOrder(a) - getIterationOrder(b)
+      (a, b) => getIterationOrder(b) - getIterationOrder(a)
     );
   }, [projectRows]);
 
