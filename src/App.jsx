@@ -287,7 +287,9 @@ const d1ChartData = {
   ],
 };
 
-const chartOptions = {
+// 🔥 CPI 차트 전용 옵션
+// y축과 툴팁에 달러($) 표시
+const cpiChartOptions = {
   responsive: true,
   maintainAspectRatio: false,
   interaction: {
@@ -298,12 +300,75 @@ const chartOptions = {
     legend: {
       position: "top",
     },
+    tooltip: {
+      callbacks: {
+        // 툴팁 값에 $ 표시
+        label: function (context) {
+          const label = context.dataset.label || "";
+          const value = context.parsed.y ?? 0;
+          return `${label}: $${Number(value).toFixed(2)}`;
+        },
+      },
+    },
   },
   scales: {
     y: {
       beginAtZero: true,
       ticks: {
         color: "#6b7280",
+        // y축 눈금에 $ 표시
+        callback: function (value) {
+          return `$${Number(value).toFixed(2)}`;
+        },
+      },
+      grid: {
+        color: "#e5e7eb",
+      },
+    },
+    x: {
+      ticks: {
+        color: "#6b7280",
+      },
+      grid: {
+        display: false,
+      },
+    },
+  },
+};
+
+// 🔥 D1 Retention 차트 전용 옵션
+// y축과 툴팁에 % 표시
+const d1ChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: {
+    mode: "index",
+    intersect: false,
+  },
+  plugins: {
+    legend: {
+      position: "top",
+    },
+    tooltip: {
+      callbacks: {
+        // 툴팁 값에 % 표시
+        label: function (context) {
+          const label = context.dataset.label || "";
+          const value = context.parsed.y ?? 0;
+          return `${label}: ${Number(value).toFixed(2)}%`;
+        },
+      },
+    },
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      ticks: {
+        color: "#6b7280",
+        // y축 눈금에 % 표시
+        callback: function (value) {
+          return `${Number(value).toFixed(0)}%`;
+        },
       },
       grid: {
         color: "#e5e7eb",
@@ -498,14 +563,16 @@ const sortedProjects = [...projects].sort((a, b) => {
   <div className="card">
     <h3 className="chart-title">CPI Trend</h3>
     <div className="chart-box">
-      <Line data={cpiChartData} options={chartOptions} />
+      {/* 🔥 CPI 차트는 달러 표시 옵션 사용 */}
+      <Line data={cpiChartData} options={cpiChartOptions} />
     </div>
   </div>
 
   <div className="card">
     <h3 className="chart-title">D1 Retention Trend</h3>
     <div className="chart-box">
-      <Line data={d1ChartData} options={chartOptions} />
+      {/* 🔥 D1 차트는 퍼센트 표시 옵션 사용 */}
+      <Line data={d1ChartData} options={d1ChartOptions} />
     </div>
   </div>
 </div>
