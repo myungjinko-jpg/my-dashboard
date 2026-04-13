@@ -319,6 +319,17 @@ const chartOptions = {
     },
   },
 };
+};
+
+const sortedProjects = [...projects].sort((a, b) => {
+  const isDropA = a.startsWith("(Drop)");
+  const isDropB = b.startsWith("(Drop)");
+
+  if (isDropA && !isDropB) return 1;
+  if (!isDropA && isDropB) return -1;
+
+  return a.localeCompare(b);
+});
 
   return (
     <div className="wrap">
@@ -407,7 +418,8 @@ const chartOptions = {
               <div className="filter-group">
                 <div className="filter-label">Project</div>
                 <select id="projectSelector" value={project} onChange={(e) => setProject(e.target.value)}>
-                  {projects.map((p) => (
+                  
+                  {sortedProjects.map((p) => (
                     <option key={p} value={p}>
                       {p}
                     </option>
