@@ -319,7 +319,6 @@ const chartOptions = {
     },
   },
 };
-};
 
 const sortedProjects = [...projects].sort((a, b) => {
   const isDropA = a.startsWith("(Drop)");
