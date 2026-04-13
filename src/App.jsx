@@ -190,9 +190,26 @@ export default function App() {
     .filter((row) => hasValue(row["D1 Retention"]) && toNumber(row["D1 Retention"]) > 0)
     .sort((a, b) => toNumber(b["D1 Retention"]) - toNumber(a["D1 Retention"]))[0];
 
-  const sortedCurrentRows = [...currentRows].sort((a, b) =>
-    String(a.Date || "").localeCompare(String(b.Date || ""))
-  );
+  function parseDateValue(value) {
+  if (!value) return 0;
+
+  const parts = String(value)
+    .trim()
+    .split(".")
+    .map((v) => v.trim())
+    .filter(Boolean);
+
+  if (parts.length < 3) return 0;
+
+  const [year, month, day] = parts.map(Number);
+
+  return new Date(year, month - 1, day).getTime();
+}
+
+
+const sortedCurrentRows = [...currentRows].sort(
+  (a, b) => parseDateValue(b.Date) - parseDateValue(a.Date)
+);
 
   const previousRows = useMemo(() => {
   if (!previousSummary) return [];
