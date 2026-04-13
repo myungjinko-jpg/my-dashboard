@@ -190,8 +190,12 @@ export default function App() {
     .filter((row) => hasValue(row["D1 Retention"]) && toNumber(row["D1 Retention"]) > 0)
     .sort((a, b) => toNumber(b["D1 Retention"]) - toNumber(a["D1 Retention"]))[0];
 
-  const sortedCurrentRows = [...currentRows].sort((a, b) =>
-    String(a.Date || "").localeCompare(String(b.Date || ""))
+  const chartRows = [...currentRows].sort(
+  (a, b) => parseDateValue(a.Date) - parseDateValue(b.Date)
+  );
+
+  const dailyMetricRows = [...currentRows].sort(
+  (a, b) => parseDateValue(b.Date) - parseDateValue(a.Date)
   );
 
   const previousRows = useMemo(() => {
