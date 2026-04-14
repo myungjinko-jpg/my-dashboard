@@ -37,15 +37,134 @@ function averageBy(items, key) {
   return valid.reduce((sum, item) => sum + toNumber(item[key]), 0) / valid.length;
 }
 
+
+// 🔥 값이 유효한지 체크하는 함수
+// - CPI는 0보다 커야 유효
+// - Retention은 0도 의미 있는 값이라 허용
+// - Playtime은 0이면 데이터 없음/수집 실패 가능성이 있어 제외
+function isValidMetricValue(value, key) {
+  if (!Number.isFinite(value)) return false;
+
+  if (key === "CPI") return value > 0;
+  if (key.includes("Retention")) return value >= 0;
+  if (key.includes("Playtime")) return value > 0;
+
+  return value > 0;
+}
+
+// 🔥 CPI 집계 함수
+// - 일자별 CPI를 단순 평균하지 않고
+// - Meta installs를 가중치로 사용하여 최종 CPI 계산
+// - 공식: Σ(CPI × InstallsMeta) / Σ(InstallsMeta)
+function getWeightedCpi(items) {
+  let weightedSum = 0;
+  let totalWeight = 0;
+
+  items.forEach((item) => {
+    const cpi = toNumber(item.CPI);
+    const installsMeta = getInstallsMeta(item);
+
+    if (isValidMetricValue(cpi, "CPI") && installsMeta > 0) {
+      weightedSum += cpi * installsMeta;
+      totalWeight += installsMeta;
+    }
+  });
+
+  if (totalWeight === 0) return 0;
+
+  return weightedSum / totalWeight;
+}
+
+// 🔥 D1 Retention 집계 함수
+// - 각 날짜의 GA installs와 retention을 사용해
+//   실제 D1 retained users 수를 계산한 뒤
+// - 전체 retained users / 전체 installs(GA) 로 최종 리텐션 계산
+// - 공식: Σ(InstallsGA × D1Retention) / Σ(InstallsGA)
+function getWeightedRetention(items) {
+  let totalInstallsGa = 0;
+  let totalRetainedUsers = 0;
+
+  items.forEach((item) => {
+    const retention = toNumber(item["D1 Retention"]);
+    const installsGa = getInstallsGa(item);
+
+    if (isValidMetricValue(retention, "D1 Retention") && installsGa > 0) {
+      totalRetainedUsers += installsGa * (retention / 100);
+      totalInstallsGa += installsGa;
+    }
+  });
+
+  if (totalInstallsGa === 0) return 0;
+
+  // 🔥 최종 결과는 다시 % 단위로 반환
+  return (totalRetainedUsers / totalInstallsGa) * 100;
+}
+
+// 🔥 D0 Playtime 집계 함수
+// - GA installs를 가중치로 사용한 가중 평균
+// - 공식: Σ(InstallsGA × D0Playtime) / Σ(InstallsGA)
+function getWeightedD0Playtime(items) {
+  let weightedSum = 0;
+  let totalWeight = 0;
+
+  items.forEach((item) => {
+    const playtime = toNumber(item["D0 Playtime"]);
+    const installsGa = getInstallsGa(item);
+
+    if (isValidMetricValue(playtime, "D0 Playtime") && installsGa > 0) {
+      weightedSum += playtime * installsGa;
+      totalWeight += installsGa;
+    }
+  });
+
+  if (totalWeight === 0) return 0;
+
+  return weightedSum / totalWeight;
+}
+
+// 🔥 D1 Playtime 집계 함수
+// - D1에 실제로 살아남은 유저 수를 가중치로 사용
+// - retained users = InstallsGA × D1Retention
+// - 공식: Σ(D1RetainedUsers × D1Playtime) / Σ(D1RetainedUsers)
+function getWeightedD1Playtime(items) {
+  let weightedSum = 0;
+  let totalWeight = 0;
+
+  items.forEach((item) => {
+    const playtime = toNumber(item["D1 Playtime"]);
+    const retention = toNumber(item["D1 Retention"]);
+    const installsGa = getInstallsGa(item);
+
+    // 🔥 D1 retained users 수 계산
+    const retainedUsers =
+      isValidMetricValue(retention, "D1 Retention") && installsGa > 0
+        ? installsGa * (retention / 100)
+        : 0;
+
+    if (isValidMetricValue(playtime, "D1 Playtime") && retainedUsers > 0) {
+      weightedSum += playtime * retainedUsers;
+      totalWeight += retainedUsers;
+    }
+  });
+
+  if (totalWeight === 0) return 0;
+
+  return weightedSum / totalWeight;
+}
+
 function formatCurrency(value) {
   const num = toNumber(value);
   if (!num) return "No data";
   return `$${num.toFixed(2)}`;
 }
 
+// 🔥 퍼센트 포맷 함수
+// - 0%도 유효한 값이므로 표시해야 함
 function formatPercent(value) {
   const num = toNumber(value);
-  if (!num) return "No data";
+
+  if (!Number.isFinite(num)) return "No data";
+
   return `${num.toFixed(2)}%`;
 }
 
@@ -154,12 +273,28 @@ export default function App() {
       .map(([it, items]) => ({
         iteration: it,
         order: getIterationOrder(it),
-        avgCpi: averageBy(items, "CPI"),
-        avgD1: averageBy(items, "D1 Retention"),
-        totalInstallsMeta: items.reduce((sum, item) => sum + getInstallsMeta(item), 0),
-        totalInstallsGa: items.reduce((sum, item) => sum + getInstallsGa(item), 0),
-        avgD0Pt: averageBy(items, "D0 Playtime"),
-        avgD1Pt: averageBy(items, "D1 Playtime"),
+
+        // 🔥 CPI는 Meta installs 기준 가중 평균 사용
+        avgCpi: getWeightedCpi(items),
+
+        // 🔥 D1 Retention은 GA installs 기반 코호트 합산 리텐션 사용
+        avgD1: getWeightedRetention(items),
+
+        // 🔥 installs 합계는 기존 방식 그대로 유지
+        totalInstallsMeta: items.reduce(
+          (sum, item) => sum + getInstallsMeta(item),
+          0
+        ),
+        totalInstallsGa: items.reduce(
+          (sum, item) => sum + getInstallsGa(item),
+          0
+        ),
+
+        // 🔥 D0 Playtime은 GA installs 가중 평균 사용
+        avgD0Pt: getWeightedD0Playtime(items),
+
+        // 🔥 D1 Playtime은 D1 retained users 가중 평균 사용
+        avgD1Pt: getWeightedD1Playtime(items),
       }))
       .sort((a, b) => a.order - b.order);
   }, [projectRows]);
@@ -654,7 +789,8 @@ const sortedProjects = [...projects].sort((a, b) => {
                     <td>{row.Date || "-"}</td>
                     <td>{hasValue(row.CPI) && toNumber(row.CPI) > 0 ? formatCurrency(row.CPI) : "No data"}</td>
                     <td>
-                      {hasValue(row["D1 Retention"]) && toNumber(row["D1 Retention"]) > 0
+                      {/* 🔥 리텐션은 0%도 유효한 값이므로 >= 0 기준으로 표시 */}
+                      {hasValue(row["D1 Retention"]) && Number.isFinite(toNumber(row["D1 Retention"]))
                         ? formatPercent(row["D1 Retention"])
                         : "No data"}
                     </td>
