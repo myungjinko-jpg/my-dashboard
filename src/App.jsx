@@ -187,6 +187,21 @@ function getInstallsGa(row) {
   return toNumber(row["Installs (GA)"]);
 }
 
+// 🔥 실제 지표 데이터가 하나라도 있는 row인지 확인
+// - Project / Iteration / Date만 있고 나머지 metric이 모두 비어 있으면 false
+function hasAnyMetricData(row) {
+  const metricKeys = [
+    "CPI",
+    "Installs (Meta)",
+    "Installs (GA)",
+    "D1 Retention",
+    "D0 Playtime",
+    "D1 Playtime",
+  ];
+
+  return metricKeys.some((key) => hasValue(row[key]));
+}
+
 function deltaText(current, previous, inverse = false, formatter = "number") {
   const currentValue = toNumber(current);
   const previousValue = toNumber(previous);
@@ -212,6 +227,75 @@ function deltaText(current, previous, inverse = false, formatter = "number") {
 
   return { text: `${arrow} ${value}`, cls };
 }
+// 🔥 날짜 문자열을 timestamp로 변환
+// - 시트 날짜 형식: YYYY. M. D.
+function parseDateValue(value) {
+  if (!value) return 0;
+
+  const parts = String(value)
+    .trim()
+    .split(".")
+    .map((v) => v.trim())
+    .filter(Boolean);
+
+  if (parts.length < 3) return 0;
+
+  const [year, month, day] = parts.map(Number);
+
+  return new Date(year, month - 1, day).getTime();
+}
+
+// 🔥 표시용 날짜 포맷 함수
+// - 입력: YYYY. M. D.
+// - 출력: 2026. 4. 6 (Mon)
+function formatDisplayDate(value) {
+  const timestamp = parseDateValue(value);
+  if (!timestamp) return "-";
+
+  const date = new Date(timestamp);
+  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const weekday = weekdays[date.getDay()];
+
+  return `${year}. ${month}. ${day} (${weekday})`;
+}
+
+// 🔥 현재 iteration의 테스트 메타 정보 계산
+// - 시작일 / 종료일 / 현재 상태를 계산
+function getIterationMeta(items) {
+  if (!items.length) {
+    return {
+      startDate: "",
+      endDate: "",
+      status: "No Data",
+    };
+  }
+
+  const sortedByDate = [...items].sort(
+    (a, b) => parseDateValue(a.Date) - parseDateValue(b.Date)
+  );
+
+  const startDate = sortedByDate[0]?.Date || "";
+  const endDate = sortedByDate[sortedByDate.length - 1]?.Date || "";
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const endTimestamp = parseDateValue(endDate);
+  const endDateOnly = new Date(endTimestamp);
+  endDateOnly.setHours(0, 0, 0, 0);
+
+  const status = endTimestamp && endDateOnly >= today ? "Live" : "Test Ended";
+
+  return {
+    startDate,
+    endDate,
+    status,
+  };
+}
 
 export default function App() {
   const [rawData, setRawData] = useState([]);
@@ -227,7 +311,9 @@ export default function App() {
       })
       .then((res) => {
         if (!Array.isArray(res)) throw new Error("응답이 배열이 아님");
-        const clean = res.filter((r) => r.Project && r.Iteration);
+        const clean = res.filter((r) => {
+          return hasValue(r.Project) && hasValue(r.Iteration) && hasValue(r.Date);
+        });
         if (!clean.length) throw new Error("유효한 데이터 없음");
         setRawData(clean);
         setProject(clean[0].Project);
@@ -262,9 +348,22 @@ export default function App() {
     return projectRows.filter((d) => d.Iteration === iteration);
   }, [projectRows, iteration]);
 
+  const metricRows = useMemo(() => {
+  return currentRows.filter((row) => hasAnyMetricData(row));
+  }, [currentRows]);
+
+  const currentMeta = useMemo(() => {
+  return getIterationMeta(currentRows);
+  }, [currentRows]);
+
   const iterationSummary = useMemo(() => {
     const grouped = {};
+
     projectRows.forEach((row) => {
+      // 🔥 placeholder row는 iteration 존재/기간 용도로는 남기되
+      // KPI 집계용 iteration summary에서는 제외
+      if (!hasAnyMetricData(row)) return;
+
       if (!grouped[row.Iteration]) grouped[row.Iteration] = [];
       grouped[row.Iteration].push(row);
     });
@@ -280,7 +379,7 @@ export default function App() {
         // 🔥 D1 Retention은 GA installs 기반 코호트 합산 리텐션 사용
         avgD1: getWeightedRetention(items),
 
-        // 🔥 installs 합계는 기존 방식 그대로 유지
+        // 🔥 installs 합계
         totalInstallsMeta: items.reduce(
           (sum, item) => sum + getInstallsMeta(item),
           0
@@ -290,10 +389,8 @@ export default function App() {
           0
         ),
 
-        // 🔥 D0 Playtime은 GA installs 가중 평균 사용
+        // 🔥 D0 / D1 Playtime 가중 평균
         avgD0Pt: getWeightedD0Playtime(items),
-
-        // 🔥 D1 Playtime은 D1 retained users 가중 평균 사용
         avgD1Pt: getWeightedD1Playtime(items),
       }))
       .sort((a, b) => a.order - b.order);
@@ -325,38 +422,28 @@ export default function App() {
     .filter((row) => hasValue(row["D1 Retention"]) && toNumber(row["D1 Retention"]) > 0)
     .sort((a, b) => toNumber(b["D1 Retention"]) - toNumber(a["D1 Retention"]))[0];
 
-  function parseDateValue(value) {
-  if (!value) return 0;
-
-  const parts = String(value)
-    .trim()
-    .split(".")
-    .map((v) => v.trim())
-    .filter(Boolean);
-
-  if (parts.length < 3) return 0;
-
-  const [year, month, day] = parts.map(Number);
-
-  return new Date(year, month - 1, day).getTime();
-}
-
 
 // 테이블용 (최신 날짜 → 과거)
-const sortedCurrentRows = [...currentRows].sort(
+// - 실제 metric이 있는 row만 표시
+const sortedCurrentRows = [...metricRows].sort(
   (a, b) => parseDateValue(b.Date) - parseDateValue(a.Date)
 );
 
 // 차트용 (과거 → 최신)
-const chartCurrentRows = [...currentRows].sort(
+// - 실제 metric이 있는 row만 표시
+const chartCurrentRows = [...metricRows].sort(
   (a, b) => parseDateValue(a.Date) - parseDateValue(b.Date)
 );
 
 
 const previousRows = useMemo(() => {
   if (!previousSummary) return [];
+
   return projectRows
-    .filter((row) => row.Iteration === previousSummary.iteration)
+    .filter(
+      (row) =>
+        row.Iteration === previousSummary.iteration && hasAnyMetricData(row)
+    )
     .sort((a, b) => parseDateValue(a.Date) - parseDateValue(b.Date));
 }, [projectRows, previousSummary]);
 
@@ -624,7 +711,6 @@ const sortedProjects = [...projects].sort((a, b) => {
               <div className="filter-group">
                 <div className="filter-label">Project</div>
                 <select id="projectSelector" value={project} onChange={(e) => setProject(e.target.value)}>
-                  
                   {sortedProjects.map((p) => (
                     <option key={p} value={p}>
                       {p}
@@ -642,6 +728,34 @@ const sortedProjects = [...projects].sort((a, b) => {
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            {/* 🔥 선택한 iteration의 테스트 상태 및 기간 표시 */}
+            <div
+              style={{
+                marginTop: "14px",
+                paddingTop: "14px",
+                borderTop: "1px solid #e5e7eb",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+                fontSize: "14px",
+                color: "#6b7280",
+              }}
+            >
+              <div>
+                <span style={{ fontWeight: 600, color: "#111827", marginRight: "6px" }}>
+                  Status:
+                </span>
+                {currentMeta.status}
+              </div>
+
+              <div>
+                <span style={{ fontWeight: 600, color: "#111827", marginRight: "6px" }}>
+                  Date Range:
+                </span>
+                {formatDisplayDate(currentMeta.startDate)} ~ {formatDisplayDate(currentMeta.endDate)}
               </div>
             </div>
           </div>
