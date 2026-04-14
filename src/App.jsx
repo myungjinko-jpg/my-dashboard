@@ -528,7 +528,7 @@ const sortedProjects = [...projects].sort((a, b) => {
                     </span>
                   </>
                 ) : (
-                  <span className="delta-flat">첫 CPI 테스트</span>
+                  <span className="delta-flat">Initial CPI Test</span>
                 )}
               </div>
             </div>
@@ -537,7 +537,7 @@ const sortedProjects = [...projects].sort((a, b) => {
               <div className="kpi-title">CPI</div>
               <div className="kpi-value">{formatCurrency(currentSummary?.avgCpi)}</div>
               <div className={`kpi-delta ${previousSummary ? deltaText(currentSummary?.avgCpi, previousSummary.avgCpi, true, "currency").cls : "delta-flat"}`}>
-                {previousSummary ? deltaText(currentSummary?.avgCpi, previousSummary.avgCpi, true, "currency").text : "첫 CPI 테스트"}
+                {previousSummary ? deltaText(currentSummary?.avgCpi, previousSummary.avgCpi, true, "currency").text : "Initial CPI Test"}
               </div>
             </div>
 
@@ -545,7 +545,7 @@ const sortedProjects = [...projects].sort((a, b) => {
               <div className="kpi-title">D1 Retention</div>
               <div className="kpi-value">{formatPercent(currentSummary?.avgD1)}</div>
               <div className={`kpi-delta ${previousSummary ? deltaText(currentSummary?.avgD1, previousSummary.avgD1, false, "percent").cls : "delta-flat"}`}>
-                {previousSummary ? deltaText(currentSummary?.avgD1, previousSummary.avgD1, false, "percent").text : "첫 CPI 테스트"}
+                {previousSummary ? deltaText(currentSummary?.avgD1, previousSummary.avgD1, false, "percent").text : "Initial CPI Test"}
               </div>
             </div>
 
@@ -553,7 +553,7 @@ const sortedProjects = [...projects].sort((a, b) => {
               <div className="kpi-title">D0 Playtime</div>
               <div className="kpi-value">{formatSeconds(currentSummary?.avgD0Pt)}</div>
               <div className={`kpi-delta ${previousSummary ? deltaText(currentSummary?.avgD0Pt, previousSummary.avgD0Pt, false, "seconds").cls : "delta-flat"}`}>
-                {previousSummary ? deltaText(currentSummary?.avgD0Pt, previousSummary.avgD0Pt, false, "seconds").text : "첫 CPI 테스트"}
+                {previousSummary ? deltaText(currentSummary?.avgD0Pt, previousSummary.avgD0Pt, false, "seconds").text : "Initial CPI Test"}
               </div>
             </div>
 
@@ -561,7 +561,7 @@ const sortedProjects = [...projects].sort((a, b) => {
               <div className="kpi-title">D1 Playtime</div>
               <div className="kpi-value">{formatSeconds(currentSummary?.avgD1Pt)}</div>
               <div className={`kpi-delta ${previousSummary ? deltaText(currentSummary?.avgD1Pt, previousSummary.avgD1Pt, false, "seconds").cls : "delta-flat"}`}>
-                {previousSummary ? deltaText(currentSummary?.avgD1Pt, previousSummary.avgD1Pt, false, "seconds").text : "첫 CPI 테스트"}
+                {previousSummary ? deltaText(currentSummary?.avgD1Pt, previousSummary.avgD1Pt, false, "seconds").text : "Initial CPI Test"}
               </div>
             </div>
           </div>
@@ -623,7 +623,7 @@ const sortedProjects = [...projects].sort((a, b) => {
                             </span>
                           </>
                         ) : (
-                          <span className="delta-flat">첫 CPI 테스트</span>
+                          <span className="delta-flat">Initial CPI Test</span>
                         )}
                       </td>
                     </tr>
@@ -635,7 +635,7 @@ const sortedProjects = [...projects].sort((a, b) => {
 
           <div className="card">
             <h3 className="table-title">Selected Iteration Daily Metrics</h3>
-            <p className="table-subtitle">선택한 iteration의 일자별 raw 지표입니다.</p>
+            <p className="table-subtitle">Daily raw metrics for the selected iteration.</p>
             <table>
               <thead>
                 <tr>
