@@ -620,7 +620,25 @@ const sortedProjects = [...projects].sort((a, b) => {
   return (
     <div className="wrap">
       <div className="topbar">
-        <h1 className="dashboard-title">CPI Test Dashboard</h1>
+        <h1
+          className="dashboard-title"
+          style={{ display: "flex", alignItems: "center", gap: "10px" }}
+        >
+          <span>CPI Test Dashboard</span>
+          <span
+            style={{
+              fontSize: "14px",
+              fontWeight: 500,
+              color: "#6b7280",
+              padding: "2px 8px",
+              border: "1px solid #e5e7eb",
+              borderRadius: "999px",
+              backgroundColor: "#f9fafb",
+            }}
+          >
+            v2.0.0
+          </span>
+        </h1>
         <a
           className="raw-link"
           href="https://docs.google.com/spreadsheets/d/1pBJWVce2CgrPBlFMGbS2yCp6tBQnNn4gkEHz7jG3LZk/edit?gid=0#gid=0"
