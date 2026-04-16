@@ -637,7 +637,7 @@ const sortedProjects = [...projects].sort((a, b) => {
               backgroundColor: "#f9fafb",
             }}
           >
-            v2.0.0
+            v2.0.1
           </span>
         </h1>
         <a
@@ -859,9 +859,9 @@ const sortedProjects = [...projects].sort((a, b) => {
                 <tr>
                   <th>Iteration</th>
                   <th>CPI</th>
-                  <th>D1 Retention</th>
                   <th>Installs (Meta)</th>
                   <th>Installs (GA)</th>
+                  <th>D1 Retention</th>
                   <th>D0 Playtime</th>
                   <th>D1 Playtime</th>
                   <th>Change</th>
@@ -874,9 +874,9 @@ const sortedProjects = [...projects].sort((a, b) => {
                     <tr key={row.iteration}>
                       <td>{row.iteration}</td>
                       <td>{formatCurrency(row.avgCpi)}</td>
-                      <td>{formatPercent(row.avgD1)}</td>
                       <td>{row.totalInstallsMeta || 0}</td>
                       <td>{row.totalInstallsGa || 0}</td>
+                      <td>{formatPercent(row.avgD1)}</td>
                       <td>{formatSeconds(row.avgD0Pt)}</td>
                       <td>{formatSeconds(row.avgD1Pt)}</td>
                       <td>
@@ -909,9 +909,9 @@ const sortedProjects = [...projects].sort((a, b) => {
                 <tr>
                   <th>Date</th>
                   <th>CPI</th>
-                  <th>D1 Retention</th>
                   <th>Installs (Meta)</th>
                   <th>Installs (GA)</th>
+                  <th>D1 Retention</th>
                   <th>D0 Playtime</th>
                   <th>D1 Playtime</th>
                 </tr>
@@ -921,14 +921,15 @@ const sortedProjects = [...projects].sort((a, b) => {
                   <tr key={idx}>
                     <td>{row.Date || "-"}</td>
                     <td>{hasValue(row.CPI) && toNumber(row.CPI) > 0 ? formatCurrency(row.CPI) : "No data"}</td>
+                    <td>{row.Date || "-"}</td>
+                    <td>{hasValue(row.CPI) && toNumber(row.CPI) > 0 ? formatCurrency(row.CPI) : "No data"}</td>
+                    <td>{hasValue(row["Installs (Meta)"]) ? getInstallsMeta(row) : 0}</td>
+                    <td>{hasValue(row["Installs (GA)"]) ? getInstallsGa(row) : 0}</td>
                     <td>
-                      {/* 🔥 리텐션은 0%도 유효한 값이므로 >= 0 기준으로 표시 */}
                       {hasValue(row["D1 Retention"]) && Number.isFinite(toNumber(row["D1 Retention"]))
                         ? formatPercent(row["D1 Retention"])
                         : "No data"}
                     </td>
-                    <td>{hasValue(row["Installs (Meta)"]) ? getInstallsMeta(row) : 0}</td>
-                    <td>{hasValue(row["Installs (GA)"]) ? getInstallsGa(row) : 0}</td>
                     <td>
                       {hasValue(row["D0 Playtime"]) && toNumber(row["D0 Playtime"]) > 0
                         ? formatSeconds(row["D0 Playtime"])
