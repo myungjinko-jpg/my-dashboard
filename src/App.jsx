@@ -221,7 +221,8 @@ function deltaText(current, previous, inverse = false, formatter = "number") {
 
   let value = Math.abs(diff).toFixed(2);
   if (formatter === "currency") value = `$${Math.abs(diff).toFixed(2)}`;
-  if (formatter === "percent") value = `${Math.abs(diff).toFixed(2)}%`;
+  // 🔥 Retention 변화값은 퍼센트포인트(%p)로 표기
+  if (formatter === "percent") value = `${Math.abs(diff).toFixed(2)}%p`;
   if (formatter === "seconds") value = `${Math.round(Math.abs(diff))} sec`;
   if (formatter === "number") value = `${Math.round(Math.abs(diff))}`;
 
