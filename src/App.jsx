@@ -637,7 +637,7 @@ const sortedProjects = [...projects].sort((a, b) => {
               backgroundColor: "#f9fafb",
             }}
           >
-            v2.0.1
+            v2.0.2
           </span>
         </h1>
         <a
