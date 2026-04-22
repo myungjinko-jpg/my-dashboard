@@ -920,21 +920,30 @@ const sortedProjects = [...projects].sort((a, b) => {
                 {sortedCurrentRows.map((row, idx) => (
                   <tr key={idx}>
                     <td>{row.Date || "-"}</td>
-                    <td>{hasValue(row.CPI) && toNumber(row.CPI) > 0 ? formatCurrency(row.CPI) : "No data"}</td>
-                    <td>{row.Date || "-"}</td>
-                    <td>{hasValue(row.CPI) && toNumber(row.CPI) > 0 ? formatCurrency(row.CPI) : "No data"}</td>
-                    <td>{hasValue(row["Installs (Meta)"]) ? getInstallsMeta(row) : 0}</td>
-                    <td>{hasValue(row["Installs (GA)"]) ? getInstallsGa(row) : 0}</td>
+
                     <td>
-                      {hasValue(row["D1 Retention"]) && Number.isFinite(toNumber(row["D1 Retention"]))
+                      {hasValue(row.CPI) && toNumber(row.CPI) > 0
+                        ? formatCurrency(row.CPI)
+                        : "No data"}
+                    </td>
+
+                    <td>{hasValue(row["Installs (Meta)"]) ? getInstallsMeta(row) : 0}</td>
+
+                    <td>{hasValue(row["Installs (GA)"]) ? getInstallsGa(row) : 0}</td>
+
+                    <td>
+                      {hasValue(row["D1 Retention"]) &&
+                      Number.isFinite(toNumber(row["D1 Retention"]))
                         ? formatPercent(row["D1 Retention"])
                         : "No data"}
                     </td>
+
                     <td>
                       {hasValue(row["D0 Playtime"]) && toNumber(row["D0 Playtime"]) > 0
                         ? formatSeconds(row["D0 Playtime"])
                         : "No data"}
                     </td>
+
                     <td>
                       {hasValue(row["D1 Playtime"]) && toNumber(row["D1 Playtime"]) > 0
                         ? formatSeconds(row["D1 Playtime"])
