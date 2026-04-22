@@ -228,6 +228,20 @@ function deltaText(current, previous, inverse = false, formatter = "number") {
 
   return { text: `${arrow} ${value}`, cls };
 }
+
+// 🔥 표 안에서 작은 변화값을 표시하기 위한 공통 UI
+function renderInlineDelta(delta) {
+  if (!delta) {
+    return <div className="delta-flat" style={{ fontSize: "14px", marginTop: "4px" }}>Initial</div>;
+  }
+
+  return (
+    <div className={delta.cls} style={{ fontSize: "14px", marginTop: "4px" }}>
+      {delta.text}
+    </div>
+  );
+}
+
 // 🔥 날짜 문자열을 timestamp로 변환
 // - 시트 날짜 형식: YYYY. M. D.
 function parseDateValue(value) {
@@ -424,17 +438,41 @@ export default function App() {
     .sort((a, b) => toNumber(b["D1 Retention"]) - toNumber(a["D1 Retention"]))[0];
 
 
-// 테이블용 (최신 날짜 → 과거)
-// - 실제 metric이 있는 row만 표시
+// 하단 일별 테이블용 (과거 → 최신)
 const sortedCurrentRows = [...metricRows].sort(
-  (a, b) => parseDateValue(b.Date) - parseDateValue(a.Date)
+  (a, b) => parseDateValue(a.Date) - parseDateValue(b.Date)
 );
 
 // 차트용 (과거 → 최신)
-// - 실제 metric이 있는 row만 표시
 const chartCurrentRows = [...metricRows].sort(
   (a, b) => parseDateValue(a.Date) - parseDateValue(b.Date)
 );
+
+const dailyRowsWithChange = useMemo(() => {
+  const ascRows = [...metricRows].sort(
+    (a, b) => parseDateValue(a.Date) - parseDateValue(b.Date)
+  );
+
+  return ascRows.map((row, index) => {
+    const prev = index > 0 ? ascRows[index - 1] : null;
+
+    return {
+      ...row,
+      dailyDelta: {
+        cpi: prev ? deltaText(row.CPI, prev.CPI, true, "currency") : null,
+        d1: prev
+          ? deltaText(row["D1 Retention"], prev["D1 Retention"], false, "percent")
+          : null,
+        d0Pt: prev
+          ? deltaText(row["D0 Playtime"], prev["D0 Playtime"], false, "seconds")
+          : null,
+        d1Pt: prev
+          ? deltaText(row["D1 Playtime"], prev["D1 Playtime"], false, "seconds")
+          : null,
+      },
+    };
+  });
+}, [metricRows]);
 
 
 const previousRows = useMemo(() => {
@@ -864,35 +902,43 @@ const sortedProjects = [...projects].sort((a, b) => {
                   <th>D1 Retention</th>
                   <th>D0 Playtime</th>
                   <th>D1 Playtime</th>
-                  <th>Change</th>
                 </tr>
               </thead>
               <tbody>
                 {iterationSummary.map((row, index) => {
                   const prev = index > 0 ? iterationSummary[index - 1] : null;
+
+                  const cpiDelta = prev ? deltaText(row.avgCpi, prev.avgCpi, true, "currency") : null;
+                  const d1Delta = prev ? deltaText(row.avgD1, prev.avgD1, false, "percent") : null;
+                  const d0PtDelta = prev ? deltaText(row.avgD0Pt, prev.avgD0Pt, false, "seconds") : null;
+                  const d1PtDelta = prev ? deltaText(row.avgD1Pt, prev.avgD1Pt, false, "seconds") : null;
+
                   return (
                     <tr key={row.iteration}>
                       <td>{row.iteration}</td>
-                      <td>{formatCurrency(row.avgCpi)}</td>
-                      <td>{row.totalInstallsMeta || 0}</td>
-                      <td>{row.totalInstallsGa || 0}</td>
-                      <td>{formatPercent(row.avgD1)}</td>
-                      <td>{formatSeconds(row.avgD0Pt)}</td>
-                      <td>{formatSeconds(row.avgD1Pt)}</td>
+
                       <td>
-                        {prev ? (
-                          <>
-                            <span className={deltaText(row.avgCpi, prev.avgCpi, true, "currency").cls}>
-                              CPI {deltaText(row.avgCpi, prev.avgCpi, true, "currency").text}
-                            </span>
-                            <br />
-                            <span className={deltaText(row.avgD1, prev.avgD1, false, "percent").cls}>
-                              D1 {deltaText(row.avgD1, prev.avgD1, false, "percent").text}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="delta-flat">Initial CPI Test</span>
-                        )}
+                        <div>{formatCurrency(row.avgCpi)}</div>
+                        {renderInlineDelta(cpiDelta)}
+                      </td>
+
+                      <td>{row.totalInstallsMeta || 0}</td>
+
+                      <td>{row.totalInstallsGa || 0}</td>
+
+                      <td>
+                        <div>{formatPercent(row.avgD1)}</div>
+                        {renderInlineDelta(d1Delta)}
+                      </td>
+
+                      <td>
+                        <div>{formatSeconds(row.avgD0Pt)}</div>
+                        {renderInlineDelta(d0PtDelta)}
+                      </td>
+
+                      <td>
+                        <div>{formatSeconds(row.avgD1Pt)}</div>
+                        {renderInlineDelta(d1PtDelta)}
                       </td>
                     </tr>
                   );
@@ -917,14 +963,17 @@ const sortedProjects = [...projects].sort((a, b) => {
                 </tr>
               </thead>
               <tbody>
-                {sortedCurrentRows.map((row, idx) => (
+                {dailyRowsWithChange.map((row, idx) => (
                   <tr key={idx}>
                     <td>{row.Date || "-"}</td>
 
                     <td>
-                      {hasValue(row.CPI) && toNumber(row.CPI) > 0
-                        ? formatCurrency(row.CPI)
-                        : "No data"}
+                      <div>
+                        {hasValue(row.CPI) && toNumber(row.CPI) > 0
+                          ? formatCurrency(row.CPI)
+                          : "No data"}
+                      </div>
+                      {renderInlineDelta(row.dailyDelta.cpi)}
                     </td>
 
                     <td>{hasValue(row["Installs (Meta)"]) ? getInstallsMeta(row) : 0}</td>
@@ -932,22 +981,31 @@ const sortedProjects = [...projects].sort((a, b) => {
                     <td>{hasValue(row["Installs (GA)"]) ? getInstallsGa(row) : 0}</td>
 
                     <td>
-                      {hasValue(row["D1 Retention"]) &&
-                      Number.isFinite(toNumber(row["D1 Retention"]))
-                        ? formatPercent(row["D1 Retention"])
-                        : "No data"}
+                      <div>
+                        {hasValue(row["D1 Retention"]) &&
+                        Number.isFinite(toNumber(row["D1 Retention"]))
+                          ? formatPercent(row["D1 Retention"])
+                          : "No data"}
+                      </div>
+                      {renderInlineDelta(row.dailyDelta.d1)}
                     </td>
 
                     <td>
-                      {hasValue(row["D0 Playtime"]) && toNumber(row["D0 Playtime"]) > 0
-                        ? formatSeconds(row["D0 Playtime"])
-                        : "No data"}
+                      <div>
+                        {hasValue(row["D0 Playtime"]) && toNumber(row["D0 Playtime"]) > 0
+                          ? formatSeconds(row["D0 Playtime"])
+                          : "No data"}
+                      </div>
+                      {renderInlineDelta(row.dailyDelta.d0Pt)}
                     </td>
 
                     <td>
-                      {hasValue(row["D1 Playtime"]) && toNumber(row["D1 Playtime"]) > 0
-                        ? formatSeconds(row["D1 Playtime"])
-                        : "No data"}
+                      <div>
+                        {hasValue(row["D1 Playtime"]) && toNumber(row["D1 Playtime"]) > 0
+                          ? formatSeconds(row["D1 Playtime"])
+                          : "No data"}
+                      </div>
+                      {renderInlineDelta(row.dailyDelta.d1Pt)}
                     </td>
                   </tr>
                 ))}
