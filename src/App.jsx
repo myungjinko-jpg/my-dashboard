@@ -737,15 +737,15 @@ const sortedProjects = [...projects].sort((a, b) => {
           </div>
 
           <div className="overview-item">
-            <div className="overview-label">Best D1</div>
+            <div className="overview-label">Best CPI</div>
             <div className="overview-value">
-              {bestD1Project ? (
+              {bestCpiProject ? (
                 <>
                   <div className="overview-value small">
-                    {bestD1Project.project}{" "}
-                    <span className="overview-meta">{bestD1Project.iteration}</span>
+                    {bestCpiProject.project}{" "}
+                    <span className="overview-meta">{bestCpiProject.iteration}</span>
                   </div>
-                  <div>{formatPercent(bestD1Project.avgD1)}</div>
+                  <div>{formatCurrency(bestCpiProject.avgCpi)}</div>
                 </>
               ) : (
                 "No data"
@@ -756,13 +756,13 @@ const sortedProjects = [...projects].sort((a, b) => {
           <div className="overview-item">
             <div className="overview-label">Best D1</div>
             <div className="overview-value">
-              {bestD1Row ? (
+              {bestD1Project ? (
                 <>
                   <div className="overview-value small">
-                    {bestD1Row.Project}{" "}
-                    <span className="overview-meta">{bestD1Row.Iteration}</span>
+                    {bestD1Project.project}{" "}
+                    <span className="overview-meta">{bestD1Project.iteration}</span>
                   </div>
-                  <div>{formatPercent(bestD1Row["D1 Retention"])}</div>
+                  <div>{formatPercent(bestD1Project.avgD1)}</div>
                 </>
               ) : (
                 "No data"
