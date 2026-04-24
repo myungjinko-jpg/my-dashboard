@@ -415,27 +415,49 @@ export default function App() {
   const currentIndex = iterationSummary.findIndex((item) => item.iteration === iteration);
   const previousSummary = currentIndex > 0 ? iterationSummary[currentIndex - 1] : null;
 
-  const latestRowsByProject = useMemo(() => {
-    const latestByProject = {};
-    rawData.forEach((row) => {
-      const prev = latestByProject[row.Project];
-      if (!prev || getIterationOrder(row.Iteration) > getIterationOrder(prev.Iteration)) {
-        latestByProject[row.Project] = row;
-      }
-    });
-    return Object.values(latestByProject);
-  }, [rawData]);
+const latestIterationSummaryByProject = useMemo(() => {
+  const grouped = {};
+
+  rawData.forEach((row) => {
+    if (!hasAnyMetricData(row)) return;
+
+    const projectName = row.Project;
+    const iterationName = row.Iteration;
+
+    if (!grouped[projectName]) grouped[projectName] = {};
+    if (!grouped[projectName][iterationName]) grouped[projectName][iterationName] = [];
+
+    grouped[projectName][iterationName].push(row);
+  });
+
+  return Object.entries(grouped)
+    .map(([projectName, iterationMap]) => {
+      const latestIteration = Object.keys(iterationMap).sort(
+        (a, b) => getIterationOrder(b) - getIterationOrder(a)
+      )[0];
+
+      const items = iterationMap[latestIteration] || [];
+
+      return {
+        project: projectName,
+        iteration: latestIteration,
+        avgCpi: getWeightedCpi(items),
+        avgD1: getWeightedRetention(items),
+      };
+    })
+    .filter((item) => item.iteration);
+}, [rawData]);
+
+const bestCpiProject = [...latestIterationSummaryByProject]
+  .filter((item) => item.avgCpi > 0)
+  .sort((a, b) => a.avgCpi - b.avgCpi)[0];
+
+const bestD1Project = [...latestIterationSummaryByProject]
+  .filter((item) => item.avgD1 >= 0)
+  .sort((a, b) => b.avgD1 - a.avgD1)[0];
 
   const overviewProjects = new Set(rawData.map((row) => row.Project).filter(Boolean)).size;
   const overviewTotalDownloads = rawData.reduce((sum, row) => sum + getInstallsMeta(row), 0);
-
-  const bestCpiRow = [...latestRowsByProject]
-    .filter((row) => hasValue(row.CPI) && toNumber(row.CPI) > 0)
-    .sort((a, b) => toNumber(a.CPI) - toNumber(b.CPI))[0];
-
-  const bestD1Row = [...latestRowsByProject]
-    .filter((row) => hasValue(row["D1 Retention"]) && toNumber(row["D1 Retention"]) > 0)
-    .sort((a, b) => toNumber(b["D1 Retention"]) - toNumber(a["D1 Retention"]))[0];
 
 
 // 하단 일별 테이블용 (과거 → 최신)
@@ -715,15 +737,15 @@ const sortedProjects = [...projects].sort((a, b) => {
           </div>
 
           <div className="overview-item">
-            <div className="overview-label">Best CPI</div>
+            <div className="overview-label">Best D1</div>
             <div className="overview-value">
-              {bestCpiRow ? (
+              {bestD1Project ? (
                 <>
                   <div className="overview-value small">
-                    {bestCpiRow.Project}{" "}
-                    <span className="overview-meta">{bestCpiRow.Iteration}</span>
+                    {bestD1Project.project}{" "}
+                    <span className="overview-meta">{bestD1Project.iteration}</span>
                   </div>
-                  <div>{formatCurrency(bestCpiRow.CPI)}</div>
+                  <div>{formatPercent(bestD1Project.avgD1)}</div>
                 </>
               ) : (
                 "No data"
