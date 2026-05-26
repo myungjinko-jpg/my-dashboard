@@ -350,10 +350,25 @@ export default function App() {
   }, [rawData, project]);
 
   const iterations = useMemo(() => {
-    return [...new Set(projectRows.map((d) => d.Iteration).filter(Boolean))].sort(
-      (a, b) => getIterationOrder(b) - getIterationOrder(a)
+    const latestDatePerIteration = {};
+
+    projectRows.forEach((row) => {
+      if (!row.Iteration || !row.Date) return;
+
+      const date = new Date(row.Date);
+
+      if (
+        !latestDatePerIteration[row.Iteration] ||
+        date > latestDatePerIteration[row.Iteration]
+      ) {
+        latestDatePerIteration[row.Iteration] = date;
+      }
+    });
+
+    return Object.keys(latestDatePerIteration).sort(
+      (a, b) => latestDatePerIteration[b] - latestDatePerIteration[a]
     );
-  }, [projectRows]);
+  }, [projectRows]); 
 
   useEffect(() => {
     if (iterations.length) setIteration(iterations[0]);
