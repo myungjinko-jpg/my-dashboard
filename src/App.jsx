@@ -478,12 +478,6 @@ const bestD1Project = [...latestIterationSummaryByProject]
   const overviewProjects = new Set(rawData.map((row) => row.Project).filter(Boolean)).size;
   const overviewTotalDownloads = rawData.reduce((sum, row) => sum + getInstallsMeta(row), 0);
 
-
-// 하단 일별 테이블용 (과거 → 최신)
-const sortedCurrentRows = [...metricRows].sort(
-  (a, b) => parseDateValue(a.Date) - parseDateValue(b.Date)
-);
-
 // 차트용 (과거 → 최신)
 const chartCurrentRows = [...metricRows].sort(
   (a, b) => parseDateValue(a.Date) - parseDateValue(b.Date)
@@ -716,7 +710,7 @@ const sortedProjects = [...projects].sort((a, b) => {
               backgroundColor: "#f9fafb",
             }}
           >
-            v2.0.2
+            v3.0.0
           </span>
         </h1>
         <a
