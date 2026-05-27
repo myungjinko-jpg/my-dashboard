@@ -399,31 +399,35 @@ export default function App() {
     });
 
     return Object.entries(grouped)
-      .map(([it, items]) => ({
-        iteration: it,
-        order: getIterationOrder(it),
+    .map(([it, items]) => ({
+      iteration: it,
 
-        // 🔥 CPI는 Meta installs 기준 가중 평균 사용
-        avgCpi: getWeightedCpi(items),
+      latestDate: Math.max(
+        ...items.map((item) => parseDateValue(item.Date))
+      ),
 
-        // 🔥 D1 Retention은 GA installs 기반 코호트 합산 리텐션 사용
-        avgD1: getWeightedRetention(items),
+      // 🔥 CPI는 Meta installs 기준 가중 평균 사용
+      avgCpi: getWeightedCpi(items),
 
-        // 🔥 installs 합계
-        totalInstallsMeta: items.reduce(
-          (sum, item) => sum + getInstallsMeta(item),
-          0
-        ),
-        totalInstallsGa: items.reduce(
-          (sum, item) => sum + getInstallsGa(item),
-          0
-        ),
+      // 🔥 D1 Retention은 GA installs 기반 코호트 합산 리텐션 사용
+      avgD1: getWeightedRetention(items),
 
-        // 🔥 D0 / D1 Playtime 가중 평균
-        avgD0Pt: getWeightedD0Playtime(items),
-        avgD1Pt: getWeightedD1Playtime(items),
-      }))
-      .sort((a, b) => a.order - b.order);
+      // 🔥 installs 합계
+      totalInstallsMeta: items.reduce(
+        (sum, item) => sum + getInstallsMeta(item),
+        0
+      ),
+
+      totalInstallsGa: items.reduce(
+        (sum, item) => sum + getInstallsGa(item),
+        0
+      ),
+
+      // 🔥 D0 / D1 Playtime 가중 평균
+      avgD0Pt: getWeightedD0Playtime(items),
+      avgD1Pt: getWeightedD1Playtime(items),
+    }))
+    .sort((a, b) => b.latestDate - a.latestDate);
   }, [projectRows]);
 
   const currentSummary = iterationSummary.find((item) => item.iteration === iteration);
