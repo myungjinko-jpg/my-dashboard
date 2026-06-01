@@ -716,13 +716,13 @@ const sortedProjects = [...projects].sort((a, b) => {
         <img
           src={flickLogo}
           alt="Flick"
-          style={{ width: "220px", maxWidth: "55vw" }}
+          style={{ width: "340px", maxWidth: "70vw" }}
         />
 
-        <div style={{ width: "220px", maxWidth: "55vw", display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div style={{ width: "340px", maxWidth: "70vw", display: "flex", flexDirection: "column", gap: "14px" }}>
           <div style={{
             width: "100%",
-            height: "3px",
+            height: "6px",
             background: "rgba(255,255,255,0.15)",
             borderRadius: "999px",
             overflow: "hidden",
@@ -734,8 +734,8 @@ const sortedProjects = [...projects].sort((a, b) => {
               animation: "progress 2s cubic-bezier(0.4, 0, 0.2, 1) forwards",
             }} />
           </div>
-          <div style={{ textAlign: "right", fontSize: "11px", color: "rgba(255,255,255,0.35)", letterSpacing: "0.05em" }}>
-            v3.0.4
+          <div style={{ textAlign: "right", fontSize: "14px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.05em" }}>
+            v3.0.5
           </div>
         </div>
 
@@ -770,7 +770,7 @@ const sortedProjects = [...projects].sort((a, b) => {
               backgroundColor: "#f9fafb",
             }}
           >
-            v3.0.4
+            v3.0.5
           </span>
         </h1>
         <a
