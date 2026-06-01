@@ -44,8 +44,23 @@ function makeChartOptions({ isDark, yPrefix, ySuffix, suggestedMax }) {
 }
 
 export default function ChartSection({ chartCurrentRows, previousRows, isDark }) {
+  // 두 iteration 중 더 긴 쪽에 맞춰 Day 1, Day 2... 레이블 생성
+  const maxLen = Math.max(chartCurrentRows.length, previousRows.length);
+  const dayLabels = Array.from({ length: maxLen }, (_, i) => `Day ${i + 1}`);
+
+  const prevStyle = {
+    borderColor: isDark ? "#94a3b8" : "#64748b",
+    backgroundColor: "rgba(100,116,139,0.08)",
+    borderDash: [5, 4],
+    pointRadius: 3,
+    pointHoverRadius: 5,
+    pointBackgroundColor: isDark ? "#94a3b8" : "#64748b",
+    borderWidth: 2,
+    tension: 0.3,
+  };
+
   const cpiChartData = {
-    labels: chartCurrentRows.map((row) => row.Date || "-"),
+    labels: dayLabels,
     datasets: [
       {
         label: "Current",
@@ -56,17 +71,13 @@ export default function ChartSection({ chartCurrentRows, previousRows, isDark })
       ...(previousRows.length ? [{
         label: "Previous",
         data: previousRows.map((row) => toNumber(row.CPI)),
-        borderColor: isDark ? "#f59e0b" : "#d97706",
-        backgroundColor: "rgba(245,158,11,0.06)",
-        tension: 0.3, borderWidth: 2, borderDash: [5, 4],
-        pointRadius: 3, pointHoverRadius: 5,
-        pointBackgroundColor: isDark ? "#f59e0b" : "#d97706",
+        ...prevStyle,
       }] : []),
     ],
   };
 
   const d1ChartData = {
-    labels: chartCurrentRows.map((row) => row.Date || "-"),
+    labels: dayLabels,
     datasets: [
       {
         label: "Current",
@@ -77,11 +88,7 @@ export default function ChartSection({ chartCurrentRows, previousRows, isDark })
       ...(previousRows.length ? [{
         label: "Previous",
         data: previousRows.map((row) => toNumber(row["D1 Retention"])),
-        borderColor: isDark ? "#f59e0b" : "#d97706",
-        backgroundColor: "rgba(245,158,11,0.06)",
-        tension: 0.3, borderWidth: 2, borderDash: [5, 4],
-        pointRadius: 3, pointHoverRadius: 5,
-        pointBackgroundColor: isDark ? "#f59e0b" : "#d97706",
+        ...prevStyle,
       }] : []),
     ],
   };
