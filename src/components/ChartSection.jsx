@@ -4,7 +4,7 @@ import { toNumber } from "../utils";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
-function makeChartOptions({ isDark, yPrefix, ySuffix }) {
+function makeChartOptions({ isDark, yPrefix, ySuffix, suggestedMax }) {
   const tickColor = isDark ? "#94a3b8" : "#6b7280";
   const gridColor = isDark ? "#2a3448" : "#e5e7eb";
 
@@ -26,6 +26,7 @@ function makeChartOptions({ isDark, yPrefix, ySuffix }) {
     scales: {
       y: {
         beginAtZero: true,
+        ...(suggestedMax !== undefined ? { suggestedMax } : {}),
         ticks: { color: tickColor, callback: (v) => `${yPrefix}${Number(v).toFixed(yPrefix ? 2 : 0)}${ySuffix}` },
         grid: { color: gridColor },
       },
@@ -87,7 +88,7 @@ export default function ChartSection({ chartCurrentRows, previousRows, isDark })
       <div className="card">
         <h3 className="chart-title">D1 Retention Trend</h3>
         <div className="chart-box">
-          <Line data={d1ChartData} options={makeChartOptions({ isDark, yPrefix: "", ySuffix: "%" })} />
+          <Line data={d1ChartData} options={makeChartOptions({ isDark, yPrefix: "", ySuffix: "%", suggestedMax: 10 })} />
         </div>
       </div>
     </div>
