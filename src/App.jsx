@@ -56,7 +56,26 @@ export default function App() {
         const clean = res.filter((r) => hasValue(r.Project) && hasValue(r.Iteration) && hasValue(r.Date));
         if (!clean.length) throw new Error("유효한 데이터 없음");
         setRawData(clean);
-        setProject(clean[0].Project);
+
+        // Live 중인 프로젝트 우선 선택
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const projectLatestDate = {};
+        clean.forEach((r) => {
+          const ts = parseDateValue(r.Date);
+          if (!projectLatestDate[r.Project] || ts > projectLatestDate[r.Project]) {
+            projectLatestDate[r.Project] = ts;
+          }
+        });
+
+        const liveProject = Object.entries(projectLatestDate).find(([, ts]) => {
+          const d = new Date(ts);
+          d.setHours(0, 0, 0, 0);
+          return d >= today;
+        });
+
+        setProject(liveProject ? liveProject[0] : clean[0].Project);
       })
       .catch((err) => { console.error(err); setError(err.message); })
       .finally(() => {
@@ -158,11 +177,15 @@ export default function App() {
       .sort((a, b) => parseDateValue(a.Date) - parseDateValue(b.Date));
   }, [projectRows, previousSummary]);
 
+  const getProjectTier = (name) => {
+    if (name.startsWith("(Drop)")) return 2;
+    if (name.startsWith("[Challenge]")) return 1;
+    return 0;
+  };
+
   const sortedProjects = [...projects].sort((a, b) => {
-    const isDropA = a.startsWith("(Drop)");
-    const isDropB = b.startsWith("(Drop)");
-    if (isDropA && !isDropB) return 1;
-    if (!isDropA && isDropB) return -1;
+    const tierDiff = getProjectTier(a) - getProjectTier(b);
+    if (tierDiff !== 0) return tierDiff;
     return a.localeCompare(b);
   });
 
@@ -174,7 +197,7 @@ export default function App() {
         <h1 className="dashboard-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span>CPI Test Dashboard</span>
           <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--muted)", padding: "2px 8px", border: "1px solid var(--line)", borderRadius: "999px", backgroundColor: "var(--card)" }}>
-            v3.2.4
+            v3.2.5
           </span>
         </h1>
         <div className="topbar-right">
