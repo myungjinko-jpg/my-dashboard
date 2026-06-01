@@ -65,8 +65,10 @@ export default function ChartSection({ chartCurrentRows, previousRows, isDark })
       {
         label: "Current",
         data: chartCurrentRows.map((row) => toNumber(row.CPI)),
-        borderColor: "#6366f1", backgroundColor: "rgba(99,102,241,0.12)",
-        tension: 0.3, borderWidth: 2, pointRadius: 3, pointHoverRadius: 5,
+        borderColor: "#4f46e5",
+        backgroundColor: "rgba(79,70,229,0.12)",
+        pointBackgroundColor: "#4f46e5",
+        tension: 0.3, borderWidth: 3, pointRadius: 4, pointHoverRadius: 6,
       },
       ...(previousRows.length ? [{
         label: "Previous",
@@ -82,8 +84,10 @@ export default function ChartSection({ chartCurrentRows, previousRows, isDark })
       {
         label: "Current",
         data: chartCurrentRows.map((row) => toNumber(row["D1 Retention"])),
-        borderColor: "#059669", backgroundColor: "rgba(5,150,105,0.12)",
-        tension: 0.3, borderWidth: 2, pointRadius: 3, pointHoverRadius: 5,
+        borderColor: "#10b981",
+        backgroundColor: "rgba(16,185,129,0.12)",
+        pointBackgroundColor: "#10b981",
+        tension: 0.3, borderWidth: 3, pointRadius: 4, pointHoverRadius: 6,
       },
       ...(previousRows.length ? [{
         label: "Previous",
