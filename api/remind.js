@@ -13,7 +13,11 @@ function parseDateValue(value) {
 }
 
 function formatKoreanDate(date) {
-  return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+  const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const weekday = weekdays[date.getDay()];
+  return `${month}월 ${day}일(${weekday})`;
 }
 
 export default async function handler(req, res) {
@@ -70,30 +74,38 @@ export default async function handler(req, res) {
       }
     });
 
-    // 업데이트 필요한 프로젝트 없으면 종료
-    if (needsUpdate.length === 0) {
-      return res.json({ message: "모든 프로젝트 업데이트 완료. 알림 없음." });
-    }
-
-    // 슬랙 메시지 구성
     const dateStr = formatKoreanDate(targetDate);
-    const projectList = needsUpdate
-      .map((p) => `• ${p.project} ${p.iteration}`)
-      .join("\n");
-
-    const text = [
-      `📊 CPI Test 데이터 업데이트 알림 (${dateStr} 기준) <!subteam^${BIZ_GROUP_ID}|biz>`,
-      `담당자분들은 다음 프로젝트의 데이터를 업데이트 해주세요.`,
-      projectList,
-      ``,
-      `CPI Test 대시보드 바로가기`,
-      `• ${DASHBOARD_URL}`,
-    ].join("\n");
-
-    // 슬랙 전송
     const webhookUrl = process.env.SLACK_WEBHOOK_URL;
     if (!webhookUrl) throw new Error("SLACK_WEBHOOK_URL 환경변수 없음");
 
+    let text;
+
+    if (needsUpdate.length === 0) {
+      // 모두 완료
+      text = [
+        `*📊 CPI Test 데이터 업데이트 알림 - ${dateStr} 데이터 기준* <!subteam^${BIZ_GROUP_ID}|biz>`,
+        `✅ 모든 Live 프로젝트 업데이트 완료!`,
+        ``,
+        `CPI Test 대시보드 바로가기`,
+        `• ${DASHBOARD_URL}`,
+      ].join("\n");
+    } else {
+      // 업데이트 필요
+      const projectList = needsUpdate
+        .map((p) => `• ${p.project} ${p.iteration}`)
+        .join("\n");
+
+      text = [
+        `*📊 CPI Test 데이터 업데이트 알림 - ${dateStr} 데이터 기준* <!subteam^${BIZ_GROUP_ID}|biz>`,
+        `담당자분들은 다음 프로젝트의 데이터를 업데이트 해주세요.`,
+        projectList,
+        ``,
+        `CPI Test 대시보드 바로가기`,
+        `• ${DASHBOARD_URL}`,
+      ].join("\n");
+    }
+
+    // 슬랙 전송
     await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
