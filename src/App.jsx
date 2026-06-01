@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import html2canvas from "html2canvas";
 import LoadingScreen from "./components/LoadingScreen";
 import KpiGrid from "./components/KpiGrid";
 import ChartSection from "./components/ChartSection";
@@ -24,6 +25,8 @@ export default function App() {
   const [msgIndex, setMsgIndex] = useState(() => Math.floor(Math.random() * 16));
   const [dots, setDots] = useState(".");
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
+  const [copying, setCopying] = useState(false);
+  const reportRef = useRef(null);
 
   useEffect(() => {
     document.body.classList.toggle("dark", theme === "dark");
@@ -190,6 +193,37 @@ export default function App() {
     return a.localeCompare(b);
   });
 
+  const copyReport = async () => {
+    if (!reportRef.current) return;
+    setCopying(true);
+    try {
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: theme === "dark" ? "#0f1623" : "#f6f7fb",
+      });
+      canvas.toBlob(async (blob) => {
+        try {
+          await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+          setCopying("done");
+          setTimeout(() => setCopying(false), 2000);
+        } catch {
+          // 클립보드 API 미지원 시 다운로드로 대체
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${project}_${iteration}_report.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+          setCopying(false);
+        }
+      }, "image/png");
+    } catch (e) {
+      console.error(e);
+      setCopying(false);
+    }
+  };
+
   if (loading) return <LoadingScreen msgIndex={msgIndex} dots={dots} />;
 
   return (
@@ -198,7 +232,7 @@ export default function App() {
         <h1 className="dashboard-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span>CPI Test Dashboard</span>
           <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--muted)", padding: "2px 8px", border: "1px solid var(--line)", borderRadius: "999px", backgroundColor: "var(--card)" }}>
-            v3.4.6
+            v3.5.0
           </span>
         </h1>
         <div className="topbar-right">
@@ -255,12 +289,28 @@ export default function App() {
       </section>
 
       <section className="section-block">
-        <div className="section-header">
-          <div className="section-eyebrow">Project Detail</div>
-          <h2 className="section-heading">Project Analysis</h2>
-          <p className="section-desc">Detailed analysis comparing performance and trends across iterations.</p>
+        <div className="section-header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
+          <div>
+            <div className="section-eyebrow">Project Detail</div>
+            <h2 className="section-heading">Project Analysis</h2>
+            <p className="section-desc">Detailed analysis comparing performance and trends across iterations.</p>
+          </div>
+          <button
+            onClick={copyReport}
+            disabled={copying === true}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: "6px",
+              padding: "8px 14px", borderRadius: "999px", border: "1px solid var(--card-border)",
+              background: copying === "done" ? "#10b981" : "var(--card)",
+              color: copying === "done" ? "#fff" : "var(--text)",
+              fontSize: "13px", fontWeight: 600, cursor: copying === true ? "wait" : "pointer",
+              transition: "all 0.2s", whiteSpace: "nowrap",
+            }}
+          >
+            {copying === true ? "⏳ 캡쳐 중..." : copying === "done" ? "✅ 복사됨!" : "📋 Copy Report"}
+          </button>
         </div>
-        <div className="section-shell">
+        <div className="section-shell" ref={reportRef}>
           <div className="card">
             <div className="filter-row">
               <div className="filter-group">
