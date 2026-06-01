@@ -348,24 +348,6 @@ export default function App() {
       });
   }, []);
 
-  if (loading) {
-    return (
-      <div style={{
-        position: "fixed",
-        inset: 0,
-        background: "#000",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}>
-        <img
-          src={flickLogo}
-          alt="Flick"
-          style={{ width: "260px", maxWidth: "60vw" }}
-        />
-      </div>
-    );
-  }
 
   const projects = useMemo(() => {
     return [...new Set(rawData.map((d) => d.Project).filter(Boolean))].sort((a, b) =>
@@ -718,6 +700,25 @@ const sortedProjects = [...projects].sort((a, b) => {
 
   return a.localeCompare(b);
 });
+
+  if (loading) {
+    return (
+      <div style={{
+        position: "fixed",
+        inset: 0,
+        background: "#000",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}>
+        <img
+          src={flickLogo}
+          alt="Flick"
+          style={{ width: "260px", maxWidth: "60vw" }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="wrap">
