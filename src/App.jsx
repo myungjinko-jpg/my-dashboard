@@ -708,14 +708,45 @@ const sortedProjects = [...projects].sort((a, b) => {
         inset: 0,
         background: "#000",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
+        gap: "40px",
       }}>
         <img
           src={flickLogo}
           alt="Flick"
-          style={{ width: "260px", maxWidth: "60vw" }}
+          style={{ width: "220px", maxWidth: "55vw" }}
         />
+
+        <div style={{ width: "220px", maxWidth: "55vw", display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div style={{
+            width: "100%",
+            height: "3px",
+            background: "rgba(255,255,255,0.15)",
+            borderRadius: "999px",
+            overflow: "hidden",
+          }}>
+            <div style={{
+              height: "100%",
+              background: "#fff",
+              borderRadius: "999px",
+              animation: "progress 2s cubic-bezier(0.4, 0, 0.2, 1) forwards",
+            }} />
+          </div>
+          <div style={{ textAlign: "right", fontSize: "11px", color: "rgba(255,255,255,0.35)", letterSpacing: "0.05em" }}>
+            v3.0.4
+          </div>
+        </div>
+
+        <style>{`
+          @keyframes progress {
+            0%   { width: 0%; }
+            60%  { width: 75%; }
+            85%  { width: 88%; }
+            100% { width: 100%; }
+          }
+        `}</style>
       </div>
     );
   }
@@ -739,7 +770,7 @@ const sortedProjects = [...projects].sort((a, b) => {
               backgroundColor: "#f9fafb",
             }}
           >
-            v3.0.3
+            v3.0.4
           </span>
         </h1>
         <a
