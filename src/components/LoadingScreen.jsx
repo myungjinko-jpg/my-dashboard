@@ -37,7 +37,7 @@ export default function LoadingScreen({ msgIndex, dots }) {
           <div style={{ height: "100%", background: "#fff", borderRadius: "999px", animation: "progress 3s cubic-bezier(0.4, 0, 0.2, 1) forwards" }} />
         </div>
         <div style={{ textAlign: "right", fontSize: "16px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.05em" }}>
-          v3.2.1
+          v3.2.2
         </div>
       </div>
 

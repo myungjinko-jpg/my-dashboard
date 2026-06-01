@@ -281,12 +281,14 @@ select {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 12px;
-  align-items: stretch;
 }
 
 .kpi-grid .card {
   display: flex;
   flex-direction: column;
+  height: 100%;
+  margin-bottom: 0;
+  box-sizing: border-box;
 }
 
 .kpi-title {
