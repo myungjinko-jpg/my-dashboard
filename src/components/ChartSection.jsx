@@ -18,6 +18,11 @@ function makeChartOptions({ isDark, yPrefix, ySuffix, suggestedMax }) {
         labels: { color: isDark ? "#cbd5e1" : "#374151" },
       },
       tooltip: {
+        backgroundColor: isDark ? "#1e2a3a" : "#ffffff",
+        titleColor: isDark ? "#f1f5f9" : "#111827",
+        bodyColor: isDark ? "#94a3b8" : "#6b7280",
+        borderColor: isDark ? "#2a3a52" : "#e5e7eb",
+        borderWidth: 1,
         callbacks: {
           label: (ctx) => `${ctx.dataset.label}: ${yPrefix}${Number(ctx.parsed.y ?? 0).toFixed(2)}${ySuffix}`,
         },

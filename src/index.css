@@ -443,19 +443,63 @@ tbody tr.row-highlight td:first-child {
 }
 
 @media (max-width: 980px) {
-  .overview-grid,
-  .kpi-grid,
-  .chart-grid,
+  .overview-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .kpi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
   .filter-row {
     grid-template-columns: 1fr 1fr;
   }
 }
 
 @media (max-width: 640px) {
+  body {
+    padding: 12px;
+  }
+
+  .dashboard-title {
+    font-size: 22px;
+  }
+
+  .topbar {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .topbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .overview-grid,
   .kpi-grid,
   .chart-grid,
   .filter-row {
     grid-template-columns: 1fr;
+  }
+
+  .kpi-grid > .card {
+    min-height: unset;
+  }
+
+  .section-shell {
+    padding: 12px;
+  }
+
+  .kpi-value {
+    font-size: 22px;
+  }
+
+  /* 테이블 가로 스크롤 */
+  .card table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
   }
 }
