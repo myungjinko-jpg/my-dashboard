@@ -173,8 +173,8 @@ export default function App() {
       <div className="topbar">
         <h1 className="dashboard-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span>CPI Test Dashboard</span>
-          <span style={{ fontSize: "14px", fontWeight: 500, color: "#6b7280", padding: "2px 8px", border: "1px solid #e5e7eb", borderRadius: "999px", backgroundColor: "#f9fafb" }}>
-            v3.1.1
+          <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--muted)", padding: "2px 8px", border: "1px solid var(--line)", borderRadius: "999px", backgroundColor: "var(--card)" }}>
+            v3.1.2
           </span>
         </h1>
         <div className="topbar-right">
@@ -252,9 +252,9 @@ export default function App() {
                 </select>
               </div>
             </div>
-            <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #e5e7eb", display: "flex", flexDirection: "column", gap: "6px", fontSize: "14px", color: "#6b7280" }}>
-              <div><span style={{ fontWeight: 600, color: "#111827", marginRight: "6px" }}>Status:</span>{currentMeta.status}</div>
-              <div><span style={{ fontWeight: 600, color: "#111827", marginRight: "6px" }}>Date Range:</span>{formatDisplayDate(currentMeta.startDate)} ~ {formatDisplayDate(currentMeta.endDate)}</div>
+            <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: "6px", fontSize: "14px", color: "var(--muted)" }}>
+              <div><span style={{ fontWeight: 600, color: "var(--text)", marginRight: "6px" }}>Status:</span>{currentMeta.status}</div>
+              <div><span style={{ fontWeight: 600, color: "var(--text)", marginRight: "6px" }}>Date Range:</span>{formatDisplayDate(currentMeta.startDate)} ~ {formatDisplayDate(currentMeta.endDate)}</div>
             </div>
           </div>
 
