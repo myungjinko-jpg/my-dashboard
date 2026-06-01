@@ -459,11 +459,11 @@ tbody tr.row-highlight td:first-child {
 
 @media (max-width: 640px) {
   body {
-    padding: 12px;
+    padding: 10px;
   }
 
   .dashboard-title {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .topbar {
@@ -476,23 +476,94 @@ tbody tr.row-highlight td:first-child {
     justify-content: space-between;
   }
 
-  .overview-grid,
-  .kpi-grid,
-  .chart-grid,
-  .filter-row {
-    grid-template-columns: 1fr;
+  /* overview: 2열 유지 */
+  .overview-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .overview-item {
+    padding: 12px;
+  }
+
+  .overview-label {
+    font-size: 11px;
+  }
+
+  .overview-value {
+    font-size: 16px;
+  }
+
+  .overview-value.small {
+    font-size: 13px;
+  }
+
+  /* KPI: 2열 */
+  .kpi-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
 
   .kpi-grid > .card {
     min-height: unset;
+    padding: 14px;
   }
 
-  .section-shell {
-    padding: 12px;
+  .kpi-title {
+    font-size: 12px;
   }
 
   .kpi-value {
-    font-size: 22px;
+    font-size: 20px;
+  }
+
+  .kpi-value.small {
+    font-size: 13px;
+  }
+
+  .kpi-delta {
+    font-size: 12px;
+  }
+
+  /* 차트: 높이 줄이기 */
+  .chart-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .chart-grid > .card .chart-box,
+  .chart-box {
+    min-height: 180px;
+    height: 180px;
+  }
+
+  .chart-grid > .card {
+    padding: 14px;
+  }
+
+  .chart-title {
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+
+  /* 필터 */
+  .filter-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  select {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .section-shell {
+    padding: 10px;
+  }
+
+  .card {
+    padding: 14px;
+    border-radius: 12px;
   }
 
   /* 테이블 가로 스크롤 */
@@ -501,5 +572,19 @@ tbody tr.row-highlight td:first-child {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     white-space: nowrap;
+  }
+
+  .table-title {
+    font-size: 15px;
+  }
+
+  th, td {
+    padding: 8px;
+    font-size: 13px;
+  }
+
+  /* 테이블 스크롤 힌트 */
+  .card:has(table) {
+    position: relative;
   }
 }
