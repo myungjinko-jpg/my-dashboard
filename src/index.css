@@ -512,26 +512,40 @@ tbody tr.row-highlight td:first-child {
   .filter-row { grid-template-columns: 1fr; gap: 8px; }
   select { padding: 10px 12px; font-size: 14px; }
 
-  /* 테이블 핵심 컬럼만 표시 */
+  /* 테이블 전체 컬럼 압축 표시 */
   .table-title { font-size: 14px; }
-  .table-subtitle { font-size: 12px; }
-  th, td { padding: 8px 6px; font-size: 12px; }
+  .table-subtitle { font-size: 11px; }
 
-  .iteration-table th:nth-child(3),
-  .iteration-table td:nth-child(3),
-  .iteration-table th:nth-child(4),
-  .iteration-table td:nth-child(4),
-  .iteration-table th:nth-child(6),
-  .iteration-table td:nth-child(6),
-  .iteration-table th:nth-child(7),
-  .iteration-table td:nth-child(7) { display: none; }
+  .iteration-table,
+  .daily-table {
+    table-layout: fixed;
+    width: 100%;
+  }
 
-  .daily-table th:nth-child(3),
-  .daily-table td:nth-child(3),
-  .daily-table th:nth-child(4),
-  .daily-table td:nth-child(4),
-  .daily-table th:nth-child(6),
-  .daily-table td:nth-child(6),
-  .daily-table th:nth-child(7),
-  .daily-table td:nth-child(7) { display: none; }
+  .iteration-table th,
+  .iteration-table td,
+  .daily-table th,
+  .daily-table td {
+    padding: 6px 4px;
+    font-size: 10px;
+    word-break: break-word;
+    white-space: normal;
+    vertical-align: top;
+  }
+
+  .iteration-table div,
+  .daily-table div {
+    font-size: 10px;
+  }
+
+  /* 델타 텍스트 더 작게 */
+  .iteration-table .delta-up,
+  .iteration-table .delta-down,
+  .iteration-table .delta-flat,
+  .daily-table .delta-up,
+  .daily-table .delta-down,
+  .daily-table .delta-flat {
+    font-size: 9px !important;
+    margin-top: 2px !important;
+  }
 }
