@@ -736,13 +736,13 @@ const sortedProjects = [...projects].sort((a, b) => {
         <img
           src={flickLogo}
           alt="Flick"
-          style={{ width: "340px", maxWidth: "70vw" }}
+          style={{ width: "560px", maxWidth: "80vw" }}
         />
 
-        <div style={{ width: "340px", maxWidth: "70vw", display: "flex", flexDirection: "column", gap: "14px" }}>
+        <div style={{ width: "560px", maxWidth: "80vw", display: "flex", flexDirection: "column", gap: "20px" }}>
           <div style={{
-            fontSize: "13px",
-            color: "rgba(255,255,255,0.45)",
+            fontSize: "18px",
+            color: "rgba(255,255,255,0.55)",
             textAlign: "center",
             letterSpacing: "0.02em",
             lineHeight: 1.6,
@@ -751,7 +751,7 @@ const sortedProjects = [...projects].sort((a, b) => {
           </div>
           <div style={{
             width: "100%",
-            height: "6px",
+            height: "8px",
             background: "rgba(255,255,255,0.15)",
             borderRadius: "999px",
             overflow: "hidden",
@@ -763,8 +763,8 @@ const sortedProjects = [...projects].sort((a, b) => {
               animation: "progress 2s cubic-bezier(0.4, 0, 0.2, 1) forwards",
             }} />
           </div>
-          <div style={{ textAlign: "right", fontSize: "14px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.05em" }}>
-            v3.0.6
+          <div style={{ textAlign: "right", fontSize: "16px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.05em" }}>
+            v3.0.7
           </div>
         </div>
 
@@ -799,7 +799,7 @@ const sortedProjects = [...projects].sort((a, b) => {
               backgroundColor: "#f9fafb",
             }}
           >
-            v3.0.6
+            v3.0.7
           </span>
         </h1>
         <a
