@@ -24,6 +24,7 @@ export default function App() {
   const [msgIndex, setMsgIndex] = useState(() => Math.floor(Math.random() * 16));
   const [dots, setDots] = useState(".");
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
+  const [mobileTab, setMobileTab] = useState("overview");
 
   useEffect(() => {
     document.body.classList.toggle("dark", theme === "dark");
@@ -191,13 +192,42 @@ export default function App() {
 
   if (loading) return <LoadingScreen msgIndex={msgIndex} dots={dots} />;
 
+  // 필터 카드 (KPI/Charts/Data 탭 공통)
+  const filterCard = (
+    <div className="card">
+      <div className="filter-row">
+        <div className="filter-group">
+          <div className="filter-label">Project</div>
+          <select id="projectSelector" value={project} onChange={(e) => setProject(e.target.value)}>
+            {sortedProjects.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+        <div className="filter-group">
+          <div className="filter-label">Iteration</div>
+          <select id="iterationSelector" value={iteration} onChange={(e) => setIteration(e.target.value)}>
+            {iterations.map((it) => <option key={it} value={it}>{it}</option>)}
+          </select>
+        </div>
+      </div>
+      <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: "8px", fontSize: "14px", color: "var(--muted)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontWeight: 600, color: "var(--text)" }}>Status:</span>
+          <span className={`status-badge ${currentMeta.status === "Live" ? "live" : "ended"}`}>
+            {currentMeta.status === "Live" ? "● Live" : currentMeta.status}
+          </span>
+        </div>
+        <div><span style={{ fontWeight: 600, color: "var(--text)", marginRight: "6px" }}>Date Range:</span>{formatDisplayDate(currentMeta.startDate)} ~ {formatDisplayDate(currentMeta.endDate)}</div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="wrap">
       <div className="topbar">
         <h1 className="dashboard-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span>CPI Test Dashboard</span>
           <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--muted)", padding: "2px 8px", border: "1px solid var(--line)", borderRadius: "999px", backgroundColor: "var(--card)" }}>
-            v3.3.1
+            v3.4.0
           </span>
         </h1>
         <div className="topbar-right">
@@ -213,7 +243,27 @@ export default function App() {
 
       {error && <div className="error-box">데이터 로드 실패: {error}</div>}
 
-      <section className="section-block">
+      {/* 모바일 탭 바 */}
+      <div className="mobile-tab-bar">
+        {[
+          { id: "overview", icon: "📊", label: "Overview" },
+          { id: "kpi",      icon: "💡", label: "KPI" },
+          { id: "charts",   icon: "📈", label: "Charts" },
+          { id: "data",     icon: "📋", label: "Data" },
+        ].map(({ id, icon, label }) => (
+          <button
+            key={id}
+            className={`mobile-tab-btn ${mobileTab === id ? "active" : ""}`}
+            onClick={() => setMobileTab(id)}
+          >
+            <span className="mobile-tab-icon">{icon}</span>
+            <span>{label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ── Overview ── */}
+      <section className={`section-block mobile-section ${mobileTab === "overview" ? "mobile-active" : ""}`}>
         <div className="section-header">
           <div className="section-eyebrow">Portfolio</div>
           <h2 className="section-heading">All Projects</h2>
@@ -253,43 +303,43 @@ export default function App() {
         </div>
       </section>
 
+      {/* ── Project Analysis (PC) / KPI+Charts+Data (Mobile) ── */}
       <section className="section-block">
-        <div className="section-header">
+        <div className="section-header desktop-only">
           <div className="section-eyebrow">Project Detail</div>
           <h2 className="section-heading">Project Analysis</h2>
           <p className="section-desc">Detailed analysis comparing performance and trends across iterations.</p>
         </div>
         <div className="section-shell">
-          <div className="card">
-            <div className="filter-row">
-              <div className="filter-group">
-                <div className="filter-label">Project</div>
-                <select id="projectSelector" value={project} onChange={(e) => setProject(e.target.value)}>
-                  {sortedProjects.map((p) => <option key={p} value={p}>{p}</option>)}
-                </select>
-              </div>
-              <div className="filter-group">
-                <div className="filter-label">Iteration</div>
-                <select id="iterationSelector" value={iteration} onChange={(e) => setIteration(e.target.value)}>
-                  {iterations.map((it) => <option key={it} value={it}>{it}</option>)}
-                </select>
-              </div>
-            </div>
-            <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: "8px", fontSize: "14px", color: "var(--muted)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ fontWeight: 600, color: "var(--text)" }}>Status:</span>
-                <span className={`status-badge ${currentMeta.status === "Live" ? "live" : "ended"}`}>
-                  {currentMeta.status === "Live" ? "● Live" : currentMeta.status}
-                </span>
-              </div>
-              <div><span style={{ fontWeight: 600, color: "var(--text)", marginRight: "6px" }}>Date Range:</span>{formatDisplayDate(currentMeta.startDate)} ~ {formatDisplayDate(currentMeta.endDate)}</div>
-            </div>
+
+          {/* KPI 탭 */}
+          <div className={`mobile-section ${mobileTab === "kpi" ? "mobile-active" : ""}`}>
+            {filterCard}
+            <KpiGrid currentSummary={currentSummary} previousSummary={previousSummary} />
           </div>
 
-          <KpiGrid currentSummary={currentSummary} previousSummary={previousSummary} />
-          <ChartSection chartCurrentRows={chartCurrentRows} previousRows={previousRows} isDark={theme === "dark"} />
-          <IterationTable iterationSummary={iterationSummary} currentIteration={iteration} />
-          <DailyTable dailyRowsWithChange={dailyRowsWithChange} />
+          {/* Charts 탭 */}
+          <div className={`mobile-section ${mobileTab === "charts" ? "mobile-active" : ""}`}>
+            {filterCard}
+            <ChartSection chartCurrentRows={chartCurrentRows} previousRows={previousRows} isDark={theme === "dark"} />
+          </div>
+
+          {/* Data 탭 */}
+          <div className={`mobile-section ${mobileTab === "data" ? "mobile-active" : ""}`}>
+            {filterCard}
+            <IterationTable iterationSummary={iterationSummary} currentIteration={iteration} />
+            <DailyTable dailyRowsWithChange={dailyRowsWithChange} />
+          </div>
+
+          {/* PC: 전부 표시 */}
+          <div className="desktop-only">
+            {filterCard}
+            <KpiGrid currentSummary={currentSummary} previousSummary={previousSummary} />
+            <ChartSection chartCurrentRows={chartCurrentRows} previousRows={previousRows} isDark={theme === "dark"} />
+            <IterationTable iterationSummary={iterationSummary} currentIteration={iteration} />
+            <DailyTable dailyRowsWithChange={dailyRowsWithChange} />
+          </div>
+
         </div>
       </section>
     </div>

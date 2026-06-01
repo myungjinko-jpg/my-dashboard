@@ -5,7 +5,7 @@ export default function IterationTable({ iterationSummary, currentIteration }) {
   return (
     <div className="card">
       <h3 className="table-title">Iteration Comparison</h3>
-      <table>
+      <table className="iteration-table">
         <thead>
           <tr>
             <th>Iteration</th>
