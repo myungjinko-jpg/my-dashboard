@@ -323,6 +323,18 @@ select {
   grid-template-columns: 1fr 1fr;
   gap: 16px;
   margin-bottom: 16px;
+  align-items: stretch;
+}
+
+.chart-grid > .card {
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-grid > .card .chart-box {
+  flex: 1;
+  min-height: 260px;
 }
 
 .chart-title,
