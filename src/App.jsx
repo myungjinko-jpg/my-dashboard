@@ -174,7 +174,7 @@ export default function App() {
         <h1 className="dashboard-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span>CPI Test Dashboard</span>
           <span style={{ fontSize: "14px", fontWeight: 500, color: "#6b7280", padding: "2px 8px", border: "1px solid #e5e7eb", borderRadius: "999px", backgroundColor: "#f9fafb" }}>
-            v3.1.0
+            v3.1.1
           </span>
         </h1>
         <div className="topbar-right">
@@ -259,7 +259,7 @@ export default function App() {
           </div>
 
           <KpiGrid currentSummary={currentSummary} previousSummary={previousSummary} />
-          <ChartSection chartCurrentRows={chartCurrentRows} previousRows={previousRows} />
+          <ChartSection chartCurrentRows={chartCurrentRows} previousRows={previousRows} isDark={theme === "dark"} />
           <IterationTable iterationSummary={iterationSummary} />
           <DailyTable dailyRowsWithChange={dailyRowsWithChange} />
         </div>

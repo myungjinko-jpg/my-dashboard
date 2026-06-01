@@ -4,64 +4,54 @@ import { toNumber } from "../utils";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
-const cpiChartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  interaction: { mode: "index", intersect: false },
-  plugins: {
-    legend: { position: "top" },
-    tooltip: {
-      callbacks: {
-        label: (ctx) => `${ctx.dataset.label}: $${Number(ctx.parsed.y ?? 0).toFixed(2)}`,
+function makeChartOptions({ isDark, yPrefix, ySuffix }) {
+  const tickColor = isDark ? "#94a3b8" : "#6b7280";
+  const gridColor = isDark ? "#2a3448" : "#e5e7eb";
+
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: "index", intersect: false },
+    plugins: {
+      legend: {
+        position: "top",
+        labels: { color: isDark ? "#cbd5e1" : "#374151" },
+      },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => `${ctx.dataset.label}: ${yPrefix}${Number(ctx.parsed.y ?? 0).toFixed(2)}${ySuffix}`,
+        },
       },
     },
-  },
-  scales: {
-    y: {
-      beginAtZero: true,
-      ticks: { color: "#6b7280", callback: (v) => `$${Number(v).toFixed(2)}` },
-      grid: { color: "#e5e7eb" },
-    },
-    x: { ticks: { color: "#6b7280" }, grid: { display: false } },
-  },
-};
-
-const d1ChartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  interaction: { mode: "index", intersect: false },
-  plugins: {
-    legend: { position: "top" },
-    tooltip: {
-      callbacks: {
-        label: (ctx) => `${ctx.dataset.label}: ${Number(ctx.parsed.y ?? 0).toFixed(2)}%`,
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: { color: tickColor, callback: (v) => `${yPrefix}${Number(v).toFixed(yPrefix ? 2 : 0)}${ySuffix}` },
+        grid: { color: gridColor },
+      },
+      x: {
+        ticks: { color: tickColor },
+        grid: { display: false },
       },
     },
-  },
-  scales: {
-    y: {
-      beginAtZero: true,
-      ticks: { color: "#6b7280", callback: (v) => `${Number(v).toFixed(0)}%` },
-      grid: { color: "#e5e7eb" },
-    },
-    x: { ticks: { color: "#6b7280" }, grid: { display: false } },
-  },
-};
+  };
+}
 
-export default function ChartSection({ chartCurrentRows, previousRows }) {
+export default function ChartSection({ chartCurrentRows, previousRows, isDark }) {
   const cpiChartData = {
     labels: chartCurrentRows.map((row) => row.Date || "-"),
     datasets: [
       {
         label: "Current",
         data: chartCurrentRows.map((row) => toNumber(row.CPI)),
-        borderColor: "#4f46e5", backgroundColor: "rgba(79,70,229,0.12)",
+        borderColor: "#6366f1", backgroundColor: "rgba(99,102,241,0.12)",
         tension: 0.3, borderWidth: 2, pointRadius: 3, pointHoverRadius: 5,
       },
       ...(previousRows.length ? [{
         label: "Previous",
         data: previousRows.map((row) => toNumber(row.CPI)),
-        borderColor: "#94a3b8", backgroundColor: "rgba(148,163,184,0.10)",
+        borderColor: isDark ? "#475569" : "#94a3b8",
+        backgroundColor: isDark ? "rgba(71,85,105,0.10)" : "rgba(148,163,184,0.10)",
         tension: 0.3, borderWidth: 2, borderDash: [6, 6], pointRadius: 2, pointHoverRadius: 4,
       }] : []),
     ],
@@ -79,7 +69,8 @@ export default function ChartSection({ chartCurrentRows, previousRows }) {
       ...(previousRows.length ? [{
         label: "Previous",
         data: previousRows.map((row) => toNumber(row["D1 Retention"])),
-        borderColor: "#94a3b8", backgroundColor: "rgba(148,163,184,0.10)",
+        borderColor: isDark ? "#475569" : "#94a3b8",
+        backgroundColor: isDark ? "rgba(71,85,105,0.10)" : "rgba(148,163,184,0.10)",
         tension: 0.3, borderWidth: 2, borderDash: [6, 6], pointRadius: 2, pointHoverRadius: 4,
       }] : []),
     ],
@@ -90,13 +81,13 @@ export default function ChartSection({ chartCurrentRows, previousRows }) {
       <div className="card">
         <h3 className="chart-title">CPI Trend</h3>
         <div className="chart-box">
-          <Line data={cpiChartData} options={cpiChartOptions} />
+          <Line data={cpiChartData} options={makeChartOptions({ isDark, yPrefix: "$", ySuffix: "" })} />
         </div>
       </div>
       <div className="card">
         <h3 className="chart-title">D1 Retention Trend</h3>
         <div className="chart-box">
-          <Line data={d1ChartData} options={d1ChartOptions} />
+          <Line data={d1ChartData} options={makeChartOptions({ isDark, yPrefix: "", ySuffix: "%" })} />
         </div>
       </div>
     </div>
