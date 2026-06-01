@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import flickLogo from "./assets/Flick Brand Logo.png";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -317,8 +318,11 @@ export default function App() {
   const [project, setProject] = useState("");
   const [iteration, setIteration] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const startTime = Date.now();
+
     fetch(API_URL)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -336,8 +340,32 @@ export default function App() {
       .catch((err) => {
         console.error(err);
         setError(err.message);
+      })
+      .finally(() => {
+        const elapsed = Date.now() - startTime;
+        const remaining = Math.max(0, 2000 - elapsed);
+        setTimeout(() => setLoading(false), remaining);
       });
   }, []);
+
+  if (loading) {
+    return (
+      <div style={{
+        position: "fixed",
+        inset: 0,
+        background: "#000",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}>
+        <img
+          src={flickLogo}
+          alt="Flick"
+          style={{ width: "260px", maxWidth: "60vw" }}
+        />
+      </div>
+    );
+  }
 
   const projects = useMemo(() => {
     return [...new Set(rawData.map((d) => d.Project).filter(Boolean))].sort((a, b) =>
@@ -710,7 +738,7 @@ const sortedProjects = [...projects].sort((a, b) => {
               backgroundColor: "#f9fafb",
             }}
           >
-            v3.0.1
+            v3.0.2
           </span>
         </h1>
         <a
