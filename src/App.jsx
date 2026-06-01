@@ -710,7 +710,7 @@ const sortedProjects = [...projects].sort((a, b) => {
               backgroundColor: "#f9fafb",
             }}
           >
-            v3.0.0
+            v3.0.1
           </span>
         </h1>
         <a
@@ -941,7 +941,7 @@ const sortedProjects = [...projects].sort((a, b) => {
               </thead>
               <tbody>
                 {iterationSummary.map((row, index) => {
-                  const prev = index > 0 ? iterationSummary[index - 1] : null;
+                  const prev = index < iterationSummary.length - 1 ? iterationSummary[index + 1] : null;
 
                   const cpiDelta = prev ? deltaText(row.avgCpi, prev.avgCpi, true, "currency") : null;
                   const d1Delta = prev ? deltaText(row.avgD1, prev.avgD1, false, "percent") : null;
