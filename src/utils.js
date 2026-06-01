@@ -48,6 +48,12 @@ export function formatDisplayDate(value) {
   return `${date.getFullYear()}. ${date.getMonth() + 1}. ${date.getDate()} (${weekdays[date.getDay()]})`;
 }
 
+export function formatNumber(value) {
+  const num = toNumber(value);
+  if (!num) return "0";
+  return num.toLocaleString();
+}
+
 export function formatCurrency(value) {
   const num = toNumber(value);
   if (!num) return "No data";

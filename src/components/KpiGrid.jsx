@@ -1,12 +1,12 @@
-import { deltaText, formatCurrency, formatPercent, formatSeconds } from "../utils";
+import { deltaText, formatCurrency, formatPercent, formatSeconds, formatNumber } from "../utils";
 
 export default function KpiGrid({ currentSummary, previousSummary }) {
   return (
     <div className="kpi-grid">
       <div className="card">
         <div className="kpi-title">Installs</div>
-        <div className="kpi-value">Meta: {currentSummary?.totalInstallsMeta || 0}</div>
-        <div className="kpi-value small">GA: {currentSummary?.totalInstallsGa || 0}</div>
+        <div className="kpi-value">Meta: {formatNumber(currentSummary?.totalInstallsMeta)}</div>
+        <div className="kpi-value small">GA: {formatNumber(currentSummary?.totalInstallsGa)}</div>
         <div className="kpi-delta">
           {previousSummary ? (
             <>

@@ -6,7 +6,7 @@ import IterationTable from "./components/IterationTable";
 import DailyTable from "./components/DailyTable";
 import {
   hasValue, hasAnyMetricData, parseDateValue, formatDisplayDate, formatCurrency, formatPercent,
-  getInstallsMeta, getInstallsGa, getIterationOrder, getIterationMeta,
+  formatNumber, getInstallsMeta, getInstallsGa, getIterationOrder, getIterationMeta,
   getWeightedCpi, getWeightedRetention, getWeightedD0Playtime, getWeightedD1Playtime,
   deltaText,
 } from "./utils";
@@ -174,7 +174,7 @@ export default function App() {
         <h1 className="dashboard-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span>CPI Test Dashboard</span>
           <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--muted)", padding: "2px 8px", border: "1px solid var(--line)", borderRadius: "999px", backgroundColor: "var(--card)" }}>
-            v3.1.2
+            v3.2.0
           </span>
         </h1>
         <div className="topbar-right">
@@ -197,16 +197,16 @@ export default function App() {
           <p className="section-desc">A summary view of all currently tracked projects.</p>
         </div>
         <div className="overview-grid">
-          <div className="overview-item">
-            <div className="overview-label">Projects</div>
+          <div className="overview-item accent-indigo">
+            <div className="overview-label">🗂 Projects</div>
             <div className="overview-value">{overviewProjects || "-"}</div>
           </div>
-          <div className="overview-item">
-            <div className="overview-label">Downloads (Meta)</div>
-            <div className="overview-value">{overviewTotalDownloads || "-"}</div>
+          <div className="overview-item accent-sky">
+            <div className="overview-label">📥 Downloads (Meta)</div>
+            <div className="overview-value">{overviewTotalDownloads ? formatNumber(overviewTotalDownloads) : "-"}</div>
           </div>
-          <div className="overview-item">
-            <div className="overview-label">Best CPI</div>
+          <div className="overview-item accent-green">
+            <div className="overview-label">💰 Best CPI</div>
             <div className="overview-value">
               {bestCpiProject ? (
                 <>
@@ -216,8 +216,8 @@ export default function App() {
               ) : "No data"}
             </div>
           </div>
-          <div className="overview-item">
-            <div className="overview-label">Best D1</div>
+          <div className="overview-item accent-violet">
+            <div className="overview-label">🔁 Best D1</div>
             <div className="overview-value">
               {bestD1Project ? (
                 <>
@@ -252,15 +252,20 @@ export default function App() {
                 </select>
               </div>
             </div>
-            <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: "6px", fontSize: "14px", color: "var(--muted)" }}>
-              <div><span style={{ fontWeight: 600, color: "var(--text)", marginRight: "6px" }}>Status:</span>{currentMeta.status}</div>
+            <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid var(--line)", display: "flex", flexDirection: "column", gap: "8px", fontSize: "14px", color: "var(--muted)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontWeight: 600, color: "var(--text)" }}>Status:</span>
+                <span className={`status-badge ${currentMeta.status === "Live" ? "live" : "ended"}`}>
+                  {currentMeta.status === "Live" ? "● Live" : currentMeta.status}
+                </span>
+              </div>
               <div><span style={{ fontWeight: 600, color: "var(--text)", marginRight: "6px" }}>Date Range:</span>{formatDisplayDate(currentMeta.startDate)} ~ {formatDisplayDate(currentMeta.endDate)}</div>
             </div>
           </div>
 
           <KpiGrid currentSummary={currentSummary} previousSummary={previousSummary} />
           <ChartSection chartCurrentRows={chartCurrentRows} previousRows={previousRows} isDark={theme === "dark"} />
-          <IterationTable iterationSummary={iterationSummary} />
+          <IterationTable iterationSummary={iterationSummary} currentIteration={iteration} />
           <DailyTable dailyRowsWithChange={dailyRowsWithChange} />
         </div>
       </section>

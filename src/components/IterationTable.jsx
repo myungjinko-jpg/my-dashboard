@@ -1,7 +1,7 @@
-import { deltaText, formatCurrency, formatPercent, formatSeconds } from "../utils";
+import { deltaText, formatCurrency, formatPercent, formatSeconds, formatNumber } from "../utils";
 import renderInlineDelta from "./InlineDelta";
 
-export default function IterationTable({ iterationSummary }) {
+export default function IterationTable({ iterationSummary, currentIteration }) {
   return (
     <div className="card">
       <h3 className="table-title">Iteration Comparison</h3>
@@ -26,11 +26,11 @@ export default function IterationTable({ iterationSummary }) {
             const d1PtDelta = prev ? deltaText(row.avgD1Pt, prev.avgD1Pt, false, "seconds") : null;
 
             return (
-              <tr key={row.iteration}>
+              <tr key={row.iteration} className={row.iteration === currentIteration ? "row-highlight" : ""}>
                 <td>{row.iteration}</td>
                 <td><div>{formatCurrency(row.avgCpi)}</div>{renderInlineDelta(cpiDelta)}</td>
-                <td>{row.totalInstallsMeta || 0}</td>
-                <td>{row.totalInstallsGa || 0}</td>
+                <td>{formatNumber(row.totalInstallsMeta)}</td>
+                <td>{formatNumber(row.totalInstallsGa)}</td>
                 <td><div>{formatPercent(row.avgD1)}</div>{renderInlineDelta(d1Delta)}</td>
                 <td><div>{formatSeconds(row.avgD0Pt)}</div>{renderInlineDelta(d0PtDelta)}</td>
                 <td><div>{formatSeconds(row.avgD1Pt)}</div>{renderInlineDelta(d1PtDelta)}</td>
