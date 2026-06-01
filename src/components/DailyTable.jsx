@@ -6,7 +6,7 @@ export default function DailyTable({ dailyRowsWithChange }) {
     <div className="card">
       <h3 className="table-title">Selected Iteration Daily Metrics</h3>
       <p className="table-subtitle">Daily raw metrics for the selected iteration.</p>
-      <table className="daily-table">
+      <table>
         <thead>
           <tr>
             <th>Date</th>
