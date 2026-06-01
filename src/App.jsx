@@ -174,7 +174,7 @@ export default function App() {
         <h1 className="dashboard-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span>CPI Test Dashboard</span>
           <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--muted)", padding: "2px 8px", border: "1px solid var(--line)", borderRadius: "999px", backgroundColor: "var(--card)" }}>
-            v3.2.2
+            v3.2.3
           </span>
         </h1>
         <div className="topbar-right">
