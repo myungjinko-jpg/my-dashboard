@@ -23,6 +23,12 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [msgIndex, setMsgIndex] = useState(() => Math.floor(Math.random() * 16));
   const [dots, setDots] = useState(".");
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
+
+  useEffect(() => {
+    document.body.classList.toggle("dark", theme === "dark");
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -168,12 +174,18 @@ export default function App() {
         <h1 className="dashboard-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span>CPI Test Dashboard</span>
           <span style={{ fontSize: "14px", fontWeight: 500, color: "#6b7280", padding: "2px 8px", border: "1px solid #e5e7eb", borderRadius: "999px", backgroundColor: "#f9fafb" }}>
-            v3.0.9
+            v3.1.0
           </span>
         </h1>
-        <a className="raw-link" href="https://docs.google.com/spreadsheets/d/1pBJWVce2CgrPBlFMGbS2yCp6tBQnNn4gkEHz7jG3LZk/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer">
-          Flick Project Dashboard_Raw Data
-        </a>
+        <div className="topbar-right">
+          <div className="theme-toggle">
+            <button className={theme === "light" ? "active" : ""} onClick={() => setTheme("light")}>Light</button>
+            <button className={theme === "dark" ? "active" : ""} onClick={() => setTheme("dark")}>Dark</button>
+          </div>
+          <a className="raw-link" href="https://docs.google.com/spreadsheets/d/1pBJWVce2CgrPBlFMGbS2yCp6tBQnNn4gkEHz7jG3LZk/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer">
+            Flick Project Dashboard_Raw Data
+          </a>
+        </div>
       </div>
 
       {error && <div className="error-box">데이터 로드 실패: {error}</div>}
