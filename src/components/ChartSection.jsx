@@ -56,9 +56,11 @@ export default function ChartSection({ chartCurrentRows, previousRows, isDark })
       ...(previousRows.length ? [{
         label: "Previous",
         data: previousRows.map((row) => toNumber(row.CPI)),
-        borderColor: isDark ? "#475569" : "#94a3b8",
-        backgroundColor: isDark ? "rgba(71,85,105,0.10)" : "rgba(148,163,184,0.10)",
-        tension: 0.3, borderWidth: 2, borderDash: [6, 6], pointRadius: 2, pointHoverRadius: 4,
+        borderColor: isDark ? "#f59e0b" : "#d97706",
+        backgroundColor: "rgba(245,158,11,0.06)",
+        tension: 0.3, borderWidth: 2, borderDash: [5, 4],
+        pointRadius: 3, pointHoverRadius: 5,
+        pointBackgroundColor: isDark ? "#f59e0b" : "#d97706",
       }] : []),
     ],
   };
@@ -75,9 +77,11 @@ export default function ChartSection({ chartCurrentRows, previousRows, isDark })
       ...(previousRows.length ? [{
         label: "Previous",
         data: previousRows.map((row) => toNumber(row["D1 Retention"])),
-        borderColor: isDark ? "#475569" : "#94a3b8",
-        backgroundColor: isDark ? "rgba(71,85,105,0.10)" : "rgba(148,163,184,0.10)",
-        tension: 0.3, borderWidth: 2, borderDash: [6, 6], pointRadius: 2, pointHoverRadius: 4,
+        borderColor: isDark ? "#f59e0b" : "#d97706",
+        backgroundColor: "rgba(245,158,11,0.06)",
+        tension: 0.3, borderWidth: 2, borderDash: [5, 4],
+        pointRadius: 3, pointHoverRadius: 5,
+        pointBackgroundColor: isDark ? "#f59e0b" : "#d97706",
       }] : []),
     ],
   };
