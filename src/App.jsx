@@ -128,7 +128,8 @@ export default function App() {
 
   const currentIndex = iterationSummary.findIndex((item) => item.iteration === iteration);
   const currentSummary = iterationSummary[currentIndex];
-  const previousSummary = currentIndex > 0 ? iterationSummary[currentIndex - 1] : null;
+  // 내림차순 정렬이므로 이전(과거) iteration은 index + 1
+  const previousSummary = currentIndex < iterationSummary.length - 1 ? iterationSummary[currentIndex + 1] : null;
 
   const latestIterationSummaryByProject = useMemo(() => {
     const grouped = {};
@@ -197,7 +198,7 @@ export default function App() {
         <h1 className="dashboard-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span>CPI Test Dashboard</span>
           <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--muted)", padding: "2px 8px", border: "1px solid var(--line)", borderRadius: "999px", backgroundColor: "var(--card)" }}>
-            v3.4.1
+            v3.4.2
           </span>
         </h1>
         <div className="topbar-right">
