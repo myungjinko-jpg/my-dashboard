@@ -146,8 +146,8 @@ export default function App() {
     }).filter((item) => item.iteration);
   }, [rawData]);
 
-  const bestCpiProject = [...latestIterationSummaryByProject].filter((i) => i.avgCpi > 0).sort((a, b) => a.avgCpi - b.avgCpi)[0];
-  const bestD1Project = [...latestIterationSummaryByProject].filter((i) => i.avgD1 >= 0).sort((a, b) => b.avgD1 - a.avgD1)[0];
+  const bestCpiProject = [...latestIterationSummaryByProject].filter((i) => i.avgCpi > 0 && !i.project.startsWith("(Drop)")).sort((a, b) => a.avgCpi - b.avgCpi)[0];
+  const bestD1Project = [...latestIterationSummaryByProject].filter((i) => i.avgD1 >= 0 && !i.project.startsWith("(Drop)")).sort((a, b) => b.avgD1 - a.avgD1)[0];
   const overviewProjects = new Set(rawData.map((row) => row.Project).filter(Boolean)).size;
   const overviewTotalDownloads = rawData.reduce((sum, row) => sum + getInstallsMeta(row), 0);
 
@@ -198,7 +198,7 @@ export default function App() {
         <h1 className="dashboard-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span>CPI Test Dashboard</span>
           <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--muted)", padding: "2px 8px", border: "1px solid var(--line)", borderRadius: "999px", backgroundColor: "var(--card)" }}>
-            v3.4.2
+            v3.4.3
           </span>
         </h1>
         <div className="topbar-right">
