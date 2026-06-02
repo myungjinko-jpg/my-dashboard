@@ -255,7 +255,7 @@ export default function App() {
         <h1 className="dashboard-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span>CPI Test Dashboard</span>
           <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--muted)", padding: "2px 8px", border: "1px solid var(--line)", borderRadius: "999px", backgroundColor: "var(--card)" }}>
-            v3.6.3
+            v3.6.4
           </span>
         </h1>
         <div className="topbar-right">
@@ -285,25 +285,21 @@ export default function App() {
           </div>
           <div className="overview-item accent-green">
             <div className="overview-label">💰 Best CPI</div>
-            <div className="overview-value">
-              {bestCpiProject ? (
-                <>
-                  <div className="overview-value small">{bestCpiProject.project} <span className="overview-meta">{bestCpiProject.iteration}</span></div>
-                  <div>{formatCurrency(bestCpiProject.avgCpi)}</div>
-                </>
-              ) : "No data"}
-            </div>
+            <div className="overview-value">{bestCpiProject ? formatCurrency(bestCpiProject.avgCpi) : "No data"}</div>
+            {bestCpiProject && (
+              <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "6px", fontWeight: 600 }}>
+                {bestCpiProject.project} <span style={{ color: "var(--primary)" }}>{bestCpiProject.iteration}</span>
+              </div>
+            )}
           </div>
           <div className="overview-item accent-violet">
             <div className="overview-label">🔁 Best D1</div>
-            <div className="overview-value">
-              {bestD1Project ? (
-                <>
-                  <div className="overview-value small">{bestD1Project.project} <span className="overview-meta">{bestD1Project.iteration}</span></div>
-                  <div>{formatPercent(bestD1Project.avgD1)}</div>
-                </>
-              ) : "No data"}
-            </div>
+            <div className="overview-value">{bestD1Project ? formatPercent(bestD1Project.avgD1) : "No data"}</div>
+            {bestD1Project && (
+              <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "6px", fontWeight: 600 }}>
+                {bestD1Project.project} <span style={{ color: "var(--primary)" }}>{bestD1Project.iteration}</span>
+              </div>
+            )}
           </div>
         </div>
       </section>
