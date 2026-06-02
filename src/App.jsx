@@ -26,6 +26,7 @@ export default function App() {
   const [dots, setDots] = useState(".");
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
   const [copying, setCopying] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const reportRef = useRef(null);
 
   useEffect(() => {
@@ -193,6 +194,24 @@ export default function App() {
     return a.localeCompare(b);
   });
 
+  const shareStatus = async () => {
+    setSharing(true);
+    try {
+      const res = await fetch("/api/status", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setSharing("done");
+        setTimeout(() => setSharing(false), 2000);
+      } else {
+        setSharing(false);
+        alert(data.message || "오류가 발생했습니다.");
+      }
+    } catch (e) {
+      console.error(e);
+      setSharing(false);
+    }
+  };
+
   const copyReport = async () => {
     if (!reportRef.current) return;
     setCopying(true);
@@ -232,7 +251,7 @@ export default function App() {
         <h1 className="dashboard-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span>CPI Test Dashboard</span>
           <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--muted)", padding: "2px 8px", border: "1px solid var(--line)", borderRadius: "999px", backgroundColor: "var(--card)" }}>
-            v3.5.0
+            v3.5.1
           </span>
         </h1>
         <div className="topbar-right">
@@ -295,20 +314,36 @@ export default function App() {
             <h2 className="section-heading">Project Analysis</h2>
             <p className="section-desc">Detailed analysis comparing performance and trends across iterations.</p>
           </div>
-          <button
-            onClick={copyReport}
-            disabled={copying === true}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: "6px",
-              padding: "8px 14px", borderRadius: "999px", border: "1px solid var(--card-border)",
-              background: copying === "done" ? "#10b981" : "var(--card)",
-              color: copying === "done" ? "#fff" : "var(--text)",
-              fontSize: "13px", fontWeight: 600, cursor: copying === true ? "wait" : "pointer",
-              transition: "all 0.2s", whiteSpace: "nowrap",
-            }}
-          >
-            {copying === true ? "⏳ 캡쳐 중..." : copying === "done" ? "✅ 복사됨!" : "📋 Copy Report"}
-          </button>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <button
+              onClick={shareStatus}
+              disabled={sharing === true}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: "6px",
+                padding: "8px 14px", borderRadius: "999px", border: "1px solid var(--card-border)",
+                background: sharing === "done" ? "#10b981" : "var(--card)",
+                color: sharing === "done" ? "#fff" : "var(--text)",
+                fontSize: "13px", fontWeight: 600, cursor: sharing === true ? "wait" : "pointer",
+                transition: "all 0.2s", whiteSpace: "nowrap",
+              }}
+            >
+              {sharing === true ? "⏳ 전송 중..." : sharing === "done" ? "✅ 전송됨!" : "📢 현황 공유"}
+            </button>
+            <button
+              onClick={copyReport}
+              disabled={copying === true}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: "6px",
+                padding: "8px 14px", borderRadius: "999px", border: "1px solid var(--card-border)",
+                background: copying === "done" ? "#10b981" : "var(--card)",
+                color: copying === "done" ? "#fff" : "var(--text)",
+                fontSize: "13px", fontWeight: 600, cursor: copying === true ? "wait" : "pointer",
+                transition: "all 0.2s", whiteSpace: "nowrap",
+              }}
+            >
+              {copying === true ? "⏳ 캡쳐 중..." : copying === "done" ? "✅ 복사됨!" : "📋 Copy Report"}
+            </button>
+          </div>
         </div>
         <div className="section-shell" ref={reportRef}>
           <div className="card">
