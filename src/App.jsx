@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import html2canvas from "html2canvas";
 import LoadingScreen from "./components/LoadingScreen";
+import SlackIcon from "./components/SlackIcon";
 import KpiGrid from "./components/KpiGrid";
 import ChartSection from "./components/ChartSection";
 import IterationTable from "./components/IterationTable";
@@ -251,7 +252,7 @@ export default function App() {
         <h1 className="dashboard-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span>CPI Test Dashboard</span>
           <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--muted)", padding: "2px 8px", border: "1px solid var(--line)", borderRadius: "999px", backgroundColor: "var(--card)" }}>
-            v3.5.2
+            v3.5.3
           </span>
         </h1>
         <div className="topbar-right">
@@ -327,7 +328,7 @@ export default function App() {
                 transition: "all 0.2s", whiteSpace: "nowrap",
               }}
             >
-              {sharing === true ? "⏳ Sending..." : sharing === "done" ? "✅ Sent!" : "🔔 Slack Update"}
+              {sharing === true ? "⏳ Sending..." : sharing === "done" ? "✅ Sent!" : <><SlackIcon size={15} /> Slack Update</>}
             </button>
             <button
               onClick={copyReport}
