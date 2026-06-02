@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import html2canvas from "html2canvas";
 import LoadingScreen from "./components/LoadingScreen";
 import slackLogo from "./assets/toppng.com-slack-new-logo-icon-1600x1600.png";
+import sheetLogo from "./assets/googlesheet icon.png";
 import KpiGrid from "./components/KpiGrid";
 import ChartSection from "./components/ChartSection";
 import IterationTable from "./components/IterationTable";
@@ -252,7 +253,7 @@ export default function App() {
         <h1 className="dashboard-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span>CPI Test Dashboard</span>
           <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--muted)", padding: "2px 8px", border: "1px solid var(--line)", borderRadius: "999px", backgroundColor: "var(--card)" }}>
-            v3.5.4
+            v3.5.5
           </span>
         </h1>
         <div className="topbar-right">
@@ -260,9 +261,6 @@ export default function App() {
             <button className={theme === "light" ? "active" : ""} onClick={() => setTheme("light")}>Light</button>
             <button className={theme === "dark" ? "active" : ""} onClick={() => setTheme("dark")}>Dark</button>
           </div>
-          <a className="raw-link" href="https://docs.google.com/spreadsheets/d/1pBJWVce2CgrPBlFMGbS2yCp6tBQnNn4gkEHz7jG3LZk/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer">
-            Flick Project Dashboard_Raw Data
-          </a>
         </div>
       </div>
 
@@ -316,6 +314,19 @@ export default function App() {
             <p className="section-desc">Detailed analysis comparing performance and trends across iterations.</p>
           </div>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <a
+              href="https://docs.google.com/spreadsheets/d/1pBJWVce2CgrPBlFMGbS2yCp6tBQnNn4gkEHz7jG3LZk/edit?gid=0#gid=0"
+              target="_blank" rel="noopener noreferrer"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: "6px",
+                padding: "8px 14px", borderRadius: "999px", border: "1px solid var(--card-border)",
+                background: "var(--card)", color: "var(--text)", textDecoration: "none",
+                fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap",
+              }}
+            >
+              <img src={sheetLogo} alt="Sheets" style={{ width: 15, height: 15 }} />
+              Data Update
+            </a>
             <button
               onClick={shareStatus}
               disabled={sharing === true}
