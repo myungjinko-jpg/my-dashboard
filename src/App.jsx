@@ -29,6 +29,7 @@ export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
   const [copying, setCopying] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [sharingConfirm, setSharingConfirm] = useState(false);
   const reportRef = useRef(null);
 
   useEffect(() => {
@@ -197,6 +198,7 @@ export default function App() {
   });
 
   const shareStatus = async () => {
+    setSharingConfirm(false);
     setSharing(true);
     try {
       const res = await fetch("/api/status", { method: "POST" });
@@ -253,7 +255,7 @@ export default function App() {
         <h1 className="dashboard-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span>CPI Test Dashboard</span>
           <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--muted)", padding: "2px 8px", border: "1px solid var(--line)", borderRadius: "999px", backgroundColor: "var(--card)" }}>
-            v3.5.5
+            v3.5.6
           </span>
         </h1>
         <div className="topbar-right">
@@ -327,20 +329,32 @@ export default function App() {
               <img src={sheetLogo} alt="Sheets" style={{ width: 15, height: 15 }} />
               Data Update
             </a>
-            <button
-              onClick={shareStatus}
-              disabled={sharing === true}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: "6px",
-                padding: "8px 14px", borderRadius: "999px", border: "1px solid var(--card-border)",
-                background: sharing === "done" ? "#10b981" : "var(--card)",
-                color: sharing === "done" ? "#fff" : "var(--text)",
-                fontSize: "13px", fontWeight: 600, cursor: sharing === true ? "wait" : "pointer",
-                transition: "all 0.2s", whiteSpace: "nowrap",
-              }}
-            >
-              {sharing === true ? "⏳ Sending..." : sharing === "done" ? "✅ Sent!" : <><img src={slackLogo} alt="Slack" style={{ width: 15, height: 15 }} /> Slack Update</>}
-            </button>
+            {sharingConfirm ? (
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: "8px",
+                padding: "8px 14px", borderRadius: "999px", border: "1px solid #6366f1",
+                background: "var(--card)", fontSize: "13px", fontWeight: 600, whiteSpace: "nowrap",
+              }}>
+                <span style={{ color: "var(--muted)" }}>업데이트 현황을 Slack에 전송할까요?</span>
+                <button onClick={shareStatus} style={{ border: "none", background: "#6366f1", color: "#fff", borderRadius: "6px", padding: "3px 10px", fontWeight: 700, cursor: "pointer", fontSize: "12px" }}>Yes</button>
+                <button onClick={() => setSharingConfirm(false)} style={{ border: "none", background: "transparent", color: "var(--muted)", borderRadius: "6px", padding: "3px 8px", fontWeight: 700, cursor: "pointer", fontSize: "12px" }}>No</button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setSharingConfirm(true)}
+                disabled={sharing === true}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: "6px",
+                  padding: "8px 14px", borderRadius: "999px", border: "1px solid var(--card-border)",
+                  background: sharing === "done" ? "#10b981" : "var(--card)",
+                  color: sharing === "done" ? "#fff" : "var(--text)",
+                  fontSize: "13px", fontWeight: 600, cursor: sharing === true ? "wait" : "pointer",
+                  transition: "all 0.2s", whiteSpace: "nowrap",
+                }}
+              >
+                {sharing === true ? "⏳ Sending..." : sharing === "done" ? "✅ Sent!" : <><img src={slackLogo} alt="Slack" style={{ width: 15, height: 15 }} /> Slack Update</>}
+              </button>
+            )}
             <button
               onClick={copyReport}
               disabled={copying === true}
