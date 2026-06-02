@@ -69,7 +69,7 @@ export function formatPercent(value) {
 export function formatSeconds(value) {
   const num = toNumber(value);
   if (!num) return "No data";
-  return `${Math.round(num)} sec`;
+  return `${Math.round(num).toLocaleString()} sec`;
 }
 
 export function deltaText(current, previous, inverse = false, formatter = "number") {

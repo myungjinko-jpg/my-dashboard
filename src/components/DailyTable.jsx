@@ -1,4 +1,4 @@
-import { hasValue, toNumber, getInstallsMeta, getInstallsGa, formatCurrency, formatPercent, formatSeconds } from "../utils";
+import { hasValue, toNumber, getInstallsMeta, getInstallsGa, formatCurrency, formatPercent, formatSeconds, formatNumber, formatDisplayDate } from "../utils";
 import renderInlineDelta from "./InlineDelta";
 
 export default function DailyTable({ dailyRowsWithChange }) {
@@ -21,13 +21,13 @@ export default function DailyTable({ dailyRowsWithChange }) {
         <tbody>
           {dailyRowsWithChange.map((row, idx) => (
             <tr key={idx}>
-              <td>{row.Date || "-"}</td>
+              <td>{formatDisplayDate(row.Date)}</td>
               <td>
                 <div>{hasValue(row.CPI) && toNumber(row.CPI) > 0 ? formatCurrency(row.CPI) : "No data"}</div>
                 {renderInlineDelta(row.dailyDelta.cpi)}
               </td>
-              <td>{hasValue(row["Installs (Meta)"]) ? getInstallsMeta(row) : 0}</td>
-              <td>{hasValue(row["Installs (GA)"]) ? getInstallsGa(row) : 0}</td>
+              <td>{hasValue(row["Installs (Meta)"]) ? formatNumber(getInstallsMeta(row)) : 0}</td>
+              <td>{hasValue(row["Installs (GA)"]) ? formatNumber(getInstallsGa(row)) : 0}</td>
               <td>
                 <div>{hasValue(row["D1 Retention"]) && Number.isFinite(toNumber(row["D1 Retention"])) ? formatPercent(row["D1 Retention"]) : "No data"}</div>
                 {renderInlineDelta(row.dailyDelta.d1)}
