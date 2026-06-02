@@ -392,9 +392,6 @@ th {
   padding-top: 0;
 }
 
-th:first-child, td:first-child {
-  text-align: left;
-}
 
 tbody tr { transition: background 0.12s; }
 tbody tr:hover { background: var(--card-bg-subtle); }
