@@ -376,10 +376,11 @@ select {
 table { width: 100%; border-collapse: collapse; }
 
 th, td {
-  padding: 10px 12px;
+  padding: 10px 8px;
   border-bottom: 1px solid var(--line);
-  text-align: left;
+  text-align: center;
   vertical-align: top;
+  width: calc(100% / 7);
 }
 
 th {
@@ -389,6 +390,10 @@ th {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding-top: 0;
+}
+
+th:first-child, td:first-child {
+  text-align: left;
 }
 
 tbody tr { transition: background 0.12s; }
