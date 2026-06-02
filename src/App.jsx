@@ -251,7 +251,7 @@ export default function App() {
         <h1 className="dashboard-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span>CPI Test Dashboard</span>
           <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--muted)", padding: "2px 8px", border: "1px solid var(--line)", borderRadius: "999px", backgroundColor: "var(--card)" }}>
-            v3.5.1
+            v3.5.2
           </span>
         </h1>
         <div className="topbar-right">
@@ -327,7 +327,7 @@ export default function App() {
                 transition: "all 0.2s", whiteSpace: "nowrap",
               }}
             >
-              {sharing === true ? "⏳ 전송 중..." : sharing === "done" ? "✅ 전송됨!" : "📢 현황 공유"}
+              {sharing === true ? "⏳ Sending..." : sharing === "done" ? "✅ Sent!" : "🔔 Slack Update"}
             </button>
             <button
               onClick={copyReport}
