@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dice-battle",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "../dice-battle", "-p", "5600", "--no-clipboard"],
+      "port": 5600
+    }
+  ]
+}
