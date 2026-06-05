@@ -41,11 +41,12 @@ export default async function handler(req, res) {
     targetDate.setUTCDate(targetDate.getUTCDate() - 2);
     targetDate.setHours(0, 0, 0, 0);
 
-    // Live 프로젝트: 오늘 이후 날짜가 미리 기입된 프로젝트 + 최신 iteration
+    // Live 프로젝트: 마지막 날짜가 (오늘-2일) 이후인 프로젝트 + 최신 iteration
+    // → 모든 데이터를 수집할 수 있는 날까지 Live로 간주
     const liveProjectMap = {};
     rows.forEach((row) => {
       const d = parseDateValue(row.Date);
-      if (d && d >= today && row.Project && row.Iteration) {
+      if (d && d >= targetDate && row.Project && row.Iteration) {
         liveProjectMap[row.Project] = row.Iteration;
       }
     });

@@ -76,10 +76,14 @@ export default function App() {
           }
         });
 
+        // 마지막 날짜가 (오늘-2일) 이후인 프로젝트를 Live로 간주
+        const twoDaysAgo = new Date(today);
+        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
         const liveProject = Object.entries(projectLatestDate).find(([, ts]) => {
           const d = new Date(ts);
           d.setHours(0, 0, 0, 0);
-          return d >= today;
+          return d >= twoDaysAgo;
         });
 
         setProject(liveProject ? liveProject[0] : clean[0].Project);
@@ -255,7 +259,7 @@ export default function App() {
         <h1 className="dashboard-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span>CPI Test Dashboard</span>
           <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--muted)", padding: "2px 8px", border: "1px solid var(--line)", borderRadius: "999px", backgroundColor: "var(--card)" }}>
-            v3.6.6
+            v3.6.7
           </span>
         </h1>
         <div className="topbar-right">

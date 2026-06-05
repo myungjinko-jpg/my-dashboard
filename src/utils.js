@@ -155,6 +155,8 @@ export function getIterationMeta(items) {
   const endTimestamp = parseDateValue(endDate);
   const endDateOnly = new Date(endTimestamp);
   endDateOnly.setHours(0, 0, 0, 0);
-  const status = endTimestamp && endDateOnly >= today ? "Live" : "Test Ended";
+  const twoDaysAgo = new Date(today);
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+  const status = endTimestamp && endDateOnly >= twoDaysAgo ? "Live" : "Test Ended";
   return { startDate, endDate, status };
 }

@@ -37,11 +37,12 @@ export default async function handler(req, res) {
     const targetDate = new Date(today);
     targetDate.setUTCDate(targetDate.getUTCDate() - 2);
 
-    // Live 프로젝트: 오늘 이후 날짜가 미리 기입된 프로젝트
+    // Live 프로젝트: 마지막 날짜가 (오늘-2일) 이후인 프로젝트
+    // → 모든 데이터를 수집할 수 있는 날까지 Live로 간주
     const liveProjects = new Set();
     rows.forEach((row) => {
       const d = parseDateValue(row.Date);
-      if (d && d >= today) liveProjects.add(row.Project);
+      if (d && d >= targetDate) liveProjects.add(row.Project);
     });
 
     // Live 프로젝트 중 집계 기준일 데이터가 비어있는 프로젝트
