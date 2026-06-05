@@ -85,6 +85,7 @@ export default async function handler(req, res) {
     if (!webhookUrl) throw new Error("SLACK_WEBHOOK_URL 환경변수 없음");
 
     const projectLines = Object.entries(statusMap)
+      .sort(([, a], [, b]) => b - a) // 완료(true) 먼저
       .map(([project, done]) => `• ${done ? "✅" : "❌"} ${project} ${liveProjectMap[project]}`)
       .join("\n");
 

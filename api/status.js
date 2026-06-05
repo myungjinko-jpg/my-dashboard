@@ -84,10 +84,12 @@ export default async function handler(req, res) {
 
     // 슬랙 메시지 구성
     const dateStr = formatKoreanDate(targetDate);
-    const lines = Object.entries(statusMap).map(([project, done]) => {
-      const iteration = liveProjectMap[project];
-      return `${done ? "✅" : "❌"} ${project} ${iteration}`;
-    });
+    const lines = Object.entries(statusMap)
+      .sort(([, a], [, b]) => b - a) // 완료(true) 먼저
+      .map(([project, done]) => {
+        const iteration = liveProjectMap[project];
+        return `${done ? "✅" : "❌"} ${project} ${iteration}`;
+      });
 
     const allDone = Object.values(statusMap).every(Boolean);
 
