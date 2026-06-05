@@ -92,7 +92,7 @@ export default async function handler(req, res) {
     const allDone = Object.values(statusMap).every(Boolean);
 
     const text = [
-      `*📊 CPI Test 데이터 업데이트 현황 - ${dateStr} 기준* <!subteam^${BIZ_GROUP_ID}|biz>`,
+      `*📊 CPI Test 데이터 업데이트 현황 - \`${dateStr} 기준\`* <!subteam^${BIZ_GROUP_ID}|biz>`,
       ...lines,
       ``,
       `CPI Test 대시보드 바로가기`,
