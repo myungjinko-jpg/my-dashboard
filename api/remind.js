@@ -60,8 +60,9 @@ export default async function handler(req, res) {
       }
     });
 
+    // null = 해당 날짜 row 없음(아직 시작 전), false = 미입력, true = 완료
     const statusMap = {};
-    Object.keys(liveProjectMap).forEach((p) => { statusMap[p] = false; });
+    Object.keys(liveProjectMap).forEach((p) => { statusMap[p] = null; });
 
     rows.forEach((row) => {
       if (!statusMap.hasOwnProperty(row.Project)) return;
@@ -73,19 +74,26 @@ export default async function handler(req, res) {
       targetDate.setHours(0, 0, 0, 0);
       if (rowDate.getTime() !== targetDate.getTime()) return;
 
+      // row가 존재하면 일단 false(미입력)로 설정
+      if (statusMap[row.Project] === null) statusMap[row.Project] = false;
+
       const hasData = metricKeys.some(
         (key) => row[key] && String(row[key]).trim() !== ""
       );
       if (hasData) statusMap[row.Project] = true;
     });
 
-    const allDone = Object.values(statusMap).every(Boolean);
+    // null(시작 전) 제외하고 판단
+    const relevantEntries = Object.entries(statusMap).filter(([, v]) => v !== null);
+    const allDone = relevantEntries.length > 0 && relevantEntries.every(([, v]) => v === true);
+
     const dateStr = formatKoreanDate(targetDate);
     const webhookUrl = process.env.SLACK_WEBHOOK_URL;
     if (!webhookUrl) throw new Error("SLACK_WEBHOOK_URL 환경변수 없음");
 
     const projectLines = Object.entries(statusMap)
-      .sort(([, a], [, b]) => b - a) // 완료(true) 먼저
+      .filter(([, v]) => v !== null) // 시작 전 제외
+      .sort(([, a], [, b]) => b - a)
       .map(([project, done]) => `• ${done ? "✅" : "❌"} ${project} ${liveProjectMap[project]}`)
       .join("\n");
 

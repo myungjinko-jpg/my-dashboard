@@ -61,20 +61,23 @@ export default async function handler(req, res) {
       "D1 Retention", "D0 Playtime", "D1 Playtime",
     ];
 
+    // null = 해당 날짜 row 없음(아직 시작 전), false = 미입력, true = 완료
     const statusMap = {};
     Object.keys(liveProjectMap).forEach((project) => {
-      statusMap[project] = false; // 기본: 미완료
+      statusMap[project] = null;
     });
 
     rows.forEach((row) => {
       if (!statusMap.hasOwnProperty(row.Project)) return;
+      if (row.Iteration !== liveProjectMap[row.Project]) return;
 
       const rowDate = parseDateValue(row.Date);
       if (!rowDate) return;
 
       rowDate.setHours(0, 0, 0, 0);
       if (rowDate.getTime() !== targetDate.getTime()) return;
-      if (row.Iteration !== liveProjectMap[row.Project]) return;
+
+      if (statusMap[row.Project] === null) statusMap[row.Project] = false;
 
       const hasData = metricKeys.some(
         (key) => row[key] && String(row[key]).trim() !== ""
@@ -85,13 +88,15 @@ export default async function handler(req, res) {
     // 슬랙 메시지 구성
     const dateStr = formatKoreanDate(targetDate);
     const lines = Object.entries(statusMap)
+      .filter(([, v]) => v !== null) // 시작 전 제외
       .sort(([, a], [, b]) => b - a) // 완료(true) 먼저
       .map(([project, done]) => {
         const iteration = liveProjectMap[project];
         return `${done ? "✅" : "❌"} ${project} ${iteration}`;
       });
 
-    const allDone = Object.values(statusMap).every(Boolean);
+    const relevantEntries = Object.entries(statusMap).filter(([, v]) => v !== null);
+    const allDone = relevantEntries.length > 0 && relevantEntries.every(([, v]) => v === true);
 
     const text = [
       `*📊 CPI Test 데이터 업데이트 현황 - \`${dateStr} 기준\`* <!subteam^${BIZ_GROUP_ID}|biz>`,
