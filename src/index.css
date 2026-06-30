@@ -959,6 +959,36 @@ tbody tr.row-highlight td:first-child {
   color: var(--muted);
 }
 
+.ltv-applied-bm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: rgba(67,97,238,0.07);
+  border: 1px solid rgba(67,97,238,0.25);
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.ltv-applied-bm strong {
+  color: var(--primary);
+}
+
+.ltv-applied-bm-clear {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+.ltv-applied-bm-clear:hover { color: var(--bad); }
+
 .ltv-bm-empty {
   font-size: 12px;
   color: var(--muted);

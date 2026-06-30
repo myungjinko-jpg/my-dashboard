@@ -13,6 +13,11 @@ const DAY_GOALS = { 1: 0.4, 7: 0.17, 14: 0.07, 30: 0.025 };
 function pct(v) { return (v * 100).toFixed(1) + "%"; }
 function usd(v) { return "$" + v.toFixed(2); }
 function usd4(v) { return "$" + v.toFixed(4); }
+function kLabel(k) {
+  if (k >= -0.45) return { text: "완만", color: "#10b981" };
+  if (k >= -0.85) return { text: "보통", color: "#f59e0b" };
+  return { text: "급격", color: "#f43f5e" };
+}
 function ratio(iapPct) {
   const iap = Math.round(iapPct * 10);
   const iaa = 10 - iap;
@@ -154,6 +159,7 @@ export default function LtvCalculator({ isDark }) {
   const [bmLoading, setBmLoading] = useState(false);
   const [bmUploading, setBmUploading] = useState(false);
   const [bmMsg, setBmMsg] = useState("");
+  const [appliedBm, setAppliedBm] = useState(null);
   const fileInputRef = useRef(null);
 
   const iapArpdau = arpdau * iapPct;
@@ -196,6 +202,7 @@ export default function LtvCalculator({ isDark }) {
     if (bm.k) setK(Number(bm.k));
     if (bm.cumRpd) setArpdau(Number(bm.cumRpd));
     if (bm.cpi) setCpi(Number(bm.cpi));
+    setAppliedBm(bm);
   };
 
   const bmGenres = ["전체", ...Array.from(new Set(benchmarks.map(b => b.genre).filter(Boolean)))];
@@ -429,8 +436,16 @@ export default function LtvCalculator({ isDark }) {
               📐 Retention Model
               <HelpTip text="Power-law 공식 D1 × day^k 로 일별 잔존율을 추정합니다. D1은 설치 첫날 잔존율, k는 감소 속도(음수일수록 빠른 감소)입니다." />
             </div>
-            <SliderInput label="D1 Retention" value={d1} onChange={setD1} min={0.05} max={0.8} step={0.01} display={pct} />
-            <SliderInput label={<>Decay Factor (k) <HelpTip text="0에 가까울수록 잔존율이 완만하게 감소, -1.5에 가까울수록 급격히 떨어집니다. 하이브리드 캐주얼 기준 -0.6~-0.8이 일반적입니다." /></>} value={k} onChange={setK} min={-1.5} max={-0.1} step={0.01} display={(v) => v.toFixed(2)} />
+            <SliderInput label="D1 Retention" value={d1} onChange={(v) => { setD1(v); setAppliedBm(null); }} min={0.05} max={0.8} step={0.01} display={pct} />
+            <SliderInput
+              label={<>Decay Factor (k) <HelpTip text="0에 가까울수록 잔존율이 완만하게 감소, -1.5에 가까울수록 급격히 떨어집니다. 하이브리드 캐주얼 기준 -0.6~-0.8이 일반적입니다." /></>}
+              value={k} onChange={(v) => { setK(v); setAppliedBm(null); }}
+              min={-1.5} max={-0.1} step={0.01}
+              display={(v) => {
+                const lbl = kLabel(v);
+                return <>{v.toFixed(2)} <span style={{ fontSize: "10px", fontWeight: 700, color: lbl.color, background: lbl.color + "22", borderRadius: "4px", padding: "1px 5px" }}>{lbl.text}</span></>;
+              }}
+            />
             <div className="ltv-goal-check">
               {Object.entries(DAY_GOALS).map(([day, goal]) => {
                 const sim = d1 * Math.pow(parseInt(day), k);
@@ -443,6 +458,12 @@ export default function LtvCalculator({ isDark }) {
                 );
               })}
             </div>
+            {appliedBm && (
+              <div className="ltv-applied-bm">
+                📊 <strong>{appliedBm.app}</strong> 기반 · D1 {(appliedBm.d1*100).toFixed(1)}% · k {appliedBm.k}
+                <button className="ltv-applied-bm-clear" onClick={() => setAppliedBm(null)} title="출처 표시 닫기">✕</button>
+              </div>
+            )}
           </div>
 
           <div className="ltv-section-block">
