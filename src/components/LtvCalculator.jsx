@@ -141,13 +141,15 @@ function parseAppMagicCSV(text) {
   }).filter(a => a.d1 && a.k);
 }
 
+const DEFAULTS = { d1: 0.4, k: -0.66, arpdau: 0.10, iapPct: 0.1, cpi: 1.0, installs: 10000 };
+
 export default function LtvCalculator({ isDark }) {
-  const [d1, setD1] = useState(0.4);
-  const [k, setK] = useState(-0.66);
-  const [arpdau, setArpdau] = useState(0.10);
-  const [iapPct, setIapPct] = useState(0.1);
-  const [cpi, setCpi] = useState(1.0);
-  const [installs, setInstalls] = useState(10000);
+  const [d1, setD1] = useState(DEFAULTS.d1);
+  const [k, setK] = useState(DEFAULTS.k);
+  const [arpdau, setArpdau] = useState(DEFAULTS.arpdau);
+  const [iapPct, setIapPct] = useState(DEFAULTS.iapPct);
+  const [cpi, setCpi] = useState(DEFAULTS.cpi);
+  const [installs, setInstalls] = useState(DEFAULTS.installs);
   const [presets, setPresets] = useState([]);
   const [saveName, setSaveName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -204,6 +206,12 @@ export default function LtvCalculator({ isDark }) {
     if (bm.cumRpd) setArpdau(Number(bm.cumRpd));
     if (bm.cpi) setCpi(Number(bm.cpi));
     setAppliedBm(bm);
+  };
+
+  const resetAll = () => {
+    setD1(DEFAULTS.d1); setK(DEFAULTS.k); setArpdau(DEFAULTS.arpdau);
+    setIapPct(DEFAULTS.iapPct); setCpi(DEFAULTS.cpi); setInstalls(DEFAULTS.installs);
+    setAppliedBm(null);
   };
 
   const bmGenres = ["전체", ...Array.from(new Set(benchmarks.map(b => b.genre).filter(Boolean)))];
@@ -431,6 +439,9 @@ export default function LtvCalculator({ isDark }) {
       <div className="ltv-body">
         {/* Left: Inputs */}
         <div className="ltv-inputs card">
+          <div className="ltv-reset-row">
+            <button className="ltv-reset-btn" onClick={resetAll}>↺ 초기화</button>
+          </div>
 
           <div className="ltv-section-block">
             <div className="ltv-section-title">
@@ -461,7 +472,7 @@ export default function LtvCalculator({ isDark }) {
             </div>
             {appliedBm && (
               <div className="ltv-applied-bm">
-                📊 <strong>{appliedBm.app}</strong> 기반 · D1 {(appliedBm.d1*100).toFixed(1)}% · k {appliedBm.k}
+                📊 <strong>{appliedBm.app}</strong> 기반 · D1 {(appliedBm.d1*100).toFixed(1)}% · k {appliedBm.k}{appliedBm.cumRpd ? ` · ARPDAU $${Number(appliedBm.cumRpd).toFixed(4)}` : ""}
                 <button className="ltv-applied-bm-clear" onClick={() => setAppliedBm(null)} title="출처 표시 닫기">✕</button>
               </div>
             )}
@@ -473,7 +484,7 @@ export default function LtvCalculator({ isDark }) {
               <HelpTip text="수익 파라미터를 설정합니다. ARPDAU는 일일 활성유저 1인당 평균 매출이며, IAP(인앱결제)와 IAA(광고수익)의 비중을 조절할 수 있습니다." />
             </div>
             <ArpdauInput value={arpdau} onChange={setArpdau} />
-            <SliderInput label={<>IAP : IAA 비중 <HelpTip text="하이브리드 캐주얼 수익 구조. IAA(광고)는 초기 유저에서 주로 발생하고, IAP(인앱결제)는 장기 잔존 유저에서 발생합니다. 일반적으로 IAA 70~90%가 많습니다." /></>} value={iapPct} onChange={setIapPct} min={0} max={1} step={0.1} display={ratio}>
+            <SliderInput label={<>IAP : IAA 비중 <span className="ltv-manual-badge">직접 조절</span> <HelpTip text="하이브리드 캐주얼 수익 구조. IAA(광고)는 초기 유저에서 주로 발생하고, IAP(인앱결제)는 장기 잔존 유저에서 발생합니다. 일반적으로 IAA 70~90%가 많습니다. 슬라이더로 게임의 실제 비중에 맞게 조절하세요." /></>} value={iapPct} onChange={setIapPct} min={0} max={1} step={0.1} display={ratio}>
               <div className="ltv-iap-bar">
                 <div className="ltv-iap-fill iap" style={{ width: `${iapPct * 100}%` }}>
                   {iapPct >= 0.15 && <span>IAP {usd4(iapArpdau)}</span>}
@@ -565,7 +576,7 @@ export default function LtvCalculator({ isDark }) {
                       {filteredBm.map((bm, i) => (
                         <button key={i} className="ltv-bm-item" onClick={() => applyBenchmark(bm)} title="클릭하면 파라미터 자동 입력">
                           <span className="ltv-bm-name">{bm.app}</span>
-                          <span className="ltv-bm-meta">D1 {bm.d1 ? (bm.d1*100).toFixed(1) : "–"}% · k {bm.k ?? "–"} · {bm.months}개월</span>
+                          <span className="ltv-bm-meta">D1 {bm.d1 ? (bm.d1*100).toFixed(1) : "–"}% · k {bm.k ?? "–"} · ARPDAU {bm.cumRpd ? "$" + Number(bm.cumRpd).toFixed(4) : "–"} · {bm.months}개월</span>
                         </button>
                       ))}
                     </div>
