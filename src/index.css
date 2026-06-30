@@ -758,9 +758,12 @@ tbody tr.row-highlight td:first-child {
 /* ── Charts ── */
 .ltv-chart-card { padding: 20px 24px; }
 .ltv-chart-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--primary);
+  opacity: 0.85;
   margin-bottom: 14px;
 }
 
