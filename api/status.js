@@ -1,5 +1,5 @@
 const SHEET_ID = "1pBJWVce2CgrPBlFMGbS2yCp6tBQnNn4gkEHz7jG3LZk";
-const API_URL = `https://opensheet.elk.sh/${SHEET_ID}/Test_Raw Data`;
+const API_URL = `https://opensheet.elk.sh/${SHEET_ID}/Test_Raw%20Data`;
 const DASHBOARD_URL = "https://my-dashboard-gamma-amber.vercel.app";
 const BIZ_GROUP_ID = "S0AE7K2HLM6";
 

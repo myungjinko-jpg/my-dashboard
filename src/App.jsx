@@ -16,7 +16,7 @@ import {
 import LtvCalculator from "./components/LtvCalculator";
 
 const SHEET_ID = "1pBJWVce2CgrPBlFMGbS2yCp6tBQnNn4gkEHz7jG3LZk";
-const SHEET_NAME = "Test_Raw Data";
+const SHEET_NAME = "Test_Raw%20Data";
 const API_URL = `https://opensheet.elk.sh/${SHEET_ID}/${SHEET_NAME}`;
 
 export default function App() {
