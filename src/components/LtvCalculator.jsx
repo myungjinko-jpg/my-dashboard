@@ -72,7 +72,14 @@ function ArpdauInput({ value, onChange }) {
   return (
     <div className="ltv-input-group">
       <div className="ltv-input-label">
-        <span>ARPDAU</span>
+        <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          ARPDAU
+          <input
+            type="number" min={0.001} max={50} step={0.001} value={value}
+            onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v) && v > 0) onChange(v); }}
+            className="ltv-number-input"
+          />
+        </span>
         <span className="ltv-input-value">{usd4(value)}</span>
       </div>
       <input
@@ -80,14 +87,6 @@ function ArpdauInput({ value, onChange }) {
         onChange={(e) => onChange(parseFloat(e.target.value))}
         className="ltv-slider"
       />
-      <div style={{ display: "flex", gap: "6px", marginTop: "6px", alignItems: "center" }}>
-        <span style={{ fontSize: "11px", color: "var(--muted)", whiteSpace: "nowrap" }}>직접 입력</span>
-        <input
-          type="number" min={0.001} max={50} step={0.001} value={value}
-          onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v) && v > 0) onChange(v); }}
-          className="ltv-number-input"
-        />
-      </div>
     </div>
   );
 }
