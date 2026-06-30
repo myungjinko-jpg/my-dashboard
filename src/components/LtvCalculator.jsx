@@ -501,18 +501,6 @@ export default function LtvCalculator({ isDark }) {
                 return <>{v.toFixed(2)} <span style={{ fontSize: "10px", fontWeight: 700, color: lbl.color, background: lbl.color + "22", borderRadius: "4px", padding: "1px 5px" }}>{lbl.text}</span></>;
               }}
             />
-            <div className="ltv-goal-check">
-              {Object.entries(DAY_GOALS).map(([day, goal]) => {
-                const sim = d1 * Math.pow(parseInt(day), k);
-                const ok = Math.abs(sim - goal) / goal < 0.15;
-                return (
-                  <div key={day} className={`ltv-goal-row ${ok ? "ok" : "miss"}`}>
-                    <span>D{day} Goal {pct(goal)}</span>
-                    <span>Sim {pct(sim)} {ok ? "✓" : "✗"}</span>
-                  </div>
-                );
-              })}
-            </div>
             {appliedBm && (
               <div className="ltv-applied-bm">
                 📊 <strong>{appliedBm.app}</strong> 기반 · D1 {(appliedBm.d1*100).toFixed(1)}% · k {appliedBm.k}{appliedBm.cumRpd ? ` · ARPDAU $${Number(appliedBm.cumRpd).toFixed(4)}` : ""}
@@ -595,6 +583,25 @@ export default function LtvCalculator({ isDark }) {
             <div className="ltv-chart-title">Retention Curve (D1~D30)</div>
             <div style={{ height: 220 }}>
               <Line data={retChartData} options={chartOpts("Retention (%)", (v) => v + "%")} />
+            </div>
+            <div className="ltv-goal-bars">
+              {Object.entries(DAY_GOALS).map(([day, goal]) => {
+                const sim = d1 * Math.pow(parseInt(day), k);
+                const ratio = Math.min(sim / goal, 2);
+                const ok = sim >= goal * 0.85;
+                const color = ok ? "#10b981" : "#f43f5e";
+                return (
+                  <div key={day} className="ltv-goal-bar-row">
+                    <span className="ltv-goal-bar-label">D{day}</span>
+                    <div className="ltv-goal-bar-track">
+                      <div className="ltv-goal-bar-fill" style={{ width: `${Math.min(ratio * 50, 100)}%`, background: color }} />
+                      <div className="ltv-goal-bar-marker" style={{ left: "50%" }} />
+                    </div>
+                    <span className="ltv-goal-bar-sim" style={{ color }}>{pct(sim)}</span>
+                    <span className="ltv-goal-bar-goal">/ {pct(goal)}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
           <div className="card ltv-chart-card">
