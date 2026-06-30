@@ -608,6 +608,8 @@ tbody tr.row-highlight td:first-child {
   background: var(--line);
   cursor: pointer;
   outline: none;
+  display: block;
+  margin: 8px 0;
 }
 .ltv-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
