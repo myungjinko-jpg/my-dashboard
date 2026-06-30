@@ -189,7 +189,8 @@ export default function LtvCalculator({ isDark }) {
       const text = await file.text();
       const parsed = parseAppMagicCSV(text);
       if (!parsed.length) { setBmMsg("유효한 데이터가 없습니다."); return; }
-      await gasGet({ action: "saveAppMagic", data: JSON.stringify(parsed) });
+      const saveRes = await gasGet({ action: "saveAppMagic", data: JSON.stringify(parsed) });
+      if (!saveRes.ok) { setBmMsg("저장 실패 — Apps Script 재배포가 필요합니다."); return; }
       const updated = await gasGet({ action: "listAppMagic" });
       setBenchmarks(Array.isArray(updated) ? updated : []);
       setBmMsg(`${parsed.length}개 앱 저장 완료`);
