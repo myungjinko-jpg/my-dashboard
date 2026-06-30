@@ -486,10 +486,7 @@ export default function LtvCalculator({ isDark }) {
             )}
           </div>
 
-          {/* 자동 입력 구역 */}
-          <div className="ltv-zone-divider">벤치마크 적용 시 자동 입력</div>
-
-          <div className="ltv-section-block ltv-section-block--no-top">
+          <div className="ltv-section-block">
             <div className="ltv-section-title">
               <Activity size={14} /> Retention Model
               <HelpTip text="Power-law 공식 D1 × day^k 로 일별 잔존율을 추정합니다. D1은 설치 첫날 잔존율, k는 감소 속도(음수일수록 빠른 감소)입니다." />
@@ -533,10 +530,7 @@ export default function LtvCalculator({ isDark }) {
             <SliderInput label={<>CPI <HelpTip text="유저 1명 획득에 드는 광고비(Cost Per Install). Breakeven은 누적 LTV가 이 값을 넘는 날로, D30 이내면 공격적 스케일업이 가능합니다." /></>} value={cpi} onChange={setCpi} min={0.1} max={5.0} step={0.05} display={usd} />
           </div>
 
-          {/* 수동 조절 구역 */}
-          <div className="ltv-zone-divider">직접 조절</div>
-
-          <div className="ltv-section-block ltv-section-block--no-top">
+          <div className="ltv-section-block">
             <SliderInput label={<>IAP : IAA 비중 <HelpTip text="하이브리드 캐주얼 수익 구조. IAA(광고)는 초기 유저에서 주로 발생하고, IAP(인앱결제)는 장기 잔존 유저에서 발생합니다. 일반적으로 IAA 70~90%가 많습니다. 슬라이더로 게임의 실제 비중에 맞게 조절하세요." /></>} value={iapPct} onChange={setIapPct} min={0} max={1} step={0.1} display={ratio}>
               <div className="ltv-iap-bar">
                 <div className="ltv-iap-fill iap" style={{ width: `${iapPct * 100}%` }}>
