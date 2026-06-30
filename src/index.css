@@ -480,3 +480,284 @@ tbody tr.row-highlight td:first-child {
   .iteration-table .delta-up, .iteration-table .delta-down, .iteration-table .delta-flat,
   .daily-table .delta-up, .daily-table .delta-down, .daily-table .delta-flat { font-size: 9px !important; margin-top: 2px !important; }
 }
+
+/* ── Tab Nav ── */
+.tab-nav {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--line);
+  padding-bottom: 0;
+}
+
+.tab-btn {
+  padding: 9px 20px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px 6px 0 0;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  background: var(--primary-light);
+}
+
+/* ── LTV Calculator ── */
+.ltv-wrap { display: flex; flex-direction: column; gap: 16px; }
+
+.ltv-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+.ltv-kpi-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.ltv-kpi-card.good { border-color: var(--good); }
+.ltv-kpi-card.warn { border-color: #f59e0b; }
+.ltv-kpi-card.bad  { border-color: var(--bad); }
+
+.ltv-kpi-label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.ltv-kpi-value { font-size: 20px; font-weight: 700; color: var(--text); }
+.ltv-kpi-sub   { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+.ltv-body {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.ltv-inputs { padding: 20px; }
+.ltv-charts { display: flex; flex-direction: column; gap: 16px; }
+
+.ltv-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.ltv-input-group { margin-bottom: 14px; }
+.ltv-input-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.ltv-input-value { font-weight: 700; color: var(--primary); }
+
+.ltv-slider {
+  width: 100%;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.ltv-number-input {
+  width: 80px;
+  padding: 3px 7px;
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  background: var(--card-bg-subtle);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ltv-iap-bar {
+  display: flex;
+  height: 22px;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.ltv-iap-fill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: width 0.2s;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.ltv-iap-fill.iap { background: #8b5cf6; color: #fff; }
+.ltv-iap-fill.iaa { background: #f59e0b; color: #fff; }
+
+/* Scenario save */
+.ltv-script-notice {
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--card-bg-subtle);
+  border: 1px dashed var(--card-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  line-height: 1.6;
+}
+
+.ltv-add-btn {
+  width: 100%;
+  padding: 8px;
+  border: 1.5px dashed var(--card-border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.ltv-add-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+.ltv-save-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.ltv-save-input {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1.5px solid var(--primary);
+  border-radius: 8px;
+  background: var(--card-bg-subtle);
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+.ltv-save-btn {
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ltv-save-btn.confirm { background: var(--primary); color: #fff; }
+.ltv-save-btn.cancel  { background: var(--card-bg-subtle); color: var(--muted); }
+
+.ltv-preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.ltv-preset-item {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.ltv-preset-item:hover { border-color: var(--primary); }
+
+.ltv-preset-load {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+.ltv-preset-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.ltv-preset-meta {
+  font-size: 11px;
+  color: var(--muted);
+}
+.ltv-preset-delete {
+  padding: 0 10px;
+  border: none;
+  border-left: 1px solid var(--card-border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.ltv-preset-delete:hover { color: var(--bad); background: var(--card-bg-subtle); }
+
+.ltv-goal-check {
+  background: var(--card-bg-subtle);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.ltv-goal-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 500;
+}
+.ltv-goal-row.ok  { color: var(--good); }
+.ltv-goal-row.miss { color: var(--bad); }
+
+.ltv-chart-card { padding: 16px 20px; }
+.ltv-chart-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.ltv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.ltv-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.ltv-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+}
+.ltv-table tr:last-child td { border-bottom: none; }
+.ltv-table tr:hover td { background: var(--card-bg-subtle); }
+
+@media (max-width: 900px) {
+  .ltv-kpi-row { grid-template-columns: repeat(3, 1fr); }
+  .ltv-body { grid-template-columns: 1fr; }
+}
+@media (max-width: 540px) {
+  .ltv-kpi-row { grid-template-columns: repeat(2, 1fr); }
+}
