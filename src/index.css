@@ -1006,6 +1006,27 @@ tbody tr.row-highlight td:first-child {
 }
 .ltv-reset-btn:hover { color: var(--bad); border-color: var(--bad); }
 
+.ltv-zone-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ltv-zone-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.ltv-section-block--no-top {
+  border-top: none !important;
+}
+
 .ltv-manual-badge {
   font-size: 10px;
   font-weight: 600;

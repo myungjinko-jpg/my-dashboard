@@ -443,108 +443,7 @@ export default function LtvCalculator({ isDark }) {
             <button className="ltv-reset-btn" onClick={resetAll}>↺ 초기화</button>
           </div>
 
-          <div className="ltv-section-block">
-            <div className="ltv-section-title">
-              📐 Retention Model
-              <HelpTip text="Power-law 공식 D1 × day^k 로 일별 잔존율을 추정합니다. D1은 설치 첫날 잔존율, k는 감소 속도(음수일수록 빠른 감소)입니다." />
-            </div>
-            <SliderInput label="D1 Retention" value={d1} onChange={(v) => { setD1(v); setAppliedBm(null); }} min={0.05} max={0.8} step={0.01} display={pct} />
-            <SliderInput
-              label={<>Decay Factor (k) <HelpTip text="0에 가까울수록 잔존율이 완만하게 감소, -1.5에 가까울수록 급격히 떨어집니다. 하이브리드 캐주얼 기준 -0.6~-0.8이 일반적입니다." /></>}
-              value={k} onChange={(v) => { setK(v); setAppliedBm(null); }}
-              min={-1.5} max={-0.1} step={0.01}
-              display={(v) => {
-                const lbl = kLabel(v);
-                return <>{v.toFixed(2)} <span style={{ fontSize: "10px", fontWeight: 700, color: lbl.color, background: lbl.color + "22", borderRadius: "4px", padding: "1px 5px" }}>{lbl.text}</span></>;
-              }}
-            />
-            <div className="ltv-goal-check">
-              {Object.entries(DAY_GOALS).map(([day, goal]) => {
-                const sim = d1 * Math.pow(parseInt(day), k);
-                const ok = Math.abs(sim - goal) / goal < 0.15;
-                return (
-                  <div key={day} className={`ltv-goal-row ${ok ? "ok" : "miss"}`}>
-                    <span>D{day} Goal {pct(goal)}</span>
-                    <span>Sim {pct(sim)} {ok ? "✓" : "✗"}</span>
-                  </div>
-                );
-              })}
-            </div>
-            {appliedBm && (
-              <div className="ltv-applied-bm">
-                📊 <strong>{appliedBm.app}</strong> 기반 · D1 {(appliedBm.d1*100).toFixed(1)}% · k {appliedBm.k}{appliedBm.cumRpd ? ` · ARPDAU $${Number(appliedBm.cumRpd).toFixed(4)}` : ""}
-                <button className="ltv-applied-bm-clear" onClick={() => setAppliedBm(null)} title="출처 표시 닫기">✕</button>
-              </div>
-            )}
-          </div>
-
-          <div className="ltv-section-block">
-            <div className="ltv-section-title">
-              💰 Revenue
-              <HelpTip text="수익 파라미터를 설정합니다. ARPDAU는 일일 활성유저 1인당 평균 매출이며, IAP(인앱결제)와 IAA(광고수익)의 비중을 조절할 수 있습니다." />
-            </div>
-            <ArpdauInput value={arpdau} onChange={setArpdau} />
-            <SliderInput label={<>IAP : IAA 비중 <span className="ltv-manual-badge">직접 조절</span> <HelpTip text="하이브리드 캐주얼 수익 구조. IAA(광고)는 초기 유저에서 주로 발생하고, IAP(인앱결제)는 장기 잔존 유저에서 발생합니다. 일반적으로 IAA 70~90%가 많습니다. 슬라이더로 게임의 실제 비중에 맞게 조절하세요." /></>} value={iapPct} onChange={setIapPct} min={0} max={1} step={0.1} display={ratio}>
-              <div className="ltv-iap-bar">
-                <div className="ltv-iap-fill iap" style={{ width: `${iapPct * 100}%` }}>
-                  {iapPct >= 0.15 && <span>IAP {usd4(iapArpdau)}</span>}
-                </div>
-                <div className="ltv-iap-fill iaa" style={{ width: `${(1 - iapPct) * 100}%` }}>
-                  {(1 - iapPct) >= 0.15 && <span>IAA {usd4(iaaArpdau)}</span>}
-                </div>
-              </div>
-            </SliderInput>
-            <SliderInput label={<>CPI <HelpTip text="유저 1명 획득에 드는 광고비(Cost Per Install). Breakeven은 누적 LTV가 이 값을 넘는 날로, D30 이내면 공격적 스케일업이 가능합니다." /></>} value={cpi} onChange={setCpi} min={0.1} max={5.0} step={0.05} display={usd} />
-          </div>
-
-          <div className="ltv-section-block">
-            <div className="ltv-section-title">
-              📦 Scale
-              <HelpTip text="인스톨 수를 설정하면 D30 Total Rev에서 코호트 전체 예상 매출을 확인할 수 있습니다." />
-            </div>
-            <SliderInput label="Install Count" value={installs} onChange={setInstalls} min={1000} max={100000} step={1000} display={(v) => v.toLocaleString()} />
-          </div>
-
-          <div className="ltv-section-block">
-            <div className="ltv-section-title">
-              💾 Saved Scenarios
-              <HelpTip text="현재 파라미터 세트를 이름 붙여 저장합니다. Google Sheets에 저장되어 팀원과 공유되며, 클릭하면 해당 세트를 불러옵니다." />
-            </div>
-            {!APPS_SCRIPT_URL ? (
-              <div className="ltv-script-notice">
-                Apps Script URL 설정 후 사용 가능해요.<br />
-                <span style={{ color: "var(--muted)", fontSize: "11px" }}>.env → VITE_LTV_SCRIPT_URL</span>
-              </div>
-            ) : saving ? (
-              <div className="ltv-save-row">
-                <input className="ltv-save-input" placeholder="시나리오 이름 입력..." value={saveName}
-                  onChange={(e) => setSaveName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") savePreset(); if (e.key === "Escape") setSaving(false); }}
-                  autoFocus />
-                <button className="ltv-save-btn confirm" onClick={savePreset} disabled={presetLoading}>저장</button>
-                <button className="ltv-save-btn cancel" onClick={() => { setSaving(false); setSaveName(""); }}>✕</button>
-              </div>
-            ) : (
-              <button className="ltv-add-btn" onClick={() => setSaving(true)} disabled={presetLoading}>
-                {presetLoading ? "⏳ 처리 중..." : "+ 현재 세트 저장"}
-              </button>
-            )}
-            {presetError && <div style={{ fontSize: "11px", color: "var(--bad)", marginTop: "6px" }}>{presetError}</div>}
-            {APPS_SCRIPT_URL && presets.length > 0 && (
-              <div className="ltv-preset-list">
-                {presets.map((p) => (
-                  <div key={p.id} className="ltv-preset-item">
-                    <button className="ltv-preset-load" onClick={() => loadPreset(p)} title="불러오기">
-                      <span className="ltv-preset-name">{p.name}</span>
-                      <span className="ltv-preset-meta">D1 {(Number(p.d1)*100).toFixed(0)}% · ARPDAU ${Number(p.arpdau).toFixed(3)} · CPI ${Number(p.cpi).toFixed(2)}</span>
-                    </button>
-                    <button className="ltv-preset-delete" onClick={() => deletePreset(p.id)} title="삭제">✕</button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
+          {/* Benchmark */}
           <div className="ltv-section-block">
             <div className="ltv-section-title">
               📊 Benchmark
@@ -586,6 +485,110 @@ export default function LtvCalculator({ isDark }) {
                   <div className="ltv-bm-empty">CSV를 업로드하면 여기에 앱 목록이 쌓입니다.</div>
                 )}
               </>
+            )}
+          </div>
+
+          {/* 자동 입력 구역 */}
+          <div className="ltv-zone-divider">벤치마크 적용 시 자동 입력</div>
+
+          <div className="ltv-section-block ltv-section-block--no-top">
+            <div className="ltv-section-title">
+              📐 Retention Model
+              <HelpTip text="Power-law 공식 D1 × day^k 로 일별 잔존율을 추정합니다. D1은 설치 첫날 잔존율, k는 감소 속도(음수일수록 빠른 감소)입니다." />
+            </div>
+            <SliderInput label="D1 Retention" value={d1} onChange={(v) => { setD1(v); setAppliedBm(null); }} min={0.05} max={0.8} step={0.01} display={pct} />
+            <SliderInput
+              label={<>Decay Factor (k) <HelpTip text="0에 가까울수록 잔존율이 완만하게 감소, -1.5에 가까울수록 급격히 떨어집니다. 하이브리드 캐주얼 기준 -0.6~-0.8이 일반적입니다." /></>}
+              value={k} onChange={(v) => { setK(v); setAppliedBm(null); }}
+              min={-1.5} max={-0.1} step={0.01}
+              display={(v) => {
+                const lbl = kLabel(v);
+                return <>{v.toFixed(2)} <span style={{ fontSize: "10px", fontWeight: 700, color: lbl.color, background: lbl.color + "22", borderRadius: "4px", padding: "1px 5px" }}>{lbl.text}</span></>;
+              }}
+            />
+            <div className="ltv-goal-check">
+              {Object.entries(DAY_GOALS).map(([day, goal]) => {
+                const sim = d1 * Math.pow(parseInt(day), k);
+                const ok = Math.abs(sim - goal) / goal < 0.15;
+                return (
+                  <div key={day} className={`ltv-goal-row ${ok ? "ok" : "miss"}`}>
+                    <span>D{day} Goal {pct(goal)}</span>
+                    <span>Sim {pct(sim)} {ok ? "✓" : "✗"}</span>
+                  </div>
+                );
+              })}
+            </div>
+            {appliedBm && (
+              <div className="ltv-applied-bm">
+                📊 <strong>{appliedBm.app}</strong> 기반 · D1 {(appliedBm.d1*100).toFixed(1)}% · k {appliedBm.k}{appliedBm.cumRpd ? ` · ARPDAU $${Number(appliedBm.cumRpd).toFixed(4)}` : ""}
+                <button className="ltv-applied-bm-clear" onClick={() => setAppliedBm(null)} title="출처 표시 닫기">✕</button>
+              </div>
+            )}
+          </div>
+
+          <div className="ltv-section-block">
+            <div className="ltv-section-title">
+              💰 Revenue
+              <HelpTip text="수익 파라미터를 설정합니다. ARPDAU는 일일 활성유저 1인당 평균 매출입니다." />
+            </div>
+            <ArpdauInput value={arpdau} onChange={setArpdau} />
+            <SliderInput label={<>CPI <HelpTip text="유저 1명 획득에 드는 광고비(Cost Per Install). Breakeven은 누적 LTV가 이 값을 넘는 날로, D30 이내면 공격적 스케일업이 가능합니다." /></>} value={cpi} onChange={setCpi} min={0.1} max={5.0} step={0.05} display={usd} />
+          </div>
+
+          {/* 수동 조절 구역 */}
+          <div className="ltv-zone-divider">직접 조절</div>
+
+          <div className="ltv-section-block ltv-section-block--no-top">
+            <SliderInput label={<>IAP : IAA 비중 <HelpTip text="하이브리드 캐주얼 수익 구조. IAA(광고)는 초기 유저에서 주로 발생하고, IAP(인앱결제)는 장기 잔존 유저에서 발생합니다. 일반적으로 IAA 70~90%가 많습니다. 슬라이더로 게임의 실제 비중에 맞게 조절하세요." /></>} value={iapPct} onChange={setIapPct} min={0} max={1} step={0.1} display={ratio}>
+              <div className="ltv-iap-bar">
+                <div className="ltv-iap-fill iap" style={{ width: `${iapPct * 100}%` }}>
+                  {iapPct >= 0.15 && <span>IAP {usd4(iapArpdau)}</span>}
+                </div>
+                <div className="ltv-iap-fill iaa" style={{ width: `${(1 - iapPct) * 100}%` }}>
+                  {(1 - iapPct) >= 0.15 && <span>IAA {usd4(iaaArpdau)}</span>}
+                </div>
+              </div>
+            </SliderInput>
+            <SliderInput label={<>Install Count <HelpTip text="인스톨 수를 설정하면 D30 Total Rev에서 코호트 전체 예상 매출을 확인할 수 있습니다." /></>} value={installs} onChange={setInstalls} min={1000} max={100000} step={1000} display={(v) => v.toLocaleString()} />
+          </div>
+
+          <div className="ltv-section-block">
+            <div className="ltv-section-title">
+              💾 Saved Scenarios
+              <HelpTip text="현재 파라미터 세트를 이름 붙여 저장합니다. Google Sheets에 저장되어 팀원과 공유되며, 클릭하면 해당 세트를 불러옵니다." />
+            </div>
+            {!APPS_SCRIPT_URL ? (
+              <div className="ltv-script-notice">
+                Apps Script URL 설정 후 사용 가능해요.<br />
+                <span style={{ color: "var(--muted)", fontSize: "11px" }}>.env → VITE_LTV_SCRIPT_URL</span>
+              </div>
+            ) : saving ? (
+              <div className="ltv-save-row">
+                <input className="ltv-save-input" placeholder="시나리오 이름 입력..." value={saveName}
+                  onChange={(e) => setSaveName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") savePreset(); if (e.key === "Escape") setSaving(false); }}
+                  autoFocus />
+                <button className="ltv-save-btn confirm" onClick={savePreset} disabled={presetLoading}>저장</button>
+                <button className="ltv-save-btn cancel" onClick={() => { setSaving(false); setSaveName(""); }}>✕</button>
+              </div>
+            ) : (
+              <button className="ltv-add-btn" onClick={() => setSaving(true)} disabled={presetLoading}>
+                {presetLoading ? "⏳ 처리 중..." : "+ 현재 세트 저장"}
+              </button>
+            )}
+            {presetError && <div style={{ fontSize: "11px", color: "var(--bad)", marginTop: "6px" }}>{presetError}</div>}
+            {APPS_SCRIPT_URL && presets.length > 0 && (
+              <div className="ltv-preset-list">
+                {presets.map((p) => (
+                  <div key={p.id} className="ltv-preset-item">
+                    <button className="ltv-preset-load" onClick={() => loadPreset(p)} title="불러오기">
+                      <span className="ltv-preset-name">{p.name}</span>
+                      <span className="ltv-preset-meta">D1 {(Number(p.d1)*100).toFixed(0)}% · ARPDAU ${Number(p.arpdau).toFixed(3)} · CPI ${Number(p.cpi).toFixed(2)}</span>
+                    </button>
+                    <button className="ltv-preset-delete" onClick={() => deletePreset(p.id)} title="삭제">✕</button>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
