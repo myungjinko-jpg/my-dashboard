@@ -142,7 +142,7 @@ function parseAppMagicCSV(text) {
   }).filter(a => a.d1 && a.k);
 }
 
-const DEFAULTS = { d1: 0.4, k: -0.66, arpdau: 0.10, iapPct: 0.1, cpi: 1.0, installs: 10000 };
+const DEFAULTS = { d1: 0.43, k: -0.8, arpdau: 0.5, iapPct: 0.5, cpi: 2.55, installs: 50000 };
 
 export default function LtvCalculator({ isDark }) {
   const [d1, setD1] = useState(DEFAULTS.d1);
