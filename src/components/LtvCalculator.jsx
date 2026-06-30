@@ -19,11 +19,20 @@ function ratio(iapPct) {
   return `IAP ${iap} : IAA ${iaa}`;
 }
 
+function HelpTip({ text }) {
+  return (
+    <span className="ltv-tooltip-wrap">
+      <span className="ltv-tooltip-icon">❓</span>
+      <span className="ltv-tooltip-box">{text}</span>
+    </span>
+  );
+}
+
 function SliderInput({ label, value, onChange, min, max, step, display, children }) {
   return (
     <div className="ltv-input-group">
       <div className="ltv-input-label">
-        <span>{label}</span>
+        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>{label}</span>
         <span className="ltv-input-value">{display(value)}</span>
       </div>
       <input
@@ -312,9 +321,12 @@ export default function LtvCalculator({ isDark }) {
       <div className="ltv-body">
         {/* Left: Inputs */}
         <div className="ltv-inputs card">
-          <div className="ltv-section-title">📐 Retention Model</div>
+          <div className="ltv-section-title">
+            📐 Retention Model
+            <HelpTip text="Power-law 공식 D1 × day^k 로 일별 잔존율을 추정합니다. D1은 설치 첫날 잔존율, k는 감소 속도(음수일수록 빠른 감소)입니다." />
+          </div>
           <SliderInput label="D1 Retention" value={d1} onChange={setD1} min={0.05} max={0.8} step={0.01} display={pct} />
-          <SliderInput label="Decay Factor (k)" value={k} onChange={setK} min={-1.5} max={-0.1} step={0.01} display={(v) => v.toFixed(2)} />
+          <SliderInput label={<>Decay Factor (k) <HelpTip text="0에 가까울수록 잔존율이 완만하게 감소, -1.5에 가까울수록 급격히 떨어집니다. 하이브리드 캐주얼 기준 -0.6~-0.8이 일반적입니다." /></>} value={k} onChange={setK} min={-1.5} max={-0.1} step={0.01} display={(v) => v.toFixed(2)} />
 
           <div className="ltv-goal-check">
             {Object.entries(DAY_GOALS).map(([day, goal]) => {
@@ -329,9 +341,12 @@ export default function LtvCalculator({ isDark }) {
             })}
           </div>
 
-          <div className="ltv-section-title" style={{ marginTop: "20px" }}>💰 Revenue</div>
+          <div className="ltv-section-title" style={{ marginTop: "20px" }}>
+            💰 Revenue
+            <HelpTip text="수익 파라미터를 설정합니다. ARPDAU는 일일 활성유저 1인당 평균 매출이며, IAP(인앱결제)와 IAA(광고수익)의 비중을 조절할 수 있습니다." />
+          </div>
           <ArpdauInput value={arpdau} onChange={setArpdau} />
-          <SliderInput label="IAP : IAA 비중" value={iapPct} onChange={setIapPct} min={0} max={1} step={0.1} display={ratio}>
+          <SliderInput label={<>IAP : IAA 비중 <HelpTip text="하이브리드 캐주얼 수익 구조. IAA(광고)는 초기 유저에서 주로 발생하고, IAP(인앱결제)는 장기 잔존 유저에서 발생합니다. 일반적으로 IAA 70~90%가 많습니다." /></>} value={iapPct} onChange={setIapPct} min={0} max={1} step={0.1} display={ratio}>
             <div className="ltv-iap-bar">
               <div className="ltv-iap-fill iap" style={{ width: `${iapPct * 100}%` }}>
                 {iapPct >= 0.15 && <span>IAP {usd4(iapArpdau)}</span>}
@@ -341,12 +356,18 @@ export default function LtvCalculator({ isDark }) {
               </div>
             </div>
           </SliderInput>
-          <SliderInput label="CPI (Breakeven 기준)" value={cpi} onChange={setCpi} min={0.1} max={5.0} step={0.05} display={usd} />
+          <SliderInput label={<>CPI <HelpTip text="유저 1명 획득에 드는 광고비(Cost Per Install). Breakeven은 누적 LTV가 이 값을 넘는 날로, D30 이내면 공격적 스케일업이 가능합니다." /></>} value={cpi} onChange={setCpi} min={0.1} max={5.0} step={0.05} display={usd} />
 
-          <div className="ltv-section-title" style={{ marginTop: "20px" }}>📦 Scale</div>
+          <div className="ltv-section-title" style={{ marginTop: "20px" }}>
+            📦 Scale
+            <HelpTip text="인스톨 수를 설정하면 D30 Total Rev에서 코호트 전체 예상 매출을 확인할 수 있습니다." />
+          </div>
           <SliderInput label="Install Count" value={installs} onChange={setInstalls} min={1000} max={100000} step={1000} display={(v) => v.toLocaleString()} />
 
-          <div className="ltv-section-title" style={{ marginTop: "24px" }}>💾 Saved Scenarios</div>
+          <div className="ltv-section-title" style={{ marginTop: "24px" }}>
+            💾 Saved Scenarios
+            <HelpTip text="현재 파라미터 세트를 이름 붙여 저장합니다. Google Sheets에 저장되어 팀원과 공유되며, 클릭하면 해당 세트를 불러옵니다." />
+          </div>
           {!APPS_SCRIPT_URL ? (
             <div className="ltv-script-notice">
               Apps Script URL 설정 후 사용 가능해요.<br />

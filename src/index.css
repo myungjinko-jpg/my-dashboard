@@ -754,6 +754,86 @@ tbody tr.row-highlight td:first-child {
 .ltv-table tr:last-child td { border-bottom: none; }
 .ltv-table tr:hover td { background: var(--card-bg-subtle); }
 
+/* ── LTV Tooltip ── */
+.ltv-tooltip-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  cursor: default;
+}
+
+.ltv-tooltip-icon {
+  font-size: 11px;
+  opacity: 0.5;
+  line-height: 1;
+  transition: opacity 0.15s;
+}
+.ltv-tooltip-wrap:hover .ltv-tooltip-icon { opacity: 1; }
+
+.ltv-tooltip-box {
+  display: none;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(100% + 8px);
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+  padding: 10px 13px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text);
+  line-height: 1.6;
+  white-space: normal;
+  width: 230px;
+  z-index: 999;
+  pointer-events: none;
+}
+
+.ltv-tooltip-box::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--card-bg);
+}
+.ltv-tooltip-box::before {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 7px solid transparent;
+  border-top-color: var(--line);
+  margin-top: 1px;
+}
+
+.ltv-tooltip-wrap:hover .ltv-tooltip-box { display: block; }
+
+/* tooltip in input label: open downward to avoid clipping */
+.ltv-input-label .ltv-tooltip-box {
+  top: calc(100% + 8px);
+  bottom: auto;
+}
+.ltv-input-label .ltv-tooltip-box::after {
+  top: auto;
+  bottom: 100%;
+  border-top-color: transparent;
+  border-bottom-color: var(--card-bg);
+}
+.ltv-input-label .ltv-tooltip-box::before {
+  top: auto;
+  bottom: 100%;
+  border-top-color: transparent;
+  border-bottom-color: var(--line);
+  margin-top: 0;
+  margin-bottom: 1px;
+}
+
 @media (max-width: 900px) {
   .ltv-kpi-row { grid-template-columns: repeat(3, 1fr); }
   .ltv-body { grid-template-columns: 1fr; }
