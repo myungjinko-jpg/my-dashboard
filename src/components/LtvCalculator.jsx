@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler } from "chart.js";
 import { Line } from "react-chartjs-2";
 
@@ -20,10 +20,27 @@ function ratio(iapPct) {
 }
 
 function HelpTip({ text }) {
+  const [pos, setPos] = useState(null);
+  const iconRef = useRef(null);
+
+  const show = useCallback(() => {
+    const r = iconRef.current?.getBoundingClientRect();
+    if (r) setPos({ x: r.left + r.width / 2, y: r.top - 8 });
+  }, []);
+
+  const hide = useCallback(() => setPos(null), []);
+
   return (
-    <span className="ltv-tooltip-wrap">
-      <span className="ltv-tooltip-icon">❓</span>
-      <span className="ltv-tooltip-box">{text}</span>
+    <span className="ltv-helptip-wrap" onMouseEnter={show} onMouseLeave={hide}>
+      <span ref={iconRef} className="ltv-helptip-icon">?</span>
+      {pos && (
+        <span
+          className="ltv-helptip-box"
+          style={{ left: pos.x, top: pos.y, transform: "translate(-50%, -100%)" }}
+        >
+          {text}
+        </span>
+      )}
     </span>
   );
 }

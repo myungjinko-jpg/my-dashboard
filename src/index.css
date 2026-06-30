@@ -754,85 +754,71 @@ tbody tr.row-highlight td:first-child {
 .ltv-table tr:last-child td { border-bottom: none; }
 .ltv-table tr:hover td { background: var(--card-bg-subtle); }
 
-/* ── LTV Tooltip ── */
-.ltv-tooltip-wrap {
-  position: relative;
+/* ── LTV HelpTip ── */
+.ltv-helptip-wrap {
   display: inline-flex;
   align-items: center;
-  margin-left: 4px;
-  cursor: default;
+  margin-left: 5px;
+  vertical-align: middle;
+  flex-shrink: 0;
 }
 
-.ltv-tooltip-icon {
-  font-size: 11px;
-  opacity: 0.5;
+.ltv-helptip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--muted);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
   line-height: 1;
-  transition: opacity 0.15s;
+  cursor: default;
+  opacity: 0.55;
+  transition: opacity 0.15s, background 0.15s;
+  flex-shrink: 0;
+  user-select: none;
 }
-.ltv-tooltip-wrap:hover .ltv-tooltip-icon { opacity: 1; }
+.ltv-helptip-wrap:hover .ltv-helptip-icon {
+  opacity: 1;
+  background: var(--primary);
+}
 
-.ltv-tooltip-box {
-  display: none;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(100% + 8px);
-  background: var(--card-bg);
-  border: 1px solid var(--line);
+.ltv-helptip-box {
+  position: fixed;
+  background: #1e293b;
+  color: #f1f5f9;
   border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
-  padding: 10px 13px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.32);
+  padding: 10px 14px;
   font-size: 12px;
   font-weight: 400;
-  color: var(--text);
-  line-height: 1.6;
+  line-height: 1.65;
   white-space: normal;
-  width: 230px;
-  z-index: 999;
+  width: 240px;
+  z-index: 99999;
   pointer-events: none;
+  margin-top: -8px;
 }
 
-.ltv-tooltip-box::after {
+.ltv-helptip-box::after {
   content: "";
   position: absolute;
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
   border: 6px solid transparent;
-  border-top-color: var(--card-bg);
-}
-.ltv-tooltip-box::before {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 7px solid transparent;
-  border-top-color: var(--line);
-  margin-top: 1px;
+  border-top-color: #1e293b;
 }
 
-.ltv-tooltip-wrap:hover .ltv-tooltip-box { display: block; }
-
-/* tooltip in input label: open downward to avoid clipping */
-.ltv-input-label .ltv-tooltip-box {
-  top: calc(100% + 8px);
-  bottom: auto;
+.dark .ltv-helptip-box {
+  background: #0f172a;
+  color: #e2e8f0;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55);
 }
-.ltv-input-label .ltv-tooltip-box::after {
-  top: auto;
-  bottom: 100%;
-  border-top-color: transparent;
-  border-bottom-color: var(--card-bg);
-}
-.ltv-input-label .ltv-tooltip-box::before {
-  top: auto;
-  bottom: 100%;
-  border-top-color: transparent;
-  border-bottom-color: var(--line);
-  margin-top: 0;
-  margin-bottom: 1px;
-}
+.dark .ltv-helptip-box::after { border-top-color: #0f172a; }
 
 @media (max-width: 900px) {
   .ltv-kpi-row { grid-template-columns: repeat(3, 1fr); }
