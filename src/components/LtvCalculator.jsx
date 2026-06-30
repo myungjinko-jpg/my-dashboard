@@ -447,16 +447,13 @@ export default function LtvCalculator({ isDark }) {
           <div className="ltv-section-block">
             <div className="ltv-section-title">
               📊 Benchmark
-              <HelpTip text="AppMagic CSV를 업로드하면 앱별 데이터를 Google Sheets에 누적 저장합니다. 앱을 선택하면 D1·k·ARPDAU·CPI가 자동 입력됩니다." />
+              <HelpTip text="AppMagic CSV를 업로드하면 앱별 데이터를 Google Sheets에 누적 저장됩니다. 앱을 선택하면 D1·k·ARPDAU·CPI가 자동 입력됩니다.&#10;&#10;📋 CSV 내보내기 방법&#10;앱매직 앱 비교 대시보드 → 컬럼 설정에서 아래 순서로 지정 후 내보내기&#10;1일 차 잔존율 · 7일 차 잔존율 · 14일 차 잔존율 · 누적 RpD · 광고비 · 다운로드 수" />
             </div>
             {!APPS_SCRIPT_URL ? (
               <div className="ltv-script-notice">Apps Script URL 설정 후 사용 가능합니다.</div>
             ) : (
               <>
-                <div className="ltv-bm-guide">
-                  앱매직 앱 비교 대시보드 → 컬럼 설정에서 아래 순서로 지정 후 CSV 내보내기
-                  <span className="ltv-bm-guide-cols">1일 차 잔존율 · 7일 차 잔존율 · 14일 차 잔존율 · 누적 RpD · 광고비 · 다운로드 수</span>
-                </div>
+
                 <div className="ltv-bm-upload-row">
                   <button className="ltv-bm-upload-btn" onClick={() => fileInputRef.current?.click()} disabled={bmUploading}>
                     {bmUploading ? "⏳ 저장 중..." : "📂 CSV 업로드"}
