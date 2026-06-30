@@ -483,6 +483,12 @@ export default function LtvCalculator({ isDark }) {
                 </div>
               </>
             )}
+            {appliedBm && (
+              <div className="ltv-applied-bm" style={{ marginTop: 10 }}>
+                📊 <strong>{appliedBm.app}</strong> 기반 · D1 {(appliedBm.d1*100).toFixed(1)}% · k {appliedBm.k}{appliedBm.cumRpd ? ` · ARPDAU $${Number(appliedBm.cumRpd).toFixed(2)}` : ""}
+                <button className="ltv-applied-bm-clear" onClick={() => setAppliedBm(null)} title="출처 표시 닫기">✕</button>
+              </div>
+            )}
           </div>
 
           <div className="ltv-section-block">
@@ -500,12 +506,6 @@ export default function LtvCalculator({ isDark }) {
                 return <>{v.toFixed(2)} <span style={{ fontSize: "10px", fontWeight: 700, color: lbl.color, background: lbl.color + "22", borderRadius: "4px", padding: "1px 5px" }}>{lbl.text}</span></>;
               }}
             />
-            {appliedBm && (
-              <div className="ltv-applied-bm">
-                📊 <strong>{appliedBm.app}</strong> 기반 · D1 {(appliedBm.d1*100).toFixed(1)}% · k {appliedBm.k}{appliedBm.cumRpd ? ` · ARPDAU $${Number(appliedBm.cumRpd).toFixed(2)}` : ""}
-                <button className="ltv-applied-bm-clear" onClick={() => setAppliedBm(null)} title="출처 표시 닫기">✕</button>
-              </div>
-            )}
           </div>
 
           <div className="ltv-section-block">
