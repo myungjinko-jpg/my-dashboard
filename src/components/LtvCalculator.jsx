@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { Activity, DollarSign, Layers, Bookmark, Database } from "lucide-react";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler } from "chart.js";
 import { Line } from "react-chartjs-2";
 
@@ -443,7 +444,7 @@ export default function LtvCalculator({ isDark }) {
           {/* Benchmark */}
           <div className="ltv-section-block">
             <div className="ltv-section-title">
-              📊 Benchmark
+              <Database size={14} /> Benchmark
               <HelpTip text="AppMagic CSV를 업로드하면 앱별 데이터를 Google Sheets에 누적 저장됩니다. 앱을 선택하면 D1·k·ARPDAU·CPI가 자동 입력됩니다.&#10;&#10;📋 CSV 내보내기 방법&#10;앱매직 앱 비교 대시보드 → 컬럼 설정에서 아래 순서로 지정 후 내보내기&#10;1일 차 잔존율 · 7일 차 잔존율 · 14일 차 잔존율 · 누적 RpD · 광고비 · 다운로드 수" />
             </div>
             {!APPS_SCRIPT_URL ? (
@@ -490,7 +491,7 @@ export default function LtvCalculator({ isDark }) {
 
           <div className="ltv-section-block ltv-section-block--no-top">
             <div className="ltv-section-title">
-              📐 Retention Model
+              <Activity size={14} /> Retention Model
               <HelpTip text="Power-law 공식 D1 × day^k 로 일별 잔존율을 추정합니다. D1은 설치 첫날 잔존율, k는 감소 속도(음수일수록 빠른 감소)입니다." />
             </div>
             <SliderInput label="D1 Retention" value={d1} onChange={(v) => { setD1(v); setAppliedBm(null); }} min={0.05} max={0.8} step={0.01} display={pct} />
@@ -525,7 +526,7 @@ export default function LtvCalculator({ isDark }) {
 
           <div className="ltv-section-block">
             <div className="ltv-section-title">
-              💰 Revenue
+              <DollarSign size={14} /> Revenue
               <HelpTip text="수익 파라미터를 설정합니다. ARPDAU는 일일 활성유저 1인당 평균 매출입니다." />
             </div>
             <ArpdauInput value={arpdau} onChange={setArpdau} />
@@ -551,7 +552,7 @@ export default function LtvCalculator({ isDark }) {
 
           <div className="ltv-section-block">
             <div className="ltv-section-title">
-              💾 Saved Scenarios
+              <Bookmark size={14} /> Saved Scenarios
               <HelpTip text="현재 파라미터 세트를 이름 붙여 저장합니다. Google Sheets에 저장되어 팀원과 공유되며, 클릭하면 해당 세트를 불러옵니다." />
             </div>
             {!APPS_SCRIPT_URL ? (
