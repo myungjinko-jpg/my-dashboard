@@ -13,7 +13,7 @@ const DAY_GOALS = { 1: 0.4, 7: 0.17, 14: 0.07, 30: 0.025 };
 
 function pct(v) { return (v * 100).toFixed(1) + "%"; }
 function usd(v) { return "$" + v.toFixed(2); }
-function usd4(v) { return "$" + v.toFixed(4); }
+function usd4(v) { return "$" + v.toFixed(2); }
 function kLabel(k) {
   if (k >= -0.45) return { text: "완만", color: "#10b981" };
   if (k >= -0.85) return { text: "보통", color: "#f59e0b" };
@@ -75,7 +75,7 @@ function ArpdauInput({ value, onChange }) {
         <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           ARPDAU
           <input
-            type="number" min={0.001} max={50} step={0.001} value={value}
+            type="number" min={0.01} max={50} step={0.01} value={parseFloat(value).toFixed(2)}
             onChange={(e) => { const v = parseFloat(e.target.value); if (!isNaN(v) && v > 0) onChange(v); }}
             className="ltv-number-input"
           />
@@ -502,7 +502,7 @@ export default function LtvCalculator({ isDark }) {
             />
             {appliedBm && (
               <div className="ltv-applied-bm">
-                📊 <strong>{appliedBm.app}</strong> 기반 · D1 {(appliedBm.d1*100).toFixed(1)}% · k {appliedBm.k}{appliedBm.cumRpd ? ` · ARPDAU $${Number(appliedBm.cumRpd).toFixed(4)}` : ""}
+                📊 <strong>{appliedBm.app}</strong> 기반 · D1 {(appliedBm.d1*100).toFixed(1)}% · k {appliedBm.k}{appliedBm.cumRpd ? ` · ARPDAU $${Number(appliedBm.cumRpd).toFixed(2)}` : ""}
                 <button className="ltv-applied-bm-clear" onClick={() => setAppliedBm(null)} title="출처 표시 닫기">✕</button>
               </div>
             )}
@@ -562,7 +562,7 @@ export default function LtvCalculator({ isDark }) {
                   <div key={p.id} className="ltv-preset-item">
                     <button className="ltv-preset-load" onClick={() => loadPreset(p)} title="불러오기">
                       <span className="ltv-preset-name">{p.name}</span>
-                      <span className="ltv-preset-meta">D1 {(Number(p.d1)*100).toFixed(0)}% · ARPDAU ${Number(p.arpdau).toFixed(3)} · CPI ${Number(p.cpi).toFixed(2)}</span>
+                      <span className="ltv-preset-meta">D1 {(Number(p.d1)*100).toFixed(0)}% · ARPDAU ${Number(p.arpdau).toFixed(2)} · CPI ${Number(p.cpi).toFixed(2)}</span>
                     </button>
                     <button className="ltv-preset-delete" onClick={() => deletePreset(p.id)} title="삭제">✕</button>
                   </div>
