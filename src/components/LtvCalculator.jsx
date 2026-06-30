@@ -518,16 +518,7 @@ export default function LtvCalculator({ isDark }) {
           </div>
 
           <div className="ltv-section-block">
-            <SliderInput label={<>IAP : IAA 비중 <HelpTip text="하이브리드 캐주얼 수익 구조. IAA(광고)는 초기 유저에서 주로 발생하고, IAP(인앱결제)는 장기 잔존 유저에서 발생합니다. 일반적으로 IAA 70~90%가 많습니다. 슬라이더로 게임의 실제 비중에 맞게 조절하세요." /></>} value={iapPct} onChange={setIapPct} min={0} max={1} step={0.1} display={ratio}>
-              <div className="ltv-iap-bar">
-                <div className="ltv-iap-fill iap" style={{ width: `${iapPct * 100}%` }}>
-                  {iapPct >= 0.15 && <span>IAP {usd4(iapArpdau)}</span>}
-                </div>
-                <div className="ltv-iap-fill iaa" style={{ width: `${(1 - iapPct) * 100}%` }}>
-                  {(1 - iapPct) >= 0.15 && <span>IAA {usd4(iaaArpdau)}</span>}
-                </div>
-              </div>
-            </SliderInput>
+            <SliderInput label={<>IAP : IAA 비중 <HelpTip text="하이브리드 캐주얼 수익 구조. IAA(광고)는 초기 유저에서 주로 발생하고, IAP(인앱결제)는 장기 잔존 유저에서 발생합니다. 일반적으로 IAA 70~90%가 많습니다. 슬라이더로 게임의 실제 비중에 맞게 조절하세요." /></>} value={iapPct} onChange={setIapPct} min={0} max={1} step={0.1} display={ratio} />
             <SliderInput label={<>Install Count <HelpTip text="인스톨 수를 설정하면 D30 Total Rev에서 코호트 전체 예상 매출을 확인할 수 있습니다." /></>} value={installs} onChange={setInstalls} min={1000} max={100000} step={1000} display={(v) => v.toLocaleString()} />
           </div>
 
@@ -607,6 +598,14 @@ export default function LtvCalculator({ isDark }) {
             <div className="ltv-chart-title">Cumulative LTV vs CPI</div>
             <div style={{ height: 220 }}>
               <Line data={ltvChartData} options={chartOpts("LTV per User ($)", (v) => "$" + v)} />
+            </div>
+            <div className="ltv-iap-bar" style={{ marginTop: 16 }}>
+              <div className="ltv-iap-fill iap" style={{ width: `${iapPct * 100}%` }}>
+                {iapPct >= 0.15 && <span>IAP {usd4(iapArpdau)}</span>}
+              </div>
+              <div className="ltv-iap-fill iaa" style={{ width: `${(1 - iapPct) * 100}%` }}>
+                {(1 - iapPct) >= 0.15 && <span>IAA {usd4(iaaArpdau)}</span>}
+              </div>
             </div>
           </div>
 
