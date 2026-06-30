@@ -461,32 +461,29 @@ export default function LtvCalculator({ isDark }) {
                   <input ref={fileInputRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleCSVUpload} />
                   {bmMsg && <span className="ltv-bm-msg">{bmMsg}</span>}
                 </div>
-                {benchmarks.length > 0 && (
-                  <div className="ltv-bm-selects">
-                    <div className="ltv-select-wrap">
-                      <select className="ltv-select" value={bmGenre} onChange={e => { setBmGenre(e.target.value); }}>
-                        {bmGenres.map(g => <option key={g} value={g}>{g}</option>)}
-                      </select>
-                    </div>
-                    <div className="ltv-select-wrap">
-                      <select className="ltv-select" defaultValue="" onChange={e => {
-                        const bm = filteredBm.find((_, i) => String(i) === e.target.value);
-                        if (bm) applyBenchmark(bm);
-                        e.target.value = "";
-                      }}>
-                        <option value="" disabled>앱 선택...</option>
-                        {filteredBm.map((bm, i) => (
-                          <option key={i} value={String(i)}>
-                            {bm.app} · D1 {bm.d1 ? (bm.d1*100).toFixed(1) : "–"}% · k {bm.k ?? "–"}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                <div className="ltv-bm-selects">
+                  <div className="ltv-select-wrap">
+                    <select className="ltv-select" value={bmGenre} onChange={e => setBmGenre(e.target.value)} disabled={bmLoading}>
+                      {bmLoading ? <option>불러오는 중...</option> : bmGenres.map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
                   </div>
-                )}
-                {benchmarks.length === 0 && !bmLoading && (
-                  <div className="ltv-bm-empty">CSV를 업로드하면 여기에 앱 목록이 쌓입니다.</div>
-                )}
+                  <div className="ltv-select-wrap">
+                    <select className="ltv-select" defaultValue="" disabled={bmLoading || filteredBm.length === 0} onChange={e => {
+                      const bm = filteredBm.find((_, i) => String(i) === e.target.value);
+                      if (bm) applyBenchmark(bm);
+                      e.target.value = "";
+                    }}>
+                      <option value="" disabled>
+                        {bmLoading ? "불러오는 중..." : filteredBm.length === 0 ? "CSV를 업로드하면 목록이 쌓입니다" : "앱 선택..."}
+                      </option>
+                      {filteredBm.map((bm, i) => (
+                        <option key={i} value={String(i)}>
+                          {bm.app} · D1 {bm.d1 ? (bm.d1*100).toFixed(1) : "–"}% · k {bm.k ?? "–"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </>
             )}
           </div>
