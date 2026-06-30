@@ -91,6 +91,51 @@ function gasGet(params) {
   return fetch(url).then(r => r.json());
 }
 
+function parseCSVLine(line) {
+  const result = [];
+  let cur = "", inQ = false;
+  for (const ch of line) {
+    if (ch === '"') { inQ = !inQ; }
+    else if (ch === ',' && !inQ) { result.push(cur); cur = ""; }
+    else { cur += ch; }
+  }
+  result.push(cur);
+  return result;
+}
+
+function parseAppMagicCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  const headers = parseCSVLine(lines[0]);
+  const idx = (n) => headers.findIndex(h => h.trim() === n);
+  const iApp = idx("application"), iPub = idx("publisher"), iGenre = idx("tagsGames");
+  const iD1 = idx("retention_1"), iD7 = idx("retention_7"), iD14 = idx("retention_14");
+  const iRpd = idx("cumulative_rpd"), iSpend = idx("ad_spend"), iDl = idx("downloads");
+
+  const map = {};
+  lines.slice(1).forEach(line => {
+    const c = parseCSVLine(line);
+    const app = c[iApp]?.trim();
+    if (!app) return;
+    if (!map[app]) map[app] = { app, publisher: c[iPub]?.trim() || "", genre: (c[iGenre]?.trim() || "").split(",")[0].trim(), d1s: [], d7s: [], d14s: [], rpds: [], spend: 0, dl: 0, months: 0 };
+    const m = map[app];
+    m.months++;
+    const d1 = parseFloat(c[iD1]); if (!isNaN(d1) && d1 > 0) m.d1s.push(d1);
+    const d7 = parseFloat(c[iD7]); if (!isNaN(d7) && d7 > 0) m.d7s.push(d7);
+    const d14 = parseFloat(c[iD14]); if (!isNaN(d14) && d14 > 0) m.d14s.push(d14);
+    const rpd = parseFloat(c[iRpd]); if (!isNaN(rpd) && rpd > 0) m.rpds.push(rpd);
+    const sp = parseFloat(c[iSpend]); if (!isNaN(sp)) m.spend += sp;
+    const dl = parseFloat(c[iDl]); if (!isNaN(dl)) m.dl += dl;
+  });
+
+  const avg = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+  return Object.values(map).map(m => {
+    const d1 = avg(m.d1s), d7 = avg(m.d7s), d14 = avg(m.d14s), cumRpd = avg(m.rpds);
+    const k = d1 && d7 ? +(Math.log(d7 / d1) / Math.log(7)).toFixed(3) : null;
+    const cpi = m.dl > 0 && m.spend > 0 ? +(m.spend / m.dl).toFixed(3) : null;
+    return { app: m.app, publisher: m.publisher, genre: m.genre, d1: d1 ? +(d1 / 100).toFixed(4) : null, d7: d7 ? +(d7 / 100).toFixed(4) : null, d14: d14 ? +(d14 / 100).toFixed(4) : null, k, cumRpd, cpi, months: m.months };
+  }).filter(a => a.d1 && a.k);
+}
+
 export default function LtvCalculator({ isDark }) {
   const [d1, setD1] = useState(0.4);
   const [k, setK] = useState(-0.66);
@@ -104,6 +149,13 @@ export default function LtvCalculator({ isDark }) {
   const [presetLoading, setPresetLoading] = useState(false);
   const [presetError, setPresetError] = useState("");
 
+  const [benchmarks, setBenchmarks] = useState([]);
+  const [bmGenre, setBmGenre] = useState("전체");
+  const [bmLoading, setBmLoading] = useState(false);
+  const [bmUploading, setBmUploading] = useState(false);
+  const [bmMsg, setBmMsg] = useState("");
+  const fileInputRef = useRef(null);
+
   const iapArpdau = arpdau * iapPct;
   const iaaArpdau = arpdau * (1 - iapPct);
 
@@ -114,7 +166,40 @@ export default function LtvCalculator({ isDark }) {
       .then(data => setPresets(Array.isArray(data) ? data.reverse() : []))
       .catch(() => setPresetError("불러오기 실패"))
       .finally(() => setPresetLoading(false));
+
+    setBmLoading(true);
+    gasGet({ action: "listAppMagic" })
+      .then(data => setBenchmarks(Array.isArray(data) ? data : []))
+      .catch(() => {})
+      .finally(() => setBmLoading(false));
   }, []);
+
+  const handleCSVUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !APPS_SCRIPT_URL) return;
+    setBmUploading(true);
+    setBmMsg("");
+    try {
+      const text = await file.text();
+      const parsed = parseAppMagicCSV(text);
+      if (!parsed.length) { setBmMsg("유효한 데이터가 없습니다."); return; }
+      await gasGet({ action: "saveAppMagic", data: JSON.stringify(parsed) });
+      const updated = await gasGet({ action: "listAppMagic" });
+      setBenchmarks(Array.isArray(updated) ? updated : []);
+      setBmMsg(`${parsed.length}개 앱 저장 완료`);
+    } catch { setBmMsg("업로드 실패"); }
+    finally { setBmUploading(false); e.target.value = ""; }
+  };
+
+  const applyBenchmark = (bm) => {
+    if (bm.d1) setD1(Number(bm.d1));
+    if (bm.k) setK(Number(bm.k));
+    if (bm.cumRpd) setArpdau(Number(bm.cumRpd));
+    if (bm.cpi) setCpi(Number(bm.cpi));
+  };
+
+  const bmGenres = ["전체", ...Array.from(new Set(benchmarks.map(b => b.genre).filter(Boolean)))];
+  const filteredBm = bmGenre === "전체" ? benchmarks : benchmarks.filter(b => b.genre === bmGenre);
 
   const savePreset = async () => {
     const name = saveName.trim();
@@ -421,6 +506,46 @@ export default function LtvCalculator({ isDark }) {
                 </div>
               ))}
             </div>
+          )}
+          {/* Benchmark */}
+          <div className="ltv-section-title" style={{ marginTop: "24px" }}>
+            📊 Benchmark
+            <HelpTip text="AppMagic CSV를 업로드하면 앱별 데이터를 Google Sheets에 누적 저장합니다. 앱을 선택하면 D1·k·ARPDAU·CPI가 자동 입력됩니다." />
+          </div>
+          {!APPS_SCRIPT_URL ? (
+            <div className="ltv-script-notice">Apps Script URL 설정 후 사용 가능합니다.</div>
+          ) : (
+            <>
+              <div className="ltv-bm-upload-row">
+                <button className="ltv-add-btn" onClick={() => fileInputRef.current?.click()} disabled={bmUploading}>
+                  {bmUploading ? "⏳ 저장 중..." : "📂 CSV 업로드"}
+                </button>
+                <input ref={fileInputRef} type="file" accept=".csv" style={{ display: "none" }} onChange={handleCSVUpload} />
+                {bmMsg && <span className="ltv-bm-msg">{bmMsg}</span>}
+              </div>
+              {benchmarks.length > 0 && (
+                <>
+                  <select className="ltv-bm-select" value={bmGenre} onChange={e => setBmGenre(e.target.value)}>
+                    {bmGenres.map(g => <option key={g}>{g}</option>)}
+                  </select>
+                  <div className="ltv-bm-list">
+                    {bmLoading && <div className="ltv-bm-empty">불러오는 중...</div>}
+                    {!bmLoading && filteredBm.length === 0 && <div className="ltv-bm-empty">해당 장르 없음</div>}
+                    {filteredBm.map((bm, i) => (
+                      <button key={i} className="ltv-bm-item" onClick={() => applyBenchmark(bm)} title="클릭하면 파라미터 자동 입력">
+                        <span className="ltv-bm-name">{bm.app}</span>
+                        <span className="ltv-bm-meta">
+                          D1 {bm.d1 ? (bm.d1 * 100).toFixed(1) : "–"}% · k {bm.k ?? "–"} · {bm.months}개월
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+              {benchmarks.length === 0 && !bmLoading && (
+                <div className="ltv-bm-empty">CSV를 업로드하면 여기에 앱 목록이 쌓입니다.</div>
+              )}
+            </>
           )}
         </div>
 

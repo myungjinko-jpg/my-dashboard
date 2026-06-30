@@ -820,6 +820,79 @@ tbody tr.row-highlight td:first-child {
 }
 .dark .ltv-helptip-box::after { border-top-color: #0f172a; }
 
+/* ── LTV Benchmark ── */
+.ltv-bm-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ltv-bm-msg {
+  font-size: 11px;
+  color: var(--good);
+}
+
+.ltv-bm-select {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--text);
+  font-size: 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+
+.ltv-bm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.ltv-bm-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+.ltv-bm-item:hover {
+  border-color: var(--primary);
+  background: rgba(67,97,238,0.06);
+}
+
+.ltv-bm-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.ltv-bm-meta {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.ltv-bm-empty {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 6px 0;
+}
+
 @media (max-width: 900px) {
   .ltv-kpi-row { grid-template-columns: repeat(3, 1fr); }
   .ltv-body { grid-template-columns: 1fr; }
