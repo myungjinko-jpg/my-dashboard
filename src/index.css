@@ -621,6 +621,7 @@ tbody tr.row-highlight td:first-child {
   border: 2px solid var(--primary);
   box-shadow: 0 1px 4px rgba(0,0,0,0.18);
   transition: transform 0.15s, box-shadow 0.15s;
+  margin-top: -6px;
 }
 .ltv-slider::-moz-range-thumb {
   width: 16px;
