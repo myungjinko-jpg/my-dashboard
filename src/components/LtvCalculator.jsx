@@ -465,21 +465,27 @@ export default function LtvCalculator({ isDark }) {
                   {bmMsg && <span className="ltv-bm-msg">{bmMsg}</span>}
                 </div>
                 {benchmarks.length > 0 && (
-                  <>
-                    <select className="ltv-bm-select" value={bmGenre} onChange={e => setBmGenre(e.target.value)}>
-                      {bmGenres.map(g => <option key={g}>{g}</option>)}
-                    </select>
-                    <div className="ltv-bm-list">
-                      {bmLoading && <div className="ltv-bm-empty">불러오는 중...</div>}
-                      {!bmLoading && filteredBm.length === 0 && <div className="ltv-bm-empty">해당 장르 없음</div>}
-                      {filteredBm.map((bm, i) => (
-                        <button key={i} className="ltv-bm-item" onClick={() => applyBenchmark(bm)} title="클릭하면 파라미터 자동 입력">
-                          <span className="ltv-bm-name">{bm.app}</span>
-                          <span className="ltv-bm-meta">D1 {bm.d1 ? (bm.d1*100).toFixed(1) : "–"}% · k {bm.k ?? "–"} · ARPDAU {bm.cumRpd ? "$" + Number(bm.cumRpd).toFixed(4) : "–"} · {bm.months}개월</span>
-                        </button>
-                      ))}
+                  <div className="ltv-bm-selects">
+                    <div className="ltv-select-wrap">
+                      <select className="ltv-select" value={bmGenre} onChange={e => { setBmGenre(e.target.value); }}>
+                        {bmGenres.map(g => <option key={g} value={g}>{g}</option>)}
+                      </select>
                     </div>
-                  </>
+                    <div className="ltv-select-wrap">
+                      <select className="ltv-select" defaultValue="" onChange={e => {
+                        const bm = filteredBm.find((_, i) => String(i) === e.target.value);
+                        if (bm) applyBenchmark(bm);
+                        e.target.value = "";
+                      }}>
+                        <option value="" disabled>앱 선택...</option>
+                        {filteredBm.map((bm, i) => (
+                          <option key={i} value={String(i)}>
+                            {bm.app} · D1 {bm.d1 ? (bm.d1*100).toFixed(1) : "–"}% · k {bm.k ?? "–"}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
                 )}
                 {benchmarks.length === 0 && !bmLoading && (
                   <div className="ltv-bm-empty">CSV를 업로드하면 여기에 앱 목록이 쌓입니다.</div>
