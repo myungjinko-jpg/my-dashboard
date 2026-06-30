@@ -439,9 +439,6 @@ export default function LtvCalculator({ isDark }) {
       <div className="ltv-body">
         {/* Left: Inputs */}
         <div className="ltv-inputs card">
-          <div className="ltv-reset-row">
-            <button className="ltv-reset-btn" onClick={resetAll}>↺ 초기화</button>
-          </div>
 
           {/* Benchmark */}
           <div className="ltv-section-block">
@@ -590,6 +587,10 @@ export default function LtvCalculator({ isDark }) {
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="ltv-reset-row">
+            <button className="ltv-reset-btn" onClick={resetAll}>↺ 전체 초기화</button>
           </div>
         </div>
 

@@ -992,21 +992,23 @@ tbody tr.row-highlight td:first-child {
 .ltv-applied-bm-clear:hover { color: var(--bad); }
 
 .ltv-reset-row {
-  display: flex;
-  justify-content: flex-end;
-  padding: 12px 20px 0;
+  padding: 16px 20px 20px;
+  border-top: 1px solid var(--line);
 }
 .ltv-reset-btn {
+  width: 100%;
   background: none;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--muted);
   font-size: 12px;
-  padding: 4px 10px;
+  font-weight: 600;
+  padding: 9px 0;
   cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  letter-spacing: 0.02em;
 }
-.ltv-reset-btn:hover { color: var(--bad); border-color: var(--bad); }
+.ltv-reset-btn:hover { color: var(--bad); border-color: var(--bad); background: rgba(244,63,94,0.05); }
 
 .ltv-zone-divider {
   display: flex;
