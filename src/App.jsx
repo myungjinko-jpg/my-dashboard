@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { APP_VERSION } from "./version";
 import html2canvas from "html2canvas";
 import LoadingScreen from "./components/LoadingScreen";
 import slackLogo from "./assets/toppng.com-slack-new-logo-icon-1600x1600.png";
@@ -261,7 +262,7 @@ export default function App() {
         <h1 className="dashboard-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <span>Flick Toolbox</span>
           <span style={{ fontSize: "14px", fontWeight: 500, color: "var(--muted)", padding: "2px 8px", border: "1px solid var(--line)", borderRadius: "999px", backgroundColor: "var(--card)" }}>
-            v4.0.0
+            {APP_VERSION}
           </span>
         </h1>
         <div className="topbar-right">

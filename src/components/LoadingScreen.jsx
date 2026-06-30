@@ -1,4 +1,5 @@
 import flickLogo from "../assets/Flick Brand Logo.png";
+import { APP_VERSION } from "../version";
 
 const MESSAGES = [
   "현조님, 기획서 37번째 버전 불러오는 중",
@@ -37,7 +38,7 @@ export default function LoadingScreen({ msgIndex, dots }) {
           <div style={{ height: "100%", background: "#fff", borderRadius: "999px", animation: "progress 3s cubic-bezier(0.4, 0, 0.2, 1) forwards" }} />
         </div>
         <div style={{ textAlign: "right", fontSize: "16px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.05em" }}>
-          v3.6.7
+          {APP_VERSION}
         </div>
       </div>
 
