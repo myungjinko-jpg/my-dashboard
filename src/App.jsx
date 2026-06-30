@@ -13,9 +13,10 @@ import {
   getWeightedCpi, getWeightedRetention, getWeightedD0Playtime, getWeightedD1Playtime,
   deltaText,
 } from "./utils";
+import LtvCalculator from "./components/LtvCalculator";
 
 const SHEET_ID = "1pBJWVce2CgrPBlFMGbS2yCp6tBQnNn4gkEHz7jG3LZk";
-const SHEET_NAME = "sheet1";
+const SHEET_NAME = "Test_Raw Data";
 const API_URL = `https://opensheet.elk.sh/${SHEET_ID}/${SHEET_NAME}`;
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
   const [copying, setCopying] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [sharingConfirm, setSharingConfirm] = useState(false);
+  const [activeTab, setActiveTab] = useState("cpi");
   const reportRef = useRef(null);
 
   useEffect(() => {
@@ -270,9 +272,29 @@ export default function App() {
         </div>
       </div>
 
+      <div className="tab-nav">
+        <button className={`tab-btn ${activeTab === "cpi" ? "active" : ""}`} onClick={() => setActiveTab("cpi")}>
+          📊 CPI Dashboard
+        </button>
+        <button className={`tab-btn ${activeTab === "ltv" ? "active" : ""}`} onClick={() => setActiveTab("ltv")}>
+          💡 LTV Calculator
+        </button>
+      </div>
+
       {error && <div className="error-box">데이터 로드 실패: {error}</div>}
 
-      <section className="section-block">
+      {activeTab === "ltv" && (
+        <section className="section-block">
+          <div className="section-header">
+            <div className="section-eyebrow">Monetization</div>
+            <h2 className="section-heading">LTV Calculator</h2>
+            <p className="section-desc">Power-law retention 모델 기반 LTV 시뮬레이터. 파라미터를 조정해 수익성을 예측하세요.</p>
+          </div>
+          <LtvCalculator isDark={theme === "dark"} />
+        </section>
+      )}
+
+      {activeTab === "cpi" && (<><section className="section-block">
         <div className="section-header">
           <div className="section-eyebrow">Portfolio</div>
           <h2 className="section-heading">All Projects</h2>
@@ -403,7 +425,7 @@ export default function App() {
           <IterationTable iterationSummary={iterationSummary} currentIteration={iteration} />
           <DailyTable dailyRowsWithChange={dailyRowsWithChange} />
         </div>
-      </section>
+      </section></>)}
     </div>
   );
 }
