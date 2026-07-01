@@ -610,7 +610,7 @@ export default function LtvCalculator({ isDark }) {
               <SlidersHorizontal size={14} /> Manual Inputs
             </div>
             <SliderInput label={<>IAP : IAA 비중 <HelpTip text={"ARPDAU 중 인앱결제(IAP)와 광고수익(IAA)의 비율입니다.\n---\n게임의 실제 수익 구조에 맞게 직접 조절하세요.\n자동 입력되지 않으므로 반드시 확인이 필요합니다."} /></>} value={iapPct} onChange={setIapPct} min={0} max={1} step={0.1} display={ratio} />
-            <SliderInput label={<>Install Count <HelpTip text={"분석 대상 코호트의 인스톨 수입니다.\n---\nD30 Total Rev 계산에 사용됩니다."} /></>} value={installs} onChange={setInstalls} min={1000} max={100000} step={1000} display={(v) => v.toLocaleString()} />
+            <SliderInput label={<>Install Count <HelpTip text={"분석 대상 코호트의 인스톨 수입니다.\n---\nD30 Total Rev 계산에 사용됩니다."} /></>} value={installs} onChange={setInstalls} min={100} max={1900} step={100} display={(v) => v.toLocaleString()} />
           </div>
 
           <div className="ltv-section-block">
