@@ -841,7 +841,7 @@ tbody tr.row-highlight td:first-child {
   font-size: 13px;
 }
 .ltv-table th {
-  text-align: left;
+  text-align: right;
   padding: 8px 12px;
   font-size: 10px;
   font-weight: 700;
@@ -855,7 +855,11 @@ tbody tr.row-highlight td:first-child {
   padding: 10px 12px;
   border-bottom: 1px solid var(--line);
   color: var(--text);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
+.ltv-table th:first-child,
+.ltv-table td:first-child { text-align: left; }
 .ltv-table tr:last-child td { border-bottom: none; }
 .ltv-table tr:hover td { background: var(--card-bg-subtle); }
 
