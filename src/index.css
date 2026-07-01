@@ -650,14 +650,19 @@ tbody tr.row-highlight td:first-child {
 }
 
 .ltv-number-input {
-  width: 80px;
+  width: 72px;
   padding: 4px 8px;
-  border: 1px solid var(--card-border);
+  border: 1.5px solid var(--muted);
   border-radius: 6px;
-  background: var(--card-bg-subtle);
+  background: var(--bg);
   color: var(--text);
   font-size: 12px;
   font-weight: 600;
+  transition: border-color 0.15s;
+}
+.ltv-number-input:focus {
+  outline: none;
+  border-color: #818cf8;
 }
 
 .ltv-iap-bar {
