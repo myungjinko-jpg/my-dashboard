@@ -294,60 +294,87 @@ function SidePanel({ project: p, onClose }) {
 
 function WeeklySection({ items, onSelect }) {
   const { mon, sun } = getWeekBounds();
-  const label = `${fmt(mon)}(${DOW_KR[mon.getDay()]}) ~ ${fmt(sun)}(${DOW_KR[sun.getDay()]})`;
+  const rangeLabel = `${fmt(mon)}(${DOW_KR[mon.getDay()]}) ~ ${fmt(sun)}(${DOW_KR[sun.getDay()]})`;
+
+  // group by earliest date in note
+  const grouped = useMemo(() => {
+    const map = new Map();
+    items.forEach(p => {
+      const dates = parseNoteDates(p.note);
+      const key = dates.length > 0
+        ? `${dates[0].getMonth() + 1}/${dates[0].getDate()}(${DOW_KR[dates[0].getDay()]})`
+        : "날짜 미정";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(p);
+    });
+    return [...map.entries()];
+  }, [items]);
 
   return (
     <div style={{
-      margin: "0 0 16px",
-      padding: "14px 16px",
+      margin: "0 0 20px",
+      padding: "16px 18px",
       background: "var(--card)",
       border: "1px solid var(--card-border)",
-      borderRadius: "8px",
-      borderLeft: "3px solid #f59e0b",
+      borderRadius: "10px",
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>📅 이번 주</span>
-        <span style={{ fontSize: 11, color: "var(--muted)" }}>{label}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+        <div style={{ width: 3, height: 18, borderRadius: 2, background: "#f59e0b", flexShrink: 0 }} />
+        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>이번 주 마감</span>
+        <span style={{ fontSize: 11, color: "var(--muted)" }}>{rangeLabel}</span>
         <span style={{
-          marginLeft: "auto", fontSize: 10, fontWeight: 700,
-          background: items.length > 0 ? "#f59e0b22" : "var(--bg)",
-          color: items.length > 0 ? "#f59e0b" : "var(--muted)",
-          border: `1px solid ${items.length > 0 ? "#f59e0b44" : "var(--line)"}`,
-          padding: "1px 8px", borderRadius: 8, fontVariantNumeric: "tabular-nums",
+          marginLeft: "auto", fontSize: 11, fontWeight: 700,
+          background: "#f59e0b22", color: "#f59e0b",
+          border: "1px solid #f59e0b44",
+          padding: "2px 10px", borderRadius: 10, fontVariantNumeric: "tabular-nums",
         }}>{items.length}건</span>
       </div>
 
       {items.length === 0 ? (
         <div style={{ fontSize: 12, color: "var(--muted)", padding: "8px 0" }}>이번 주 예정된 마감/업데이트 항목이 없습니다</div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 6 }}>
-          {items.map((p, i) => {
-            const si = STATUS_MAP[p.status] || STATUS_MAP["In Preparation"];
-            const nt = NOTE_TAG[p.noteType] || NOTE_TAG.done;
-            return (
-              <div key={i} onClick={() => onSelect(p)} style={{
-                display: "flex", gap: 10, alignItems: "flex-start",
-                padding: "8px 10px", borderRadius: 5, cursor: "pointer",
-                background: "var(--bg)", border: "1px solid var(--line)",
-                borderLeft: `3px solid ${si.stripe}`,
-                transition: "background .1s",
-              }}
-                onMouseEnter={e => e.currentTarget.style.background = "var(--hover, #f5f7fd)"}
-                onMouseLeave={e => e.currentTarget.style.background = "var(--bg)"}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {p.note && <><span style={{ fontWeight: 700, color: nt.color, marginRight: 3 }}>{nt.txt}</span>{p.note}</>}
-                  </div>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
-                  <StatusPill status={p.status} />
-                  <OwnerDot owner={p.owner} size={16} />
-                </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {grouped.map(([dateLabel, ps]) => (
+            <div key={dateLabel}>
+              <div style={{
+                fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em",
+                color: "#f59e0b", marginBottom: 6,
+              }}>{dateLabel}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 6 }}>
+                {ps.map((p, i) => {
+                  const si = STATUS_MAP[p.status] || STATUS_MAP["In Preparation"];
+                  const nt = NOTE_TAG[p.noteType] || NOTE_TAG.done;
+                  const own = OWNERS[p.owner] || { short: "?", color: "#56637a" };
+                  return (
+                    <div key={i} onClick={() => onSelect(p)} style={{
+                      display: "flex", gap: 10, alignItems: "center",
+                      padding: "8px 12px", borderRadius: 6, cursor: "pointer",
+                      background: "var(--bg)", border: "1px solid var(--line)",
+                      borderLeft: `3px solid ${si.stripe}`,
+                      transition: "background .1s",
+                    }}
+                      onMouseEnter={e => e.currentTarget.style.background = "var(--hover, #f5f7fd)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "var(--bg)"}
+                    >
+                      <div style={{
+                        width: 28, height: 28, borderRadius: "50%", background: own.color,
+                        flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 11, fontWeight: 800, color: "#fff",
+                      }}>{own.short}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
+                        <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          <span style={{ fontWeight: 700, color: nt.color, marginRight: 3 }}>{nt.txt}</span>
+                          {p.note}
+                        </div>
+                      </div>
+                      <StatusPill status={p.status} />
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -386,6 +413,33 @@ function ProjectRow({ p, onSelect }) {
         {p.note && <><span style={{ fontSize: 10, fontWeight: 700, color: nt.color, marginRight: 4 }}>{nt.txt}</span>{p.note}</>}
       </div>
       <div style={{ fontSize: 12, textAlign: "center", color: "var(--muted)", opacity: 0.4 }}>›</div>
+    </div>
+  );
+}
+
+// ─── KPI Cards ────────────────────────────────────────────────────────────
+
+function KpiCard({ value, label, sub, color, onClick, active }) {
+  return (
+    <div onClick={onClick} style={{
+      flex: "1 1 140px", minWidth: 120,
+      padding: "14px 16px",
+      background: active ? `${color}18` : "var(--card)",
+      border: `1px solid ${active ? color + "55" : "var(--card-border)"}`,
+      borderRadius: 8,
+      cursor: onClick ? "pointer" : "default",
+      transition: "all .15s",
+      outline: active ? `2px solid ${color}33` : "none",
+    }}
+      onMouseEnter={e => { if (onClick) e.currentTarget.style.background = `${color}12`; }}
+      onMouseLeave={e => { if (onClick) e.currentTarget.style.background = active ? `${color}18` : "var(--card)"; }}
+    >
+      <div style={{
+        fontSize: 28, fontWeight: 800, color, lineHeight: 1,
+        fontVariantNumeric: "tabular-nums", marginBottom: 4,
+      }}>{value}</div>
+      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)" }}>{label}</div>
+      {sub && <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{sub}</div>}
     </div>
   );
 }
@@ -440,14 +494,47 @@ export default function ProjectDashboard() {
 
   return (
     <div style={{ padding: "0 0 60px" }}>
-      {/* notice */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 8,
-        margin: "16px 0 12px", padding: "7px 12px",
-        background: "rgba(79,126,240,.07)", border: "1px solid rgba(79,126,240,.18)",
-        borderRadius: 6, fontSize: 11, color: "rgba(130,160,240,.75)",
-      }}>
-        ℹ &nbsp;<span>노션 <strong style={{ color: "rgba(130,160,240,.95)" }}>Project Info</strong> DB 연동 프로토타입 — 읽기 전용, 테스트 데이터 하드코딩 (실시간 연동 개발 예정)</span>
+      {/* KPI cards */}
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", margin: "16px 0 16px" }}>
+        <KpiCard
+          value={weeklyItems.length}
+          label="이번 주 마감"
+          sub="6/29(월) ~ 7/5(일)"
+          color="#f59e0b"
+          onClick={() => {}}
+        />
+        <KpiCard
+          value={counts.action}
+          label="Action Needed"
+          sub="즉시 확인 필요"
+          color="#ef4444"
+          onClick={() => setStatusFilter(s => s === "action" ? "all" : "action")}
+          active={statusFilter === "action"}
+        />
+        <KpiCard
+          value={counts.ua}
+          label="UA Testing"
+          sub="광고 테스트 진행 중"
+          color="#4f9cf0"
+          onClick={() => setStatusFilter(s => s === "ua" ? "all" : "ua")}
+          active={statusFilter === "ua"}
+        />
+        <KpiCard
+          value={counts.dev}
+          label="DEV Iteration"
+          sub="개발 이터레이션 중"
+          color="#22c55e"
+          onClick={() => setStatusFilter(s => s === "dev" ? "all" : "dev")}
+          active={statusFilter === "dev"}
+        />
+        <KpiCard
+          value={counts.all}
+          label="전체 프로젝트"
+          sub={`Stage 0~1 활성`}
+          color="var(--muted)"
+          onClick={() => setStatusFilter("all")}
+          active={statusFilter === "all"}
+        />
       </div>
 
       {/* weekly section */}
@@ -459,29 +546,6 @@ export default function ProjectDashboard() {
         margin: "0 0 14px", padding: "10px 14px",
         background: "var(--card)", border: "1px solid var(--card-border)", borderRadius: 8,
       }}>
-        {[
-          { key: "action", label: "Action Needed", color: "#ef4444", cnt: counts.action },
-          { key: "ua",     label: "UA Testing",    color: "#4f9cf0", cnt: counts.ua },
-          { key: "dev",    label: "DEV Iteration", color: "#22c55e", cnt: counts.dev },
-          { key: "all",    label: "전체",           color: "var(--muted)", cnt: counts.all },
-        ].map(({ key, label, color, cnt }) => (
-          <button key={key}
-            onClick={() => setStatusFilter(s => s === key && key !== "all" ? "all" : key)}
-            style={{
-              display: "flex", alignItems: "center", gap: 5,
-              padding: "4px 10px", borderRadius: 5, border: "none",
-              background: statusFilter === key ? `${color}22` : "transparent",
-              cursor: "pointer", fontSize: 12, color: statusFilter === key ? color : "var(--muted)",
-              fontWeight: statusFilter === key ? 700 : 400, transition: "all .12s", fontFamily: "inherit",
-              outline: statusFilter === key ? `1px solid ${color}55` : "none",
-            }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: color, flexShrink: 0 }} />
-            <span style={{ fontVariantNumeric: "tabular-nums" }}>{cnt}</span> {label}
-          </button>
-        ))}
-
-        <div style={sep} />
-
         <span style={{ fontSize: 11, color: "var(--muted)" }}>Owner</span>
         {["all", "2bdd", "2f4d", "318d", "34fd", "36cd"].map(key => (
           <button key={key}
