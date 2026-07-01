@@ -598,8 +598,8 @@ tbody tr.row-highlight td:first-child {
 .ltv-manual-badge {
   font-size: 10px;
   font-weight: 700;
-  color: #f59e0b;
-  background: rgba(245,158,11,0.12);
+  color: #fb7185;
+  background: rgba(251,113,133,0.12);
   border-radius: 4px;
   padding: 1px 5px;
   letter-spacing: 0.02em;
