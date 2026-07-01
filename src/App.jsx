@@ -15,6 +15,7 @@ import {
   deltaText,
 } from "./utils";
 import LtvCalculator from "./components/LtvCalculator";
+import ProjectDashboard from "./components/ProjectDashboard";
 
 const SHEET_ID = "1pBJWVce2CgrPBlFMGbS2yCp6tBQnNn4gkEHz7jG3LZk";
 const SHEET_NAME = "Test_Raw%20Data";
@@ -280,6 +281,9 @@ export default function App() {
         <button className={`tab-btn ${activeTab === "ltv" ? "active" : ""}`} onClick={() => setActiveTab("ltv")}>
           💡 LTV Calculator
         </button>
+        <button className={`tab-btn ${activeTab === "projects" ? "active" : ""}`} onClick={() => setActiveTab("projects")}>
+          🗂 프로젝트 현황 <span style={{ fontSize: "10px", opacity: 0.6 }}>(테스트중)</span>
+        </button>
       </div>
 
       {error && <div className="error-box">데이터 로드 실패: {error}</div>}
@@ -292,6 +296,17 @@ export default function App() {
             <p className="section-desc">Power-law retention 모델 기반 LTV 시뮬레이터. 파라미터를 조정해 수익성을 예측하세요.</p>
           </div>
           <LtvCalculator isDark={theme === "dark"} />
+        </section>
+      )}
+
+      {activeTab === "projects" && (
+        <section className="section-block">
+          <div className="section-header">
+            <div className="section-eyebrow">Notion DB</div>
+            <h2 className="section-heading">프로젝트 현황</h2>
+            <p className="section-desc">Project Info DB 파이프라인 뷰 — Stage별 진행 현황 및 Biz Notes 요약.</p>
+          </div>
+          <ProjectDashboard />
         </section>
       )}
 
