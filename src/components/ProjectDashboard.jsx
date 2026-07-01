@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const OWNERS = {
   "2bdd": { label: "권현조", short: "권", color: "#4f7ef0" },
@@ -9,13 +9,13 @@ const OWNERS = {
 };
 
 const STATUS_MAP = {
-  "DEV Iteration":      { stripe: "#22c55e", cls: "pd-s-dev",  short: "DEV Iteration" },
-  "UA testing":         { stripe: "#4f9cf0", cls: "pd-s-ua",   short: "UA Testing" },
-  "Action Needed":      { stripe: "#ef4444", cls: "pd-s-act",  short: "Action Needed" },
-  "In Preparation":     { stripe: "#56637a", cls: "pd-s-prep", short: "In Prep." },
-  "Need Discuss":       { stripe: "#f59e0b", cls: "pd-s-dis",  short: "Need Discuss" },
-  "Under negotiation":  { stripe: "#a855f7", cls: "pd-s-neg",  short: "Under Neg." },
-  "Drop & Archive":     { stripe: "#374151", cls: "pd-s-drop", short: "Archived" },
+  "DEV Iteration":     { stripe: "#22c55e", short: "DEV Iteration" },
+  "UA testing":        { stripe: "#4f9cf0", short: "UA Testing" },
+  "Action Needed":     { stripe: "#ef4444", short: "Action Needed" },
+  "In Preparation":    { stripe: "#56637a", short: "In Prep." },
+  "Need Discuss":      { stripe: "#f59e0b", short: "Need Discuss" },
+  "Under negotiation": { stripe: "#a855f7", short: "Under Neg." },
+  "Drop & Archive":    { stripe: "#374151", short: "Archived" },
 };
 
 const STATUS_ORDER = {
@@ -48,13 +48,12 @@ const PROJECTS = [
   { name: "Sort Factory",              studio: "Gameyogi",  stage: "Stage 1 - Iteration", status: "DEV Iteration", platform: ["AOS"],       contract: "파트너십 계약 완료",   iter: "#1",       owner: "36cd", noteType: "ongoing", note: "6/25~6/29 AOS CPI 테스트 진행중",        url: "https://www.notion.so/34fa45eaf6d380a9ab63f65a7161dc79" },
   // Stage 0 - CPI Test
   { name: "Sticker Saga",              studio: "Celesta",   stage: "Stage 0 - CPI Test",  status: "UA testing",    platform: ["AOS"],       contract: "CPI 계약서 검토중",    iter: "cpi test", owner: "2f4d", noteType: "ongoing", note: "6/30~7/4 캠페인 진행 중",                url: "https://www.notion.so/37da45eaf6d3806b98d0e140510f7169" },
-  // Stage 0 - CPI Test (반건욱)
-  { name: "Twisted Arrows",      studio: "Fiber Games", stage: "Stage 0 - CPI Test",  status: "In Preparation", platform: ["AOS"], contract: "-",                    iter: "N/A",      owner: "318d", noteType: "next",    note: "(6/17) 개발사 내부적으로 테스트 진행하고 지표 공유 예정", url: "https://www.notion.so/329a45eaf6d3808f9398d929c9c58081" },
-  { name: "Bearcade Blast",      studio: "Fiber Games", stage: "Stage 0 - CPI Test",  status: "In Preparation", platform: ["AOS"], contract: "-",                    iter: "N/A",      owner: "318d", noteType: "next",    note: "(6/17) 개발사 내부적으로 테스트 진행하고 지표 공유 예정", url: "https://www.notion.so/329a45eaf6d380eea312c37d8336d582" },
-  { name: "Dig Mania",           studio: "Palefire",    stage: "Stage 0 - CPI Test",  status: "UA testing",     platform: ["AOS"], contract: "-",                    iter: "cpi test", owner: "318d", noteType: "ongoing", note: "6/25(목) ~ 6/29(월) 테스트 진행중",                  url: "https://www.notion.so/345a45eaf6d380539754cb524a2e957f" },
-  { name: "Laser Block Jam",     studio: "R2D",         stage: "Stage 0 - CPI Test",  status: "In Preparation", platform: ["AOS"], contract: "-",                    iter: "N/A",      owner: "318d", noteType: "next",    note: "6/26 가이드 전달 및 SDK 세팅 요청",                    url: "https://www.notion.so/356a45eaf6d3809abe3cda2fb18199b6" },
-  { name: "Triple Match Satars", studio: "momosh",      stage: "Stage 0 - CPI Test",  status: "In Preparation", platform: ["AOS"], contract: "-",                    iter: "N/A",      owner: "318d", noteType: "ongoing", note: "6/30(화) 가이드 전달, 7/2(금) 작업 완료 예정",         url: "https://www.notion.so/33ea45eaf6d380bd8e27c8e87fdca79e" },
-  { name: "신작 검토 중",          studio: "Ripple",      stage: "Stage 0 - CPI Test",  status: "In Preparation", platform: ["AOS"], contract: "-",                    iter: "N/A",      owner: "318d", noteType: "next",    note: "",                                                     url: "https://www.notion.so/329a45eaf6d3808496f7e4c3ae6d0827" },
+  { name: "Twisted Arrows",            studio: "Fiber Games",stage:"Stage 0 - CPI Test",  status: "In Preparation",platform: ["AOS"],       contract: "-",                    iter: "N/A",      owner: "318d", noteType: "next",    note: "(6/17) 개발사 내부적으로 테스트 진행하고 지표 공유 예정", url: "https://www.notion.so/329a45eaf6d3808f9398d929c9c58081" },
+  { name: "Bearcade Blast",            studio: "Fiber Games",stage:"Stage 0 - CPI Test",  status: "In Preparation",platform: ["AOS"],       contract: "-",                    iter: "N/A",      owner: "318d", noteType: "next",    note: "(6/17) 개발사 내부적으로 테스트 진행하고 지표 공유 예정", url: "https://www.notion.so/329a45eaf6d380eea312c37d8336d582" },
+  { name: "Dig Mania",                 studio: "Palefire",  stage: "Stage 0 - CPI Test",  status: "UA testing",    platform: ["AOS"],       contract: "-",                    iter: "cpi test", owner: "318d", noteType: "ongoing", note: "6/25(목) ~ 6/29(월) 테스트 진행중",      url: "https://www.notion.so/345a45eaf6d380539754cb524a2e957f" },
+  { name: "Laser Block Jam",           studio: "R2D",       stage: "Stage 0 - CPI Test",  status: "In Preparation",platform: ["AOS"],       contract: "-",                    iter: "N/A",      owner: "318d", noteType: "next",    note: "6/26 가이드 전달 및 SDK 세팅 요청",        url: "https://www.notion.so/356a45eaf6d3809abe3cda2fb18199b6" },
+  { name: "Triple Match Satars",       studio: "momosh",    stage: "Stage 0 - CPI Test",  status: "In Preparation",platform: ["AOS"],       contract: "-",                    iter: "N/A",      owner: "318d", noteType: "ongoing", note: "6/30(화) 가이드 전달, 7/2(금) 작업 완료 예정", url: "https://www.notion.so/33ea45eaf6d380bd8e27c8e87fdca79e" },
+  { name: "신작 검토 중",               studio: "Ripple",    stage: "Stage 0 - CPI Test",  status: "In Preparation",platform: ["AOS"],       contract: "-",                    iter: "N/A",      owner: "318d", noteType: "next",    note: "",                                          url: "https://www.notion.so/329a45eaf6d3808496f7e4c3ae6d0827" },
   // Stage 0 - Prototype
   { name: "Screw Flow",                studio: "Pick6",     stage: "Stage 0 - Prototype", status: "Action Needed", platform: ["AOS"],       contract: "파트너십 계약 완료",   iter: "cpi test", owner: "34fd", noteType: "ongoing", note: "6/23~6/27 테스트 진행중",                url: "https://www.notion.so/361a45eaf6d380c1b035ec8b6edd0a8c" },
   { name: "Tasty Merge",               studio: "Easy Goging",stage:"Stage 0 - Prototype", status: "UA testing",    platform: ["AOS","iOS"], contract: "파트너십 계약 검토중", iter: "cpi test", owner: "36cd", noteType: "ongoing", note: "6/23~6/27 iOS CPI 테스트 진행중",        url: "https://www.notion.so/375a45eaf6d3803abcd3cb8b1e71c2a5" },
@@ -65,14 +64,14 @@ const PROJECTS = [
   { name: "Wordscapes Solitaire",      studio: "MGIF",      stage: "Stage 0 - Prototype", status: "DEV Iteration", platform: ["AOS"],       contract: "파트너십 계약 완료",   iter: "cpi test", owner: "2f4d", noteType: "fix",     note: "7/9(목) 플레이어블 공유",                url: "https://www.notion.so/367a45eaf6d380eebbe8eaeb0db6acc9" },
   { name: "Bubble Word Jam",           studio: "Minder",    stage: "Stage 0 - Prototype", status: "DEV Iteration", platform: ["AOS"],       contract: "부속합의서 협의 완료", iter: "cpi test", owner: "2f4d", noteType: "fix",     note: "7/11(금) 프로토타입 완료 목표",          url: "https://www.notion.so/352a45eaf6d3807ca4b7fd4b60cdcacd" },
   { name: "Evo War TD",                studio: "Crabby",    stage: "Stage 0 - Prototype", status: "DEV Iteration", platform: ["AOS"],       contract: "파트너십 계약 완료",   iter: "cpi test", owner: "2f4d", noteType: "fix",     note: "7/10(금) 프로토타입 공유 예정",          url: "https://www.notion.so/35da45eaf6d380f99556cb1d2a898ff8" },
-  { name: "Sticker Patch",             studio: "Pundun",    stage: "Stage 0 - Prototype", status: "DEV Iteration", platform: ["AOS"],       contract: "부속합의서 협의 완료", iter: "cpi test", owner: "2f4d", noteType: "fix",     note: "6/26(금) 최종 빌드 목표일",             url: "https://www.notion.so/37da45eaf6d380a38f00e9e724f75075" },
+  { name: "Sticker Patch",             studio: "Pundun",    stage: "Stage 0 - Prototype", status: "DEV Iteration", platform: ["AOS"],       contract: "부속합의서 협의 완료", iter: "cpi test", owner: "2f4d", noteType: "fix",     note: "6/26(금) 최종 빌드 목표일",              url: "https://www.notion.so/37da45eaf6d380a38f00e9e724f75075" },
   { name: "Aqua Chain Rescue",         studio: "Makemake",  stage: "Stage 0 - Prototype", status: "DEV Iteration", platform: ["AOS"],       contract: "부속합의서 추가 필요", iter: "cpi test", owner: "2bdd", noteType: "fix",     note: "6/30(화) 레벨 디자인 + 최종 프로토타입",url: "https://www.notion.so/375a45eaf6d380bb8e87fa7dc0718685" },
   { name: "Stack to Survive",          studio: "Dlite",     stage: "Stage 0 - Prototype", status: "DEV Iteration", platform: ["AOS"],       contract: "파트너십 계약 완료",   iter: "cpi test", owner: "2bdd", noteType: "next",    note: "7/1(수) 테스트 진행 목표",               url: "https://www.notion.so/36ea45eaf6d38053ad48f3bac8a7709a" },
   { name: "Strategy Paths",            studio: "Zezo",      stage: "Stage 0 - Prototype", status: "DEV Iteration", platform: ["AOS"],       contract: "부속합의서 추가 필요", iter: "cpi test", owner: "2bdd", noteType: "next",    note: "7월 4주 최종 빌드 공유",                 url: "https://www.notion.so/37ba45eaf6d3802f8dbaf034f2ff653e" },
   { name: "Clean it Up!",              studio: "Zezo",      stage: "Stage 0 - Prototype", status: "DEV Iteration", platform: ["AOS"],       contract: "파트너십 계약 완료",   iter: "cpi test", owner: "2bdd", noteType: "fix",     note: "7월 2주 Final Build 공유",               url: "https://www.notion.so/36da45eaf6d380f8b970fac6b4ac0b17" },
   { name: "Werewolf Hero",             studio: "Zimo",      stage: "Stage 0 - Prototype", status: "DEV Iteration", platform: ["AOS"],       contract: "파트너십 계약 검토중", iter: "cpi test", owner: "2bdd", noteType: "fix",     note: "7/7(화) 중간빌드 공유",                  url: "https://www.notion.so/37da45eaf6d38080ae06df401ed4e6b5" },
   { name: "Pin Jam",                   studio: "Pick6",     stage: "Stage 0 - Prototype", status: "DEV Iteration", platform: ["AOS"],       contract: "부속합의서 추가 필요", iter: "cpi test", owner: "34fd", noteType: "next",    note: "7월 1주 테스트 진행 목표",               url: "https://www.notion.so/34ca45eaf6d3805da0fbf8542f86e507" },
-  { name: "Weapon Clash: Shooting Duel",studio:"BOOBOO",    stage: "Stage 0 - Prototype", status: "DEV Iteration", platform: ["AOS"],       contract: "파트너십 계약 완료",   iter: "cpi test", owner: "36cd", noteType: "fix",     note: "6/30(화) 폴리시, QA + 최종 딜리버리",   url: "https://www.notion.so/34ca45eaf6d380f79b42f5361cbe2160" },
+  { name: "Weapon Clash: Shooting Duel",studio:"BOOBOO",   stage: "Stage 0 - Prototype", status: "DEV Iteration", platform: ["AOS"],       contract: "파트너십 계약 완료",   iter: "cpi test", owner: "36cd", noteType: "fix",     note: "6/30(화) 폴리시, QA + 최종 딜리버리",   url: "https://www.notion.so/34ca45eaf6d380f79b42f5361cbe2160" },
   { name: "Block Stack - Line Blast",  studio: "Gameyogi",  stage: "Stage 0 - Prototype", status: "DEV Iteration", platform: ["AOS"],       contract: "-",                    iter: "cpi test", owner: "36cd", noteType: "fix",     note: "6/30 3차 빌드 (이펙트+2개 게임 모드)",   url: "https://www.notion.so/36ea45eaf6d380ff9759eb83d3820c31" },
   { name: "Plant Warriors",            studio: "Gameyogi",  stage: "Stage 0 - Prototype", status: "DEV Iteration", platform: ["AOS"],       contract: "부속합의서 협의 완료", iter: "cpi test", owner: "36cd", noteType: "fix",     note: "7/3~7/5 1차 빌드 공유",                  url: "https://www.notion.so/37ba45eaf6d380098e56f857c90a4950" },
   { name: "Space Miner",               studio: "BOOBOO",    stage: "Stage 0 - Prototype", status: "DEV Iteration", platform: ["AOS"],       contract: "부속합의서 추가 필요", iter: "cpi test", owner: "36cd", noteType: "fix",     note: "7월 1주차 중간 빌드 공유",               url: "https://www.notion.so/37aa45eaf6d3800a871bd469d2de4442" },
@@ -90,105 +89,61 @@ const PROJECTS = [
   { name: "Fluffu's Journey",          studio: "Unwind",    stage: "Stage 0 - Ideation",  status:"In Preparation",platform:["AOS"],         contract: "-",                    iter: "cpi test", owner: "34fd", noteType: "hold",    note: "자금/인력 부족으로 추가 개발 당장 어려움",url:"https://www.notion.so/375a45eaf6d3807f8accdc789a8e1840" },
   { name: "GDD 검토중",                studio: "IzyPlay",   stage: "Stage 0 - Ideation",  status:"In Preparation",platform:["AOS"],         contract: "-",                    iter: "N/A",      owner: "34fd", noteType: "ongoing", note: "06/26 sushi & beach 커뮤니케이션 시작",  url: "https://www.notion.so/37aa45eaf6d380dc9f75fa30a6a5e734" },
   // Drop
-  { name: "Cat Drop",                  studio: "Minder",    stage: "Drop",                status: "Drop & Archive",platform: ["AOS"],        contract: "드롭",                 iter: "cpi test", owner: "34fd", noteType: "done",    note: "4/14 테스트 후 드롭",                    url: "https://www.notion.so/329a45eaf6d380cb956cd5c08acb9aa7" },
-  { name: "Arrow Escape: Stickman Fight",studio:"Inwave",   stage: "Drop",                status: "Drop & Archive",platform: ["AOS"],        contract: "드롭",                 iter: "cpi test", owner: "34fd", noteType: "done",    note: "4/15 테스트 후 드롭",                    url: "https://www.notion.so/329a45eaf6d3808f9398d929c9c58081" },
-  { name: "Dragon Jam: Girl Rescue",   studio: "Inwave",    stage: "Drop",                status: "Drop & Archive",platform: ["AOS"],        contract: "드롭",                 iter: "cpi test", owner: "34fd", noteType: "done",    note: "4/15 테스트 후 드롭",                    url: "https://www.notion.so/329a45eaf6d380eea312c37d8336d582" },
-  { name: "Stonica",                   studio: "Adeline",   stage: "Drop",                status: "Drop & Archive",platform: ["AOS"],        contract: "부속합의서 추가 필요", iter: "#1",       owner: "34fd", noteType: "done",    note: "5/18 최종 협의 후 드롭",                 url: "https://www.notion.so/345a45eaf6d380539754cb524a2e957f" },
-  { name: "Sheep Jam",                 studio: "Crabby",    stage: "Drop",                status: "Drop & Archive",platform: ["AOS"],        contract: "파트너십 계약 검토중", iter: "cpi test", owner: "34fd", noteType: "done",    note: "5/21 Crabby측 의견으로 최종 드롭",       url: "https://www.notion.so/356a45eaf6d3809abe3cda2fb18199b6" },
-  { name: "Slime Hole",                studio: "Makemake",  stage: "Drop",                status: "Drop & Archive",platform: ["AOS"],        contract: "파트너십 계약 완료",   iter: "cpi test", owner: "2bdd", noteType: "done",    note: "5/26 테스트 종료 및 드롭",               url: "https://www.notion.so/33ea45eaf6d380bd8e27c8e87fdca79e" },
-  { name: "Liquid Cat Puzzle",         studio: "Hala Games",stage: "Drop",                status: "Drop & Archive",platform: ["AOS"],        contract: "드롭",                 iter: "cpi test", owner: "2bdd", noteType: "done",    note: "드롭 완료",                              url: "https://www.notion.so/329a45eaf6d3808496f7e4c3ae6d0827" },
+  { name: "Cat Drop",                  studio: "Minder",    stage: "Drop", status: "Drop & Archive", platform: ["AOS"], contract: "드롭",                iter: "cpi test", owner: "34fd", noteType: "done", note: "4/14 테스트 후 드롭",          url: "https://www.notion.so/329a45eaf6d380cb956cd5c08acb9aa7" },
+  { name: "Arrow Escape: Stickman Fight",studio:"Inwave",   stage: "Drop", status: "Drop & Archive", platform: ["AOS"], contract: "드롭",                iter: "cpi test", owner: "34fd", noteType: "done", note: "4/15 테스트 후 드롭",          url: "https://www.notion.so/329a45eaf6d3808f9398d929c9c58081" },
+  { name: "Dragon Jam: Girl Rescue",   studio: "Inwave",    stage: "Drop", status: "Drop & Archive", platform: ["AOS"], contract: "드롭",                iter: "cpi test", owner: "34fd", noteType: "done", note: "4/15 테스트 후 드롭",          url: "https://www.notion.so/329a45eaf6d380eea312c37d8336d582" },
+  { name: "Stonica",                   studio: "Adeline",   stage: "Drop", status: "Drop & Archive", platform: ["AOS"], contract: "부속합의서 추가 필요",iter: "#1",       owner: "34fd", noteType: "done", note: "5/18 최종 협의 후 드롭",       url: "https://www.notion.so/345a45eaf6d380539754cb524a2e957f" },
+  { name: "Sheep Jam",                 studio: "Crabby",    stage: "Drop", status: "Drop & Archive", platform: ["AOS"], contract: "파트너십 계약 검토중",iter: "cpi test", owner: "34fd", noteType: "done", note: "5/21 Crabby측 의견으로 최종 드롭",url:"https://www.notion.so/356a45eaf6d3809abe3cda2fb18199b6" },
+  { name: "Slime Hole",                studio: "Makemake",  stage: "Drop", status: "Drop & Archive", platform: ["AOS"], contract: "파트너십 계약 완료",  iter: "cpi test", owner: "2bdd", noteType: "done", note: "5/26 테스트 종료 및 드롭",     url: "https://www.notion.so/33ea45eaf6d380bd8e27c8e87fdca79e" },
+  { name: "Liquid Cat Puzzle",         studio: "Hala Games",stage: "Drop", status: "Drop & Archive", platform: ["AOS"], contract: "드롭",                iter: "cpi test", owner: "2bdd", noteType: "done", note: "드롭 완료",                    url: "https://www.notion.so/329a45eaf6d3808496f7e4c3ae6d0827" },
 ];
 
-const S = {
-  wrap: { padding: "0 0 48px" },
-  notice: {
-    display: "flex", alignItems: "center", gap: "8px",
-    margin: "16px 0 12px", padding: "7px 12px",
-    background: "rgba(79,126,240,.07)", border: "1px solid rgba(79,126,240,.18)",
-    borderRadius: "6px", fontSize: "11px", color: "rgba(130,160,240,.75)",
-  },
-  filterBar: {
-    display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap",
-    margin: "0 0 14px", padding: "10px 14px",
-    background: "var(--card)", border: "1px solid var(--card-border)",
-    borderRadius: "8px",
-  },
-  statBtn: (active, color) => ({
-    display: "flex", alignItems: "center", gap: "5px",
-    padding: "4px 10px", borderRadius: "5px", border: "none",
-    background: active ? `${color}22` : "transparent",
-    cursor: "pointer", fontSize: "12px", color: active ? color : "var(--muted)",
-    fontWeight: active ? 700 : 400, transition: "all .12s", fontFamily: "inherit",
-    outline: active ? `1px solid ${color}55` : "none",
-  }),
-  dot: (color) => ({ width: 7, height: 7, borderRadius: "50%", background: color, flexShrink: 0 }),
-  sep: { width: 1, height: 18, background: "var(--line)", flexShrink: 0 },
-  ownerBtn: (active) => ({
-    padding: "3px 9px", borderRadius: "4px",
-    border: `1px solid ${active ? "var(--primary)" : "var(--card-border)"}`,
-    background: active ? "var(--primary)" : "transparent",
-    color: active ? "#fff" : "var(--muted)", cursor: "pointer",
-    fontSize: "11px", fontFamily: "inherit", transition: "all .12s",
-  }),
-  toggleRow: {
-    display: "flex", alignItems: "center", gap: "6px",
-    fontSize: "11px", color: "var(--muted)", cursor: "pointer",
-    userSelect: "none", marginLeft: "auto",
-  },
-  legend: {
-    display: "flex", gap: "12px", alignItems: "center",
-    flexWrap: "wrap", marginBottom: "12px", fontSize: "11px", color: "var(--muted)",
-  },
-  stageHead: {
-    display: "flex", alignItems: "center", gap: "8px",
-    padding: "8px 4px 4px", cursor: "pointer", userSelect: "none",
-  },
-  pip: (color) => ({ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }),
-  stageLbl: { fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--muted)" },
-  stageCnt: {
-    fontSize: "10px", color: "var(--muted)", background: "var(--bg)",
-    border: "1px solid var(--line)", padding: "0 6px", borderRadius: "8px",
-    fontVariantNumeric: "tabular-nums",
-  },
-  list: { display: "flex", flexDirection: "column", gap: "2px", paddingBottom: "8px", overflowX: "auto" },
-  row: (hov) => ({
-    display: "grid",
-    gridTemplateColumns: "3px minmax(180px,1fr) 90px 64px 20px minmax(80px,120px) minmax(140px,1fr) 20px",
-    alignItems: "center", gap: "10px", padding: "7px 10px 7px 0",
-    background: hov ? "var(--card-hover, #f0f2f8)" : "var(--card)",
-    border: "1px solid var(--card-border)", borderRadius: "5px",
-    cursor: "pointer", transition: "background .1s,border-color .1s",
-    textDecoration: "none", color: "inherit", minWidth: "760px",
-  }),
-  emptyRow: {
-    padding: "14px", textAlign: "center", color: "var(--muted)", fontSize: "12px",
-    background: "var(--card)", border: "1px dashed var(--card-border)", borderRadius: "5px",
-  },
-};
+// ─── Utilities ─────────────────────────────────────────────────────────────
 
-function Switch({ on }) {
+function parseNoteDates(note, year = 2026) {
+  if (!note) return [];
+  return [...note.matchAll(/(\d{1,2})\/(\d{1,2})/g)]
+    .map(m => new Date(year, parseInt(m[1]) - 1, parseInt(m[2])));
+}
+
+function getWeekBounds() {
+  const today = new Date();
+  const dow = today.getDay();
+  const mon = new Date(today);
+  mon.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
+  mon.setHours(0, 0, 0, 0);
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  sun.setHours(23, 59, 59, 0);
+  return { mon, sun };
+}
+
+function fmt(d) {
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+const DOW_KR = ["일","월","화","수","목","금","토"];
+
+// ─── Sub-components ────────────────────────────────────────────────────────
+
+function OwnerDot({ owner, size = 18 }) {
+  const own = OWNERS[owner] || { short: "?", color: "#56637a", label: "?" };
   return (
-    <div style={{
-      width: 26, height: 14, borderRadius: 7,
-      background: on ? "var(--primary)" : "var(--line)",
-      position: "relative", flexShrink: 0, transition: "background .12s",
-    }}>
-      <div style={{
-        position: "absolute", width: 10, height: 10, borderRadius: "50%",
-        background: "#fff", top: 2, left: on ? 14 : 2, transition: "left .12s",
-      }} />
-    </div>
+    <div title={own.label} style={{
+      width: size, height: size, borderRadius: "50%", background: own.color, flexShrink: 0,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: size * 0.44, fontWeight: 800, color: "#fff",
+    }}>{own.short}</div>
   );
 }
 
 function StatusPill({ status }) {
   const si = STATUS_MAP[status] || STATUS_MAP["In Preparation"];
-  const bg = si.stripe + "18";
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 4,
       padding: "2px 7px", borderRadius: 3, fontSize: 10, fontWeight: 600,
-      color: si.stripe, background: bg, whiteSpace: "nowrap",
+      color: si.stripe, background: si.stripe + "18", whiteSpace: "nowrap",
     }}>
       <span style={{ width: 4, height: 4, borderRadius: "50%", background: "currentColor", flexShrink: 0, display: "inline-block" }} />
       {si.short}
@@ -196,75 +151,273 @@ function StatusPill({ status }) {
   );
 }
 
-function ProjectRow({ p }) {
+function PlatChips({ platform }) {
+  return (
+    <div style={{ display: "flex", gap: 3 }}>
+      {platform.map(pl => (
+        <span key={pl} style={{
+          fontSize: 9, padding: "1px 5px", borderRadius: 2, fontWeight: 700,
+          background: pl === "iOS" ? "rgba(255,69,58,.12)" : "rgba(52,199,89,.12)",
+          color: pl === "iOS" ? "#ef4444" : "#22c55e",
+          border: `1px solid ${pl === "iOS" ? "rgba(255,69,58,.2)" : "rgba(52,199,89,.2)"}`,
+        }}>{pl}</span>
+      ))}
+    </div>
+  );
+}
+
+function SidePanel({ project: p, onClose }) {
+  const [visible, setVisible] = useState(false);
+  const si = STATUS_MAP[p.status] || STATUS_MAP["In Preparation"];
+  const nt = NOTE_TAG[p.noteType] || NOTE_TAG.done;
   const own = OWNERS[p.owner] || { label: "?", color: "#56637a" };
+  const stage = STAGES.find(s => s.key === p.stage);
+
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), 10);
+    return () => clearTimeout(t);
+  }, []);
+
+  const handleClose = () => {
+    setVisible(false);
+    setTimeout(onClose, 220);
+  };
+
+  const noteLines = p.note ? p.note.split("\n").filter(Boolean) : [];
+
+  return (
+    <>
+      {/* backdrop */}
+      <div onClick={handleClose} style={{
+        position: "fixed", inset: 0, background: "rgba(0,0,0,.35)",
+        zIndex: 200, opacity: visible ? 1 : 0, transition: "opacity .22s",
+      }} />
+      {/* panel */}
+      <div style={{
+        position: "fixed", top: 0, right: 0, bottom: 0, width: 400,
+        background: "var(--card)", borderLeft: "1px solid var(--card-border)",
+        zIndex: 201, overflowY: "auto", display: "flex", flexDirection: "column",
+        transform: visible ? "translateX(0)" : "translateX(100%)",
+        transition: "transform .22s ease",
+        boxShadow: "-12px 0 32px rgba(0,0,0,.15)",
+      }}>
+        {/* header */}
+        <div style={{
+          padding: "16px 20px 14px", borderBottom: "1px solid var(--card-border)",
+          position: "sticky", top: 0, background: "var(--card)", zIndex: 1,
+        }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, justifyContent: "space-between" }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", lineHeight: 1.3, marginBottom: 6 }}>{p.name}</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                {stage && <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--muted)", background: "var(--bg)", border: "1px solid var(--line)", padding: "2px 7px", borderRadius: 3 }}>{stage.label}</span>}
+                <StatusPill status={p.status} />
+              </div>
+            </div>
+            <button onClick={handleClose} style={{
+              border: "none", background: "transparent", cursor: "pointer",
+              color: "var(--muted)", fontSize: 18, lineHeight: 1, padding: "2px 4px", flexShrink: 0,
+            }}>✕</button>
+          </div>
+        </div>
+
+        {/* body */}
+        <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 16, flex: 1 }}>
+          {/* top stripe accent */}
+          <div style={{ height: 3, borderRadius: 2, background: si.stripe, marginBottom: -8 }} />
+
+          {/* info grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 16px" }}>
+            {[
+              ["Studio", p.studio],
+              ["Iteration", p.iter],
+              ["Owner", own.label],
+              ["Platform", p.platform.join(" · ") || "-"],
+              ["Contract", p.contract === "-" ? "미계약" : p.contract],
+            ].map(([label, value]) => (
+              <div key={label}>
+                <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--muted)", marginBottom: 3 }}>{label}</div>
+                <div style={{ fontSize: 12, color: "var(--text)", fontWeight: 500 }}>{value}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ height: 1, background: "var(--line)" }} />
+
+          {/* Biz Notes */}
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--muted)", marginBottom: 8 }}>📝 Biz Notes</div>
+            {noteLines.length === 0
+              ? <div style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}>업데이트 내용 없음</div>
+              : noteLines.map((line, i) => {
+                  const tagMatch = line.match(/^(예정|진행상황|진행중|테스트|픽스|종료|홀드|테스트 예정|테스트 진행중|진행)\s*/);
+                  const tagTxt = tagMatch ? tagMatch[0].trim() : null;
+                  const rest = tagTxt ? line.slice(tagMatch[0].length) : line;
+                  const tagColor = tagTxt
+                    ? (["예정","테스트 예정"].includes(tagTxt) ? "#60a5fa"
+                      : ["진행상황","진행중","테스트 진행중","진행","테스트"].includes(tagTxt) ? "#4ade80"
+                      : tagTxt === "픽스" ? "#fb923c"
+                      : tagTxt === "홀드" ? "#f59e0b"
+                      : "#56637a")
+                    : null;
+                  return (
+                    <div key={i} style={{
+                      fontSize: 12, color: "var(--text)", lineHeight: 1.6,
+                      padding: "6px 10px", marginBottom: 4,
+                      background: "var(--bg)", borderRadius: 4,
+                      borderLeft: `3px solid ${tagColor || "var(--line)"}`,
+                    }}>
+                      {tagTxt && <span style={{ fontWeight: 700, color: tagColor, marginRight: 6 }}>{tagTxt}</span>}
+                      {rest}
+                    </div>
+                  );
+                })
+            }
+          </div>
+        </div>
+
+        {/* footer */}
+        <div style={{ padding: "14px 20px", borderTop: "1px solid var(--card-border)" }}>
+          <a href={p.url} target="_blank" rel="noopener noreferrer" style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            padding: "9px 16px", borderRadius: 6,
+            background: "var(--primary)", color: "#fff",
+            textDecoration: "none", fontSize: 13, fontWeight: 600,
+          }}>
+            노션에서 열기 ↗
+          </a>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function WeeklySection({ items, onSelect }) {
+  const { mon, sun } = getWeekBounds();
+  const label = `${fmt(mon)}(${DOW_KR[mon.getDay()]}) ~ ${fmt(sun)}(${DOW_KR[sun.getDay()]})`;
+
+  return (
+    <div style={{
+      margin: "0 0 16px",
+      padding: "14px 16px",
+      background: "var(--card)",
+      border: "1px solid var(--card-border)",
+      borderRadius: "8px",
+      borderLeft: "3px solid #f59e0b",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>📅 이번 주</span>
+        <span style={{ fontSize: 11, color: "var(--muted)" }}>{label}</span>
+        <span style={{
+          marginLeft: "auto", fontSize: 10, fontWeight: 700,
+          background: items.length > 0 ? "#f59e0b22" : "var(--bg)",
+          color: items.length > 0 ? "#f59e0b" : "var(--muted)",
+          border: `1px solid ${items.length > 0 ? "#f59e0b44" : "var(--line)"}`,
+          padding: "1px 8px", borderRadius: 8, fontVariantNumeric: "tabular-nums",
+        }}>{items.length}건</span>
+      </div>
+
+      {items.length === 0 ? (
+        <div style={{ fontSize: 12, color: "var(--muted)", padding: "8px 0" }}>이번 주 예정된 마감/업데이트 항목이 없습니다</div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 6 }}>
+          {items.map((p, i) => {
+            const si = STATUS_MAP[p.status] || STATUS_MAP["In Preparation"];
+            const nt = NOTE_TAG[p.noteType] || NOTE_TAG.done;
+            return (
+              <div key={i} onClick={() => onSelect(p)} style={{
+                display: "flex", gap: 10, alignItems: "flex-start",
+                padding: "8px 10px", borderRadius: 5, cursor: "pointer",
+                background: "var(--bg)", border: "1px solid var(--line)",
+                borderLeft: `3px solid ${si.stripe}`,
+                transition: "background .1s",
+              }}
+                onMouseEnter={e => e.currentTarget.style.background = "var(--hover, #f5f7fd)"}
+                onMouseLeave={e => e.currentTarget.style.background = "var(--bg)"}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {p.note && <><span style={{ fontWeight: 700, color: nt.color, marginRight: 3 }}>{nt.txt}</span>{p.note}</>}
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+                  <StatusPill status={p.status} />
+                  <OwnerDot owner={p.owner} size={16} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProjectRow({ p, onSelect }) {
   const si = STATUS_MAP[p.status] || STATUS_MAP["In Preparation"];
   const nt = NOTE_TAG[p.noteType] || NOTE_TAG.done;
 
   return (
-    <a href={p.url} target="_blank" rel="noopener noreferrer"
-      style={S.row(false)}
+    <div
+      onClick={() => onSelect(p)}
+      style={{
+        display: "grid",
+        gridTemplateColumns: "3px minmax(180px,1fr) 90px 64px 20px minmax(80px,120px) minmax(140px,1fr) 20px",
+        alignItems: "center", gap: "10px", padding: "7px 10px 7px 0",
+        background: "var(--card)", border: "1px solid var(--card-border)", borderRadius: "5px",
+        cursor: "pointer", transition: "background .1s", color: "inherit", minWidth: "760px",
+      }}
       onMouseEnter={e => e.currentTarget.style.background = "var(--hover, #f5f7fd)"}
       onMouseLeave={e => e.currentTarget.style.background = "var(--card)"}
     >
-      {/* stripe */}
       <div style={{ alignSelf: "stretch", borderRadius: "4px 0 0 4px", background: si.stripe, minHeight: 32 }} />
-      {/* name + studio */}
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
         <div style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 1 }}>{p.studio} · {p.iter}</div>
       </div>
-      {/* status */}
       <div><StatusPill status={p.status} /></div>
-      {/* platform */}
-      <div style={{ display: "flex", gap: 3 }}>
-        {p.platform.map(pl => (
-          <span key={pl} style={{
-            fontSize: 9, padding: "1px 5px", borderRadius: 2, fontWeight: 700,
-            background: pl === "iOS" ? "rgba(255,69,58,.12)" : "rgba(52,199,89,.12)",
-            color: pl === "iOS" ? "#ef4444" : "#22c55e",
-            border: `1px solid ${pl === "iOS" ? "rgba(255,69,58,.2)" : "rgba(52,199,89,.2)"}`,
-          }}>{pl}</span>
-        ))}
-      </div>
-      {/* owner */}
-      <div style={{
-        width: 18, height: 18, borderRadius: "50%", background: own.color,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 8, fontWeight: 800, color: "#fff", flexShrink: 0,
-      }} title={own.label}>{own.short}</div>
-      {/* contract */}
+      <PlatChips platform={p.platform} />
+      <OwnerDot owner={p.owner} />
       <div style={{ fontSize: 10, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-        {p.contract === "-" ? "" : p.contract}
+        {p.contract !== "-" ? p.contract : ""}
       </div>
-      {/* biz note */}
       <div style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>
-        {p.note && (
-          <>
-            <span style={{ fontSize: 10, fontWeight: 700, color: nt.color, marginRight: 4 }}>{nt.txt}</span>
-            {p.note}
-          </>
-        )}
+        {p.note && <><span style={{ fontSize: 10, fontWeight: 700, color: nt.color, marginRight: 4 }}>{nt.txt}</span>{p.note}</>}
       </div>
-      {/* link */}
-      <div style={{ fontSize: 14, textAlign: "center", color: "var(--muted)", opacity: 0.5 }}>↗</div>
-    </a>
+      <div style={{ fontSize: 12, textAlign: "center", color: "var(--muted)", opacity: 0.4 }}>›</div>
+    </div>
   );
 }
+
+// ─── Main component ────────────────────────────────────────────────────────
 
 export default function ProjectDashboard() {
   const [ownerFilter, setOwnerFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showDrop, setShowDrop] = useState(false);
   const [collapsed, setCollapsed] = useState(new Set());
+  const [selected, setSelected] = useState(null);
 
-  const toggleCollapse = (key) => {
-    setCollapsed(prev => {
-      const next = new Set(prev);
-      next.has(key) ? next.delete(key) : next.add(key);
-      return next;
+  const toggleCollapse = (key) => setCollapsed(prev => {
+    const next = new Set(prev);
+    next.has(key) ? next.delete(key) : next.add(key);
+    return next;
+  });
+
+  const { mon, sun } = useMemo(() => getWeekBounds(), []);
+
+  const weeklyItems = useMemo(() => {
+    return PROJECTS.filter(p => {
+      if (p.stage === "Drop") return false;
+      const dates = parseNoteDates(p.note);
+      return dates.some(d => d >= mon && d <= sun);
+    }).sort((a, b) => {
+      const da = parseNoteDates(a.note)[0] || new Date(9999, 0);
+      const db = parseNoteDates(b.note)[0] || new Date(9999, 0);
+      return da - db;
     });
-  };
+  }, [mon, sun]);
 
   const visibleAll = useMemo(() => PROJECTS.filter(p => showDrop || p.stage !== "Drop"), [showDrop]);
 
@@ -283,64 +436,96 @@ export default function ProjectDashboard() {
     all:    visibleAll.length,
   }), [visibleAll]);
 
+  const sep = { width: 1, height: 18, background: "var(--line)", flexShrink: 0 };
+
   return (
-    <div style={S.wrap}>
+    <div style={{ padding: "0 0 60px" }}>
       {/* notice */}
-      <div style={S.notice}>
+      <div style={{
+        display: "flex", alignItems: "center", gap: 8,
+        margin: "16px 0 12px", padding: "7px 12px",
+        background: "rgba(79,126,240,.07)", border: "1px solid rgba(79,126,240,.18)",
+        borderRadius: 6, fontSize: 11, color: "rgba(130,160,240,.75)",
+      }}>
         ℹ &nbsp;<span>노션 <strong style={{ color: "rgba(130,160,240,.95)" }}>Project Info</strong> DB 연동 프로토타입 — 읽기 전용, 테스트 데이터 하드코딩 (실시간 연동 개발 예정)</span>
       </div>
 
+      {/* weekly section */}
+      <WeeklySection items={weeklyItems} onSelect={setSelected} />
+
       {/* filter bar */}
-      <div style={S.filterBar}>
-        {/* status filters */}
-        <button style={S.statBtn(statusFilter === "action", "#ef4444")} onClick={() => setStatusFilter(s => s === "action" ? "all" : "action")}>
-          <span style={S.dot("#ef4444")} />
-          <span style={{ fontVariantNumeric: "tabular-nums" }}>{counts.action}</span> Action Needed
-        </button>
-        <button style={S.statBtn(statusFilter === "ua", "#4f9cf0")} onClick={() => setStatusFilter(s => s === "ua" ? "all" : "ua")}>
-          <span style={S.dot("#4f9cf0")} />
-          <span style={{ fontVariantNumeric: "tabular-nums" }}>{counts.ua}</span> UA Testing
-        </button>
-        <button style={S.statBtn(statusFilter === "dev", "#22c55e")} onClick={() => setStatusFilter(s => s === "dev" ? "all" : "dev")}>
-          <span style={S.dot("#22c55e")} />
-          <span style={{ fontVariantNumeric: "tabular-nums" }}>{counts.dev}</span> DEV Iteration
-        </button>
-        <button style={S.statBtn(statusFilter === "all", "var(--muted)")} onClick={() => setStatusFilter("all")}>
-          <span style={S.dot("var(--muted)")} />
-          <span style={{ fontVariantNumeric: "tabular-nums" }}>{counts.all}</span> 전체
-        </button>
+      <div style={{
+        display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
+        margin: "0 0 14px", padding: "10px 14px",
+        background: "var(--card)", border: "1px solid var(--card-border)", borderRadius: 8,
+      }}>
+        {[
+          { key: "action", label: "Action Needed", color: "#ef4444", cnt: counts.action },
+          { key: "ua",     label: "UA Testing",    color: "#4f9cf0", cnt: counts.ua },
+          { key: "dev",    label: "DEV Iteration", color: "#22c55e", cnt: counts.dev },
+          { key: "all",    label: "전체",           color: "var(--muted)", cnt: counts.all },
+        ].map(({ key, label, color, cnt }) => (
+          <button key={key}
+            onClick={() => setStatusFilter(s => s === key && key !== "all" ? "all" : key)}
+            style={{
+              display: "flex", alignItems: "center", gap: 5,
+              padding: "4px 10px", borderRadius: 5, border: "none",
+              background: statusFilter === key ? `${color}22` : "transparent",
+              cursor: "pointer", fontSize: 12, color: statusFilter === key ? color : "var(--muted)",
+              fontWeight: statusFilter === key ? 700 : 400, transition: "all .12s", fontFamily: "inherit",
+              outline: statusFilter === key ? `1px solid ${color}55` : "none",
+            }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: color, flexShrink: 0 }} />
+            <span style={{ fontVariantNumeric: "tabular-nums" }}>{cnt}</span> {label}
+          </button>
+        ))}
 
-        <div style={S.sep} />
+        <div style={sep} />
 
-        {/* owner filters */}
         <span style={{ fontSize: 11, color: "var(--muted)" }}>Owner</span>
         {["all", "2bdd", "2f4d", "318d", "34fd", "36cd"].map(key => (
-          <button key={key} style={S.ownerBtn(ownerFilter === key)} onClick={() => setOwnerFilter(key)}>
+          <button key={key}
+            onClick={() => setOwnerFilter(key)}
+            style={{
+              padding: "3px 9px", borderRadius: 4,
+              border: `1px solid ${ownerFilter === key ? "var(--primary)" : "var(--card-border)"}`,
+              background: ownerFilter === key ? "var(--primary)" : "transparent",
+              color: ownerFilter === key ? "#fff" : "var(--muted)",
+              cursor: "pointer", fontSize: 11, fontFamily: "inherit", transition: "all .12s",
+            }}>
             {key === "all" ? "전체" : OWNERS[key].label}
           </button>
         ))}
 
+        <div style={sep} />
 
-        <div style={S.sep} />
-
-        {/* drop toggle */}
-        <label style={S.toggleRow} onClick={() => setShowDrop(v => !v)}>
-          <Switch on={showDrop} />
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--muted)", cursor: "pointer", userSelect: "none", marginLeft: "auto" }}
+          onClick={() => setShowDrop(v => !v)}>
+          <div style={{
+            width: 26, height: 14, borderRadius: 7,
+            background: showDrop ? "var(--primary)" : "var(--line)",
+            position: "relative", flexShrink: 0, transition: "background .12s",
+          }}>
+            <div style={{
+              position: "absolute", width: 10, height: 10, borderRadius: "50%",
+              background: "#fff", top: 2, left: showDrop ? 14 : 2, transition: "left .12s",
+            }} />
+          </div>
           Drop 표시
         </label>
       </div>
 
       {/* legend */}
-      <div style={S.legend}>
-        <span style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: ".08em" }}>Owner</span>
+      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 12, fontSize: 11, color: "var(--muted)" }}>
+        <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".08em" }}>Owner</span>
         {Object.entries(OWNERS).map(([k, v]) => (
           <span key={k} style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <span style={{ width: 14, height: 14, borderRadius: "50%", background: v.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 800, color: "#fff" }}>{v.short}</span>
             {v.label}
           </span>
         ))}
-        <div style={S.sep} />
-        <span style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: ".08em" }}>Biz Notes</span>
+        <div style={sep} />
+        <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: ".08em" }}>Biz Notes</span>
         {Object.entries(NOTE_TAG).filter(([k]) => k !== "done").map(([k, v]) => (
           <span key={k}><span style={{ fontWeight: 700, color: v.color, fontSize: 10 }}>{v.txt}</span> <span style={{ fontSize: 11 }}>{k}</span></span>
         ))}
@@ -355,23 +540,27 @@ export default function ProjectDashboard() {
 
         return (
           <div key={stg.key} style={{ marginBottom: 4 }}>
-            <div style={S.stageHead} onClick={() => toggleCollapse(stg.key)}>
-              <div style={S.pip(stg.pip)} />
-              <span style={S.stageLbl}>{stg.label}</span>
-              <span style={S.stageCnt}>{items.length}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 4px 4px", cursor: "pointer", userSelect: "none" }}
+              onClick={() => toggleCollapse(stg.key)}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: stg.pip, flexShrink: 0 }} />
+              <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--muted)" }}>{stg.label}</span>
+              <span style={{ fontSize: 10, color: "var(--muted)", background: "var(--bg)", border: "1px solid var(--line)", padding: "0 6px", borderRadius: 8, fontVariantNumeric: "tabular-nums" }}>{items.length}</span>
               <span style={{ marginLeft: "auto", color: "var(--muted)", fontSize: 11, transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform .15s" }}>▾</span>
             </div>
             {!isCollapsed && (
-              <div style={S.list}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingBottom: 8, overflowX: "auto" }}>
                 {items.length === 0
-                  ? <div style={S.emptyRow}>이 필터 조건에 해당하는 프로젝트가 없습니다</div>
-                  : items.map((p, i) => <ProjectRow key={`${p.name}-${i}`} p={p} />)
+                  ? <div style={{ padding: 14, textAlign: "center", color: "var(--muted)", fontSize: 12, background: "var(--card)", border: "1px dashed var(--card-border)", borderRadius: 5 }}>이 필터 조건에 해당하는 프로젝트가 없습니다</div>
+                  : items.map((p, i) => <ProjectRow key={`${p.name}-${i}`} p={p} onSelect={setSelected} />)
                 }
               </div>
             )}
           </div>
         );
       })}
+
+      {/* side panel */}
+      {selected && <SidePanel project={selected} onClose={() => setSelected(null)} />}
     </div>
   );
 }
