@@ -320,7 +320,7 @@ function WeeklySection({ items, onSelect }) {
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
         <div style={{ width: 3, height: 18, borderRadius: 2, background: "#f59e0b", flexShrink: 0 }} />
-        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>이번 주 마감</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>이번 주 체크</span>
         <span style={{ fontSize: 11, color: "var(--muted)" }}>{rangeLabel}</span>
         <span style={{
           marginLeft: "auto", fontSize: 11, fontWeight: 700,
@@ -498,7 +498,7 @@ export default function ProjectDashboard() {
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", margin: "16px 0 16px" }}>
         <KpiCard
           value={weeklyItems.length}
-          label="이번 주 마감"
+          label="이번 주 체크"
           sub="6/29(월) ~ 7/5(일)"
           color="#f59e0b"
           onClick={() => {}}
