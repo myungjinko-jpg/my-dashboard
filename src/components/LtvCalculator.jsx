@@ -270,7 +270,7 @@ export default function LtvCalculator({ isDark }) {
     gasGet({ action: "delete", id }).catch(() => {});
   };
 
-  const tickColor = isDark ? "#64748b" : "#9aa3b0";
+  const tickColor = isDark ? "#94a3b8" : "#9aa3b0";
   const gridColor = isDark ? "#1d2333" : "#eef0f4";
   const textColor = isDark ? "#c9d4e8" : "#374151";
 
