@@ -670,6 +670,19 @@ export default function LtvCalculator({ isDark }) {
                 {(1 - iapPct) >= 0.15 && <span>IAA {usd4(iaaArpdau)}</span>}
               </div>
             </div>
+            <div className="ltv-chart-stats">
+              {[
+                { label: "D30 LTV", value: usd(ltv30) },
+                { label: "CPI",     value: usd(cpi) },
+                { label: "D30 ROI", value: `${((ltv30 / cpi) * 100).toFixed(0)}%`, color: ltv30 >= cpi ? "var(--good)" : "var(--bad)" },
+                { label: "Breakeven", value: breakevenDay ? `D${breakevenDay}` : "360d+", color: breakevenDay ? (breakevenDay <= 90 ? "var(--good)" : "var(--warn)") : "var(--bad)" },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="ltv-chart-stat">
+                  <span className="ltv-chart-stat-label">{label}</span>
+                  <span className="ltv-chart-stat-value" style={color ? { color } : {}}>{value}</span>
+                </div>
+              ))}
+            </div>
           </div>
           </div>{/* ltv-charts-top */}
 

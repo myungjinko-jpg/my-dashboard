@@ -830,6 +830,36 @@ tbody tr.row-highlight td:first-child {
 
 /* ── Charts ── */
 .ltv-chart-card { padding: 20px 24px; }
+.ltv-chart-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.ltv-chart-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 12px;
+  border-right: 1px solid var(--line);
+}
+.ltv-chart-stat:first-child { padding-left: 0; }
+.ltv-chart-stat:last-child { border-right: none; }
+.ltv-chart-stat-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.ltv-chart-stat-value {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
 .ltv-chart-title {
   font-size: 13px;
   font-weight: 700;
