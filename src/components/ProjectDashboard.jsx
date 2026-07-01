@@ -166,6 +166,84 @@ function PlatChips({ platform }) {
   );
 }
 
+function getAdminSteps(contract) {
+  if (contract === "부속합의서 추가 필요") return [
+    { id: "draft",   label: "부속합의서 기안 작성", desc: "법무 검토 후 기안 시스템 등록" },
+    { id: "sign",    label: "서명 완료",             desc: "파트너사 및 내부 서명" },
+    { id: "vendor",  label: "거래처 등록",           desc: "경영지원팀에 거래처 등록 요청" },
+    { id: "invoice", label: "인보이스 발행",         desc: "파트너사에 인보이스 수령" },
+    { id: "payment", label: "비용 지급 기안",        desc: "지급 기안 올리고 결재 요청" },
+  ];
+  if (["파트너십 계약 검토중", "CPI 계약서 검토중"].includes(contract)) return [
+    { id: "review",  label: "계약서 검토",           desc: "법무·조건 검토 완료" },
+    { id: "sign",    label: "계약 체결",             desc: "파트너사 및 내부 서명" },
+    { id: "vendor",  label: "거래처 등록",           desc: "경영지원팀에 거래처 등록 요청" },
+    { id: "invoice", label: "인보이스 발행",         desc: "파트너사에 인보이스 수령" },
+    { id: "payment", label: "비용 지급 기안",        desc: "지급 기안 올리고 결재 요청" },
+  ];
+  return null;
+}
+
+function AdminChecklist({ contract }) {
+  const steps = getAdminSteps(contract);
+  const [checked, setChecked] = useState(new Set());
+  if (!steps) return null;
+
+  const toggle = (id) => setChecked(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+
+  const done = checked.size;
+  const total = steps.length;
+  const pct = Math.round((done / total) * 100);
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--muted)" }}>📋 행정 체크리스트</div>
+        <div style={{ flex: 1, height: 4, borderRadius: 2, background: "var(--line)", overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${pct}%`, background: pct === 100 ? "#22c55e" : "#8b5cf6", borderRadius: 2, transition: "width .2s" }} />
+        </div>
+        <span style={{ fontSize: 10, color: pct === 100 ? "#22c55e" : "var(--muted)", fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{done}/{total}</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {steps.map((step, i) => {
+          const isChecked = checked.has(step.id);
+          const isLocked = i > 0 && !checked.has(steps[i - 1].id);
+          return (
+            <div key={step.id} onClick={() => !isLocked && toggle(step.id)} style={{
+              display: "flex", alignItems: "flex-start", gap: 10,
+              padding: "8px 10px", borderRadius: 6,
+              background: isChecked ? "#22c55e0d" : "var(--bg)",
+              border: `1px solid ${isChecked ? "#22c55e33" : "var(--line)"}`,
+              cursor: isLocked ? "not-allowed" : "pointer",
+              opacity: isLocked ? 0.4 : 1,
+              transition: "all .15s",
+            }}>
+              <div style={{
+                width: 18, height: 18, borderRadius: 4, flexShrink: 0, marginTop: 1,
+                border: `2px solid ${isChecked ? "#22c55e" : "var(--line)"}`,
+                background: isChecked ? "#22c55e" : "transparent",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                transition: "all .15s",
+              }}>
+                {isChecked && <span style={{ color: "#fff", fontSize: 11, lineHeight: 1 }}>✓</span>}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: isChecked ? "var(--muted)" : "var(--text)", textDecoration: isChecked ? "line-through" : "none" }}>{step.label}</div>
+                <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{step.desc}</div>
+              </div>
+              <div style={{ fontSize: 10, color: "var(--muted)", flexShrink: 0, marginTop: 3 }}>{i + 1}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function SidePanel({ project: p, onClose }) {
   const [visible, setVisible] = useState(false);
   const si = STATUS_MAP[p.status] || STATUS_MAP["In Preparation"];
@@ -243,6 +321,9 @@ function SidePanel({ project: p, onClose }) {
           </div>
 
           <div style={{ height: 1, background: "var(--line)" }} />
+
+          {/* Admin Checklist */}
+          <AdminChecklist contract={p.contract} />
 
           {/* Biz Notes */}
           <div>
