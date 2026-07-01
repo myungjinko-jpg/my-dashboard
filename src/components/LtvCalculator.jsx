@@ -168,7 +168,7 @@ function parseAppMagicCSV(text) {
   }).filter(a => a.d1 && a.k);
 }
 
-const DEFAULTS = { d1: 0.43, k: -0.8, arpdau: 0.5, iapPct: 0.5, cpi: 2.55, installs: 1000 };
+const DEFAULTS = { d1: 0.43, k: -0.8, arpdau: 0.5, iapPct: 0.5, cpi: 2.55 };
 
 export default function LtvCalculator({ isDark }) {
   const [d1, setD1] = useState(DEFAULTS.d1);
@@ -176,7 +176,6 @@ export default function LtvCalculator({ isDark }) {
   const [arpdau, setArpdau] = useState(DEFAULTS.arpdau);
   const [iapPct, setIapPct] = useState(DEFAULTS.iapPct);
   const [cpi, setCpi] = useState(DEFAULTS.cpi);
-  const [installs, setInstalls] = useState(DEFAULTS.installs);
   const [presets, setPresets] = useState([]);
   const [saveName, setSaveName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -238,7 +237,7 @@ export default function LtvCalculator({ isDark }) {
 
   const resetAll = () => {
     setD1(DEFAULTS.d1); setK(DEFAULTS.k); setArpdau(DEFAULTS.arpdau);
-    setIapPct(DEFAULTS.iapPct); setCpi(DEFAULTS.cpi); setInstalls(DEFAULTS.installs);
+    setIapPct(DEFAULTS.iapPct); setCpi(DEFAULTS.cpi);
     setAppliedBm(null);
   };
 
@@ -250,10 +249,10 @@ export default function LtvCalculator({ isDark }) {
     if (!name || !APPS_SCRIPT_URL) return;
     setPresetLoading(true);
     try {
-      const data = JSON.stringify({ name, d1, k, arpdau, iapPct, cpi, installs });
+      const data = JSON.stringify({ name, d1, k, arpdau, iapPct, cpi });
       const res = await gasGet({ action: "save", data });
       if (res.ok) {
-        const newPreset = { id: res.id, name, d1, k, arpdau, iapPct, cpi, installs };
+        const newPreset = { id: res.id, name, d1, k, arpdau, iapPct, cpi };
         setPresets(prev => [newPreset, ...prev]);
       }
     } catch { setPresetError("저장 실패"); }
@@ -262,7 +261,7 @@ export default function LtvCalculator({ isDark }) {
 
   const loadPreset = (p) => {
     setD1(Number(p.d1)); setK(Number(p.k)); setArpdau(Number(p.arpdau));
-    setIapPct(Number(p.iapPct)); setCpi(Number(p.cpi)); setInstalls(Number(p.installs));
+    setIapPct(Number(p.iapPct)); setCpi(Number(p.cpi));
   };
 
   const deletePreset = async (id) => {
@@ -492,11 +491,6 @@ export default function LtvCalculator({ isDark }) {
             sub: breakevenDay ? `누적 LTV ≥ CPI ${usd(cpi)}` : "회수 불가",
             accent: breakevenDay ? (breakevenDay <= 30 ? "good" : breakevenDay <= 90 ? "warn" : "bad") : "bad",
           },
-          {
-            label: "D30 Total Rev",
-            value: `$${Math.round(ltv30 * installs).toLocaleString()}`,
-            sub: `${installs.toLocaleString()} installs`,
-          },
         ].map(({ label, value, sub, accent }) => (
           <div key={label} className={`ltv-kpi-card ${accent || ""}`}>
             <div className="ltv-kpi-label">{label}</div>
@@ -610,7 +604,6 @@ export default function LtvCalculator({ isDark }) {
               <SlidersHorizontal size={14} /> Manual Inputs
             </div>
             <SliderInput label={<>IAP : IAA 비중 <HelpTip text={"ARPDAU 중 인앱결제(IAP)와 광고수익(IAA)의 비율입니다.\n---\n게임의 실제 수익 구조에 맞게 직접 조절하세요.\n자동 입력되지 않으므로 반드시 확인이 필요합니다."} /></>} value={iapPct} onChange={setIapPct} min={0} max={1} step={0.1} display={ratio} />
-            <SliderInput label={<>Install Count <HelpTip text={"분석 대상 코호트의 인스톨 수입니다.\n---\nD30 Total Rev 계산에 사용됩니다."} /></>} value={installs} onChange={setInstalls} min={100} max={1900} step={100} display={(v) => v.toLocaleString()} />
           </div>
 
           <div className="ltv-section-block">
@@ -729,7 +722,6 @@ export default function LtvCalculator({ isDark }) {
                     <th>IAA Rev</th>
                     <th>Cum LTV</th>
                     <th>ROI</th>
-                    <th>Total Rev</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -747,7 +739,6 @@ export default function LtvCalculator({ isDark }) {
                         <td style={{ color: roiOk ? "var(--good)" : "var(--bad)", fontWeight: 600 }}>
                           {roi.toFixed(0)}%
                         </td>
-                        <td>{`$${(m.cumLtv * installs).toLocaleString(undefined, { maximumFractionDigits: 0 })}`}</td>
                       </tr>
                     );
                   })}
