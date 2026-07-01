@@ -1,4 +1,4 @@
-# my-dashboard
+# Flick Toolbox
 
 내부용 CPI Test Dashboard + LTV Calculator. React + Vite, Vercel 배포.
 
