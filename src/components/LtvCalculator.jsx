@@ -405,12 +405,12 @@ export default function LtvCalculator({ isDark }) {
     },
     scales: {
       x: {
-        ticks: { color: tickColor, font: { size: 11 } },
-        grid: { color: gridColor },
+        ticks: { color: tickColor, font: { size: 11 }, maxTicksLimit: 8 },
+        grid: { display: false },
         border: { color: gridColor },
       },
       y: {
-        ticks: { color: tickColor, font: { size: 11 }, callback: yFmt },
+        ticks: { color: tickColor, font: { size: 11 }, callback: yFmt, maxTicksLimit: 5 },
         grid: { color: gridColor },
         border: { color: "transparent" },
       },
