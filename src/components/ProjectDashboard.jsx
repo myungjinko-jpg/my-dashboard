@@ -292,8 +292,8 @@ function SidePanel({ project: p, onClose }) {
   );
 }
 
-const STATUS_FILTER_LABEL = { action: "Action Needed", ua: "UA Testing", dev: "DEV Iteration" };
-const STATUS_FILTER_COLOR = { action: "#ef4444", ua: "#4f9cf0", dev: "#22c55e" };
+const STATUS_FILTER_LABEL = { action: "Action Needed", ua: "UA Testing", dev: "DEV Iteration", biz: "기안 필요", vendor: "거래처 등록" };
+const STATUS_FILTER_COLOR = { action: "#ef4444", ua: "#4f9cf0", dev: "#22c55e", biz: "#8b5cf6", vendor: "#f97316" };
 
 function WeeklySection({ items, totalCount, statusFilter, onSelect }) {
   const { mon, sun } = getWeekBounds();
@@ -491,6 +491,8 @@ export default function ProjectDashboard() {
     if (statusFilter === "action") return p.status === "Action Needed";
     if (statusFilter === "ua")     return p.status === "UA testing";
     if (statusFilter === "dev")    return p.status === "DEV Iteration";
+    if (statusFilter === "biz")    return p.contract === "부속합의서 추가 필요";
+    if (statusFilter === "vendor") return ["파트너십 계약 검토중","CPI 계약서 검토중"].includes(p.contract);
     return true;
   };
 
@@ -504,10 +506,12 @@ export default function ProjectDashboard() {
   [weeklyItems, statusFilter]);
 
   const counts = useMemo(() => ({
-    action: visibleAll.filter(p => p.status === "Action Needed").length,
-    ua:     visibleAll.filter(p => p.status === "UA testing").length,
-    dev:    visibleAll.filter(p => p.status === "DEV Iteration").length,
-    all:    visibleAll.length,
+    action:  visibleAll.filter(p => p.status === "Action Needed").length,
+    ua:      visibleAll.filter(p => p.status === "UA testing").length,
+    dev:     visibleAll.filter(p => p.status === "DEV Iteration").length,
+    all:     visibleAll.length,
+    biz:     visibleAll.filter(p => p.contract === "부속합의서 추가 필요").length,
+    vendor:  visibleAll.filter(p => ["파트너십 계약 검토중","CPI 계약서 검토중"].includes(p.contract)).length,
   }), [visibleAll]);
 
   const sep = { width: 1, height: 18, background: "var(--line)", flexShrink: 0 };
@@ -550,10 +554,27 @@ export default function ProjectDashboard() {
         <KpiCard
           value={counts.all}
           label="전체 프로젝트"
-          sub={`Stage 0~1 활성`}
+          sub="Stage 0~1 활성"
           color="var(--muted)"
           onClick={() => setStatusFilter("all")}
           active={statusFilter === "all"}
+        />
+        <div style={{ width: 1, background: "var(--line)", alignSelf: "stretch", margin: "4px 0" }} />
+        <KpiCard
+          value={counts.biz}
+          label="기안 필요"
+          sub="부속합의서 기안 대상"
+          color="#8b5cf6"
+          onClick={() => setStatusFilter(s => s === "biz" ? "all" : "biz")}
+          active={statusFilter === "biz"}
+        />
+        <KpiCard
+          value={counts.vendor}
+          label="거래처 등록"
+          sub="계약 검토중 스튜디오"
+          color="#f97316"
+          onClick={() => setStatusFilter(s => s === "vendor" ? "all" : "vendor")}
+          active={statusFilter === "vendor"}
         />
       </div>
 
