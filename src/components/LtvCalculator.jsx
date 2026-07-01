@@ -189,6 +189,7 @@ export default function LtvCalculator({ isDark }) {
   const [bmUploading, setBmUploading] = useState(false);
   const [bmMsg, setBmMsg] = useState("");
   const [appliedBm, setAppliedBm] = useState(null);
+  const [selectedBmIdx, setSelectedBmIdx] = useState("");
   const fileInputRef = useRef(null);
 
   const iapArpdau = arpdau * iapPct;
@@ -534,18 +535,16 @@ export default function LtvCalculator({ isDark }) {
                     </select>
                   </div>
                   <div className="ltv-select-wrap">
-                    <select className="ltv-select" defaultValue="" disabled={bmLoading || filteredBm.length === 0} onChange={e => {
-                      const bm = filteredBm.find((_, i) => String(i) === e.target.value);
-                      if (bm) applyBenchmark(bm);
-                      e.target.value = "";
+                    <select className="ltv-select" value={selectedBmIdx} disabled={bmLoading || filteredBm.length === 0} onChange={e => {
+                      const idx = e.target.value;
+                      const bm = filteredBm.find((_, i) => String(i) === idx);
+                      if (bm) { applyBenchmark(bm); setSelectedBmIdx(idx); }
                     }}>
                       <option value="" disabled>
                         {bmLoading ? "불러오는 중..." : filteredBm.length === 0 ? "CSV를 업로드하면 목록이 쌓입니다" : "앱 선택..."}
                       </option>
                       {filteredBm.map((bm, i) => (
-                        <option key={i} value={String(i)}>
-                          {bm.app} · D1 {bm.d1 ? (bm.d1*100).toFixed(1) : "–"}% · k {bm.k ?? "–"}
-                        </option>
+                        <option key={i} value={String(i)}>{bm.app}</option>
                       ))}
                     </select>
                   </div>
@@ -553,9 +552,29 @@ export default function LtvCalculator({ isDark }) {
               </>
             )}
             {appliedBm && (
-              <div className="ltv-applied-bm" style={{ marginTop: 10 }}>
-                📊 <strong>{appliedBm.app}</strong> 기반 · D1 {(appliedBm.d1*100).toFixed(1)}% · k {appliedBm.k}{appliedBm.cumRpd ? ` · ARPDAU $${Number(appliedBm.cumRpd).toFixed(2)}` : ""}
-                <button className="ltv-applied-bm-clear" onClick={() => setAppliedBm(null)} title="출처 표시 닫기">✕</button>
+              <div className="ltv-applied-bm">
+                <div className="ltv-applied-bm-header">
+                  <span className="ltv-applied-bm-name">{appliedBm.app}</span>
+                  <button className="ltv-applied-bm-clear" onClick={() => { setAppliedBm(null); setSelectedBmIdx(""); }} title="선택 해제">✕</button>
+                </div>
+                <div className="ltv-applied-bm-stats">
+                  <div className="ltv-applied-bm-stat">
+                    <span className="ltv-applied-bm-stat-label">D1</span>
+                    <span className="ltv-applied-bm-stat-value">{appliedBm.d1 ? (appliedBm.d1*100).toFixed(1) + "%" : "–"}</span>
+                  </div>
+                  <div className="ltv-applied-bm-stat">
+                    <span className="ltv-applied-bm-stat-label">k</span>
+                    <span className="ltv-applied-bm-stat-value">{appliedBm.k ?? "–"}</span>
+                  </div>
+                  <div className="ltv-applied-bm-stat">
+                    <span className="ltv-applied-bm-stat-label">ARPDAU</span>
+                    <span className="ltv-applied-bm-stat-value">{appliedBm.cumRpd ? `$${Number(appliedBm.cumRpd).toFixed(2)}` : "–"}</span>
+                  </div>
+                  <div className="ltv-applied-bm-stat">
+                    <span className="ltv-applied-bm-stat-label">CPI</span>
+                    <span className="ltv-applied-bm-stat-value">{appliedBm.cpi ? `$${Number(appliedBm.cpi).toFixed(2)}` : "–"}</span>
+                  </div>
+                </div>
               </div>
             )}
           </div>
