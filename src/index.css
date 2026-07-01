@@ -564,7 +564,7 @@ tbody tr.row-highlight td:first-child {
 }
 
 .ltv-section-block {
-  padding: 20px 20px 16px;
+  padding: 24px 20px 20px;
 }
 .ltv-section-block + .ltv-section-block {
   border-top: 1px solid var(--line);
@@ -577,14 +577,14 @@ tbody tr.row-highlight td:first-child {
   font-size: 13px;
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .ltv-charts { display: flex; flex-direction: column; gap: 16px; }
 .ltv-charts-top { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .ltv-charts-top > * { min-width: 0; }
 
-.ltv-input-group { margin-bottom: 16px; }
+.ltv-input-group { margin-bottom: 22px; }
 .ltv-input-group:last-child { margin-bottom: 0; }
 
 .ltv-input-label {
@@ -593,7 +593,7 @@ tbody tr.row-highlight td:first-child {
   font-size: 12px;
   font-weight: 600;
   color: var(--text);
-  margin-bottom: 7px;
+  margin-bottom: 10px;
 }
 .ltv-input-value {
   font-weight: 600;
