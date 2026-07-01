@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 const OWNERS = {
   "2bdd": { label: "권현조", short: "권", color: "#4f7ef0" },
   "2f4d": { label: "고명진", short: "고", color: "#a855f7" },
+  "ban":  { label: "반건욱", short: "반", color: "#ec4899" },
   "34fd": { label: "최장용", short: "최", color: "#f59e0b" },
   "36cd": { label: "김량희", short: "김", color: "#22c55e" },
 };
@@ -306,7 +307,7 @@ export default function ProjectDashboard() {
 
         {/* owner filters */}
         <span style={{ fontSize: 11, color: "var(--muted)" }}>Owner</span>
-        {["all", "2bdd", "2f4d", "34fd", "36cd"].map(key => (
+        {["all", "2bdd", "2f4d", "ban", "34fd", "36cd"].map(key => (
           <button key={key} style={S.ownerBtn(ownerFilter === key)} onClick={() => setOwnerFilter(key)}>
             {key === "all" ? "전체" : OWNERS[key].label}
           </button>
