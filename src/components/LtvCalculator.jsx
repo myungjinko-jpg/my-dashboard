@@ -605,7 +605,7 @@ export default function LtvCalculator({ isDark }) {
             <div className="ltv-section-title">
               <SlidersHorizontal size={14} /> Manual Inputs
             </div>
-            <SliderInput label={<>IAP : IAA 비중 <HelpTip text={"ARPDAU 중 인앱결제(IAP)와 광고수익(IAA)의 비율입니다.\n---\n게임의 실제 수익 구조에 맞게 직접 조절하세요.\n자동 입력되지 않으므로 반드시 확인이 필요합니다."} /></>} value={iapPct} onChange={setIapPct} min={0} max={1} step={0.1} display={ratio}>
+            <SliderInput label={<>IAP : IAA 비중 <span className="ltv-manual-badge">수동</span> <HelpTip text={"ARPDAU 중 인앱결제(IAP)와 광고수익(IAA)의 비율입니다.\n---\n벤치마크에서 자동 입력되지 않으므로 게임에 맞게 직접 조절하세요."} /></>} value={iapPct} onChange={setIapPct} min={0} max={1} step={0.1} display={ratio}>
               <div className="ltv-iap-hint">
                 <span>IAP <strong>{usd(iapArpdau)}</strong></span>
                 <span>IAA <strong>{usd(iaaArpdau)}</strong></span>
