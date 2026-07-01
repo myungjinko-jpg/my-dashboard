@@ -247,9 +247,9 @@ export default function LtvCalculator({ isDark }) {
     gasGet({ action: "delete", id }).catch(() => {});
   };
 
-  const tickColor = isDark ? "#94a3b8" : "#6b7280";
-  const gridColor = isDark ? "#2a3448" : "#e5e7eb";
-  const textColor = isDark ? "#cbd5e1" : "#374151";
+  const tickColor = "#3d4f6e";
+  const gridColor = "#1d2333";
+  const textColor = "#c9d4e8";
 
   // Daily retention: ret(d) = d1 * d^k
   const retByDay = useMemo(() => {
@@ -309,29 +309,41 @@ export default function LtvCalculator({ isDark }) {
   // Retention chart (D1~D30 daily)
   const retChartData = useMemo(() => {
     const labels = Array.from({ length: 30 }, (_, i) => `D${i + 1}`);
-    const goalPoints = Array.from({ length: 30 }, (_, i) => DAY_GOALS[i + 1] ?? null);
+    const goalPoints = Array.from({ length: 30 }, (_, i) => DAY_GOALS[i + 1] != null ? +(DAY_GOALS[i + 1] * 100).toFixed(2) : null);
     return {
       labels,
       datasets: [
         {
-          label: "Simulated Retention",
+          label: "Retention",
           data: retByDay.slice(0, 30).map(v => +(v * 100).toFixed(2)),
-          borderColor: "#4361ee",
-          backgroundColor: "rgba(67,97,238,0.08)",
+          borderColor: "#818cf8",
+          backgroundColor: (ctx) => {
+            const chart = ctx.chart;
+            const { chartArea } = chart;
+            if (!chartArea) return "rgba(129,140,248,0)";
+            const grad = chart.ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+            grad.addColorStop(0, "rgba(129,140,248,0.18)");
+            grad.addColorStop(1, "rgba(129,140,248,0)");
+            return grad;
+          },
           fill: true,
-          tension: 0.3,
-          pointRadius: 2,
+          tension: 0.35,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          borderWidth: 2.5,
         },
         {
           label: "Goal",
-          data: goalPoints.map(v => v !== null ? +(v * 100).toFixed(2) : null),
-          borderColor: "#f59e0b",
-          backgroundColor: "transparent",
-          borderDash: [5, 3],
-          pointRadius: 5,
+          data: goalPoints,
+          borderColor: "rgba(148,163,184,0)",
+          backgroundColor: "rgba(148,163,184,0.45)",
+          pointRadius: goalPoints.map(v => v !== null ? 4 : 0),
           pointStyle: "circle",
+          pointBorderColor: "rgba(148,163,184,0.5)",
+          pointBorderWidth: 1.5,
+          pointBackgroundColor: "transparent",
+          showLine: false,
           spanGaps: false,
-          tension: 0,
         },
       ],
     };
@@ -344,64 +356,63 @@ export default function LtvCalculator({ isDark }) {
       labels: MONTH_LABELS,
       datasets: [
         {
-          label: "Total LTV / User",
+          label: "Total LTV",
           data: monthly.map(m => +m.cumLtv.toFixed(4)),
-          borderColor: "#10b981",
-          backgroundColor: "rgba(16,185,129,0.08)",
+          borderColor: "#818cf8",
+          backgroundColor: (ctx) => {
+            const chart = ctx.chart;
+            const { chartArea } = chart;
+            if (!chartArea) return "rgba(129,140,248,0)";
+            const grad = chart.ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+            grad.addColorStop(0, "rgba(129,140,248,0.18)");
+            grad.addColorStop(1, "rgba(129,140,248,0)");
+            return grad;
+          },
           fill: true,
-          tension: 0.3,
-          pointRadius: 3,
-        },
-        {
-          label: `IAP (${Math.round(iapPct * 100)}%)`,
-          data: monthly.map(m => +m.cumIap.toFixed(4)),
-          borderColor: "#8b5cf6",
-          backgroundColor: "transparent",
-          borderDash: [4, 2],
-          pointRadius: 2,
-          tension: 0.3,
-        },
-        {
-          label: `IAA (${Math.round((1 - iapPct) * 100)}%)`,
-          data: monthly.map(m => +m.cumIaa.toFixed(4)),
-          borderColor: "#f59e0b",
-          backgroundColor: "transparent",
-          borderDash: [4, 2],
-          pointRadius: 2,
-          tension: 0.3,
+          tension: 0.35,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          borderWidth: 2.5,
         },
         {
           label: "CPI",
           data: cpiLine,
-          borderColor: "#f43f5e",
+          borderColor: "#fb7185",
           backgroundColor: "transparent",
-          borderDash: [5, 3],
           pointRadius: 0,
+          borderWidth: 1.5,
+          borderDash: [],
         },
       ],
     };
-  }, [monthly, cpi, iapPct]);
+  }, [monthly, cpi]);
 
-  const chartOpts = (yLabel, yFmt) => ({
+  const chartOpts = (yFmt) => ({
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: "index", intersect: false },
     plugins: {
-      legend: { position: "top", labels: { color: textColor, boxWidth: 12, font: { size: 12 } } },
+      legend: { display: false },
       tooltip: {
-        backgroundColor: isDark ? "#1e2d42" : "#fff",
-        titleColor: textColor,
-        bodyColor: textColor,
-        borderColor: isDark ? "#2a3a5a" : "#e2e5ea",
+        backgroundColor: "#0e1117",
+        titleColor: "#c9d4e8",
+        bodyColor: "#64748b",
+        borderColor: "#1d2333",
         borderWidth: 1,
+        padding: 10,
+        cornerRadius: 6,
       },
     },
     scales: {
-      x: { ticks: { color: tickColor, font: { size: 11 } }, grid: { color: gridColor } },
+      x: {
+        ticks: { color: tickColor, font: { size: 11 } },
+        grid: { color: gridColor },
+        border: { color: gridColor },
+      },
       y: {
         ticks: { color: tickColor, font: { size: 11 }, callback: yFmt },
         grid: { color: gridColor },
-        title: { display: true, text: yLabel, color: tickColor, font: { size: 11 } },
+        border: { color: "transparent" },
       },
     },
   });
@@ -579,7 +590,7 @@ export default function LtvCalculator({ isDark }) {
           <div className="card ltv-chart-card">
             <div className="ltv-chart-title">Retention Curve (D1~D30)</div>
             <div style={{ height: 220 }}>
-              <Line data={retChartData} options={chartOpts("Retention (%)", (v) => v + "%")} />
+              <Line data={retChartData} options={chartOpts((v) => v + "%")} />
             </div>
             <div className="ltv-goal-bars">
               {Object.entries(DAY_GOALS).map(([day, goal]) => {
@@ -604,7 +615,7 @@ export default function LtvCalculator({ isDark }) {
           <div className="card ltv-chart-card">
             <div className="ltv-chart-title">Cumulative LTV vs CPI</div>
             <div style={{ height: 220 }}>
-              <Line data={ltvChartData} options={chartOpts("LTV per User ($)", (v) => "$" + v)} />
+              <Line data={ltvChartData} options={chartOpts((v) => "$" + v)} />
             </div>
             <div className="ltv-iap-bar" style={{ marginTop: 16 }}>
               <div className="ltv-iap-fill iap" style={{ width: `${iapPct * 100}%` }}>
