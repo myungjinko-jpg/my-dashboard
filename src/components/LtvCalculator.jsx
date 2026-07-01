@@ -5,6 +5,29 @@ import { Line } from "react-chartjs-2";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
 
+const endLabelPlugin = {
+  id: "endLabel",
+  afterDatasetsDraw(chart) {
+    const { ctx, chartArea: { right } } = chart;
+    chart.data.datasets.forEach((ds, i) => {
+      const meta = chart.getDatasetMeta(i);
+      if (meta.hidden) return;
+      const pts = meta.data.filter(Boolean);
+      if (!pts.length) return;
+      const last = pts[pts.length - 1];
+      const x = last.x, y = last.y;
+      ctx.save();
+      ctx.font = "600 10px system-ui, sans-serif";
+      ctx.fillStyle = ds.borderColor;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(ds.label, x + 6, y);
+      ctx.restore();
+    });
+  },
+};
+ChartJS.register(endLabelPlugin);
+
 // Apps Script 배포 후 URL을 여기에 입력
 const APPS_SCRIPT_URL = import.meta.env.VITE_LTV_SCRIPT_URL || "";
 
@@ -410,6 +433,7 @@ export default function LtvCalculator({ isDark }) {
   const chartOpts = (yFmt) => ({
     responsive: true,
     maintainAspectRatio: false,
+    layout: { padding: { right: 52 } },
     interaction: { mode: "index", intersect: false },
     plugins: {
       legend: { display: false },
