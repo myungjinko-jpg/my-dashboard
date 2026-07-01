@@ -859,7 +859,7 @@ tbody tr.row-highlight td:first-child {
   font-variant-numeric: tabular-nums;
 }
 .ltv-table th:first-child,
-.ltv-table td:first-child { text-align: left; }
+.ltv-table td:first-child { text-align: center; }
 .ltv-table tr:last-child td { border-bottom: none; }
 .ltv-table tr:hover td { background: var(--card-bg-subtle); }
 
