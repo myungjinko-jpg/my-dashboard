@@ -471,6 +471,7 @@ export default function LtvCalculator({ isDark }) {
     },
   });
 
+  const ltv1  = ltvByDay.total[0];
   const ltv7  = ltvByDay.total[6];
   const ltv14 = ltvByDay.total[13];
   const ltv30 = ltvByDay.total[29];
@@ -481,6 +482,7 @@ export default function LtvCalculator({ isDark }) {
       {/* KPI Summary */}
       <div className="ltv-kpi-row">
         {[
+          { label: "LTV D1",  value: usd(ltv1),  sub: `ROI ${((ltv1  / cpi) * 100).toFixed(0)}%` },
           { label: "LTV D7",  value: usd(ltv7),  sub: `ROI ${((ltv7  / cpi) * 100).toFixed(0)}%` },
           { label: "LTV D14", value: usd(ltv14), sub: `ROI ${((ltv14 / cpi) * 100).toFixed(0)}%` },
           { label: "LTV D30", value: usd(ltv30), sub: `ROI ${((ltv30 / cpi) * 100).toFixed(0)}%` },
