@@ -247,9 +247,9 @@ export default function LtvCalculator({ isDark }) {
     gasGet({ action: "delete", id }).catch(() => {});
   };
 
-  const tickColor = "#3d4f6e";
-  const gridColor = "#1d2333";
-  const textColor = "#c9d4e8";
+  const tickColor = isDark ? "#3d4f6e" : "#c8d0dc";
+  const gridColor = isDark ? "#1d2333" : "#eef0f4";
+  const textColor = isDark ? "#c9d4e8" : "#374151";
 
   // Daily retention: ret(d) = d1 * d^k
   const retByDay = useMemo(() => {
@@ -406,7 +406,7 @@ export default function LtvCalculator({ isDark }) {
     scales: {
       x: {
         ticks: { color: tickColor, font: { size: 11 }, maxTicksLimit: 8 },
-        grid: { display: false },
+        grid: { color: gridColor },
         border: { color: gridColor },
       },
       y: {
