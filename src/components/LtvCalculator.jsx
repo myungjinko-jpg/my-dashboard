@@ -44,7 +44,11 @@ function HelpTip({ text }) {
           className="ltv-helptip-box"
           style={{ left: pos.x, top: pos.y, transform: "translate(-50%, -100%)" }}
         >
-          {text}
+          {text.split("\n").map((line, i) =>
+            line === "---"
+              ? <span key={i} className="ltv-helptip-sep" />
+              : <span key={i} className="ltv-helptip-line">{line}</span>
+          )}
         </span>
       )}
     </span>
@@ -444,7 +448,7 @@ export default function LtvCalculator({ isDark }) {
           <div className="ltv-section-block">
             <div className="ltv-section-title">
               <Database size={14} /> Benchmark
-              <HelpTip text="AppMagic CSV를 업로드하면 앱별 데이터를 Google Sheets에 누적 저장됩니다. 앱을 선택하면 D1·k·ARPDAU·CPI가 자동 입력됩니다.&#10;&#10;📋 CSV 내보내기 방법&#10;앱매직 앱 비교 대시보드 → 컬럼 설정에서 아래 순서로 지정 후 내보내기&#10;1일 차 잔존율 · 7일 차 잔존율 · 14일 차 잔존율 · 누적 RpD · 광고비 · 다운로드 수" />
+              <HelpTip text={"AppMagic 데이터를 기반으로 앱별 지표를 자동 입력합니다.\n---\n사용 순서\n① CSV 업로드 → 구글 시트에 누적 저장\n② 장르 필터로 범위 좁히기\n③ 앱 선택 → D1 · k · ARPDAU · CPI 자동 입력\n---\nCSV 컬럼 순서 (앱매직 앱 비교 대시보드)\n1일 차 잔존율 · 7일 차 잔존율 · 14일 차 잔존율\n누적 RpD · 광고비 · 다운로드 수"} />
             </div>
             {!APPS_SCRIPT_URL ? (
               <div className="ltv-script-notice">Apps Script URL 설정 후 사용 가능합니다.</div>
@@ -494,11 +498,11 @@ export default function LtvCalculator({ isDark }) {
           <div className="ltv-section-block">
             <div className="ltv-section-title">
               <Activity size={14} /> Retention Model
-              <HelpTip text="Power-law 공식 D1 × day^k 로 일별 잔존율을 추정합니다. D1은 설치 첫날 잔존율, k는 감소 속도(음수일수록 빠른 감소)입니다." />
+              <HelpTip text={"Power-law 공식으로 일별 잔존율을 추정합니다.\n공식: Ret(d) = D1 × d^k\n---\nD1  설치 첫날 잔존율\nk    감소 속도 (음수일수록 빠른 하락)"} />
             </div>
             <SliderInput label="D1 Retention" value={d1} onChange={(v) => { setD1(v); setAppliedBm(null); }} min={0.05} max={0.8} step={0.01} display={pct} />
             <SliderInput
-              label={<>Decay Factor (k) <HelpTip text="0에 가까울수록 잔존율이 완만하게 감소, -1.5에 가까울수록 급격히 떨어집니다. 하이브리드 캐주얼 기준 -0.6~-0.8이 일반적입니다." /></>}
+              label={<>Decay Factor (k) <HelpTip text={"잔존율 감소 속도를 나타내는 지수\n---\n완만  k ≥ -0.45   오래 남는 코어 유저\n보통  -0.85~-0.45  하이브리드 캐주얼 일반\n급격  k < -0.85   빠른 이탈, 광고 수익 집중\n---\n하이브리드 캐주얼 기준: -0.6 ~ -0.8"} /></>}
               value={k} onChange={(v) => { setK(v); setAppliedBm(null); }}
               min={-1.5} max={-0.1} step={0.01}
               display={(v) => {
@@ -511,24 +515,24 @@ export default function LtvCalculator({ isDark }) {
           <div className="ltv-section-block">
             <div className="ltv-section-title">
               <DollarSign size={14} /> Revenue
-              <HelpTip text="수익 파라미터를 설정합니다. ARPDAU는 일일 활성유저 1인당 평균 매출입니다." />
+              <HelpTip text={"ARPDAU  일일 활성 유저 1인당 평균 매출\nCPI       유저 1명 획득 광고비\n---\n슬라이더 외 ARPDAU는 직접 입력도 가능합니다."} />
             </div>
             <ArpdauInput value={arpdau} onChange={setArpdau} />
-            <SliderInput label={<>CPI <HelpTip text="유저 1명 획득에 드는 광고비(Cost Per Install). Breakeven은 누적 LTV가 이 값을 넘는 날로, D30 이내면 공격적 스케일업이 가능합니다." /></>} value={cpi} onChange={setCpi} min={0.1} max={5.0} step={0.05} display={usd} />
+            <SliderInput label={<>CPI <HelpTip text={"유저 1명 획득에 드는 광고비 (Cost Per Install)\n---\nBreakeven — 누적 LTV ≥ CPI 가 되는 날\nD30 이내   공격적 스케일업 가능\nD90 이내   보통 수준\nD90 초과   수익 구조 재검토 필요"} /></>} value={cpi} onChange={setCpi} min={0.1} max={5.0} step={0.05} display={usd} />
           </div>
 
           <div className="ltv-section-block">
             <div className="ltv-section-title">
               <SlidersHorizontal size={14} /> Manual Inputs
             </div>
-            <SliderInput label={<>IAP : IAA 비중 <HelpTip text="하이브리드 캐주얼 수익 구조. IAA(광고)는 초기 유저에서 주로 발생하고, IAP(인앱결제)는 장기 잔존 유저에서 발생합니다. 일반적으로 IAA 70~90%가 많습니다. 슬라이더로 게임의 실제 비중에 맞게 조절하세요." /></>} value={iapPct} onChange={setIapPct} min={0} max={1} step={0.1} display={ratio} />
-            <SliderInput label={<>Install Count <HelpTip text="인스톨 수를 설정하면 D30 Total Rev에서 코호트 전체 예상 매출을 확인할 수 있습니다." /></>} value={installs} onChange={setInstalls} min={1000} max={100000} step={1000} display={(v) => v.toLocaleString()} />
+            <SliderInput label={<>IAP : IAA 비중 <HelpTip text={"게임의 실제 수익 구조에 맞게 직접 설정합니다.\n---\nIAP  인앱결제 — 장기 잔존 유저에서 주로 발생\nIAA  광고 수익 — 초기 이탈 유저에서 주로 발생\n---\n하이브리드 캐주얼 일반: IAA 70~90%"} /></>} value={iapPct} onChange={setIapPct} min={0} max={1} step={0.1} display={ratio} />
+            <SliderInput label={<>Install Count <HelpTip text={"코호트 규모를 설정합니다.\nD30 Total Rev = 누적 LTV × 인스톨 수"} /></>} value={installs} onChange={setInstalls} min={1000} max={100000} step={1000} display={(v) => v.toLocaleString()} />
           </div>
 
           <div className="ltv-section-block">
             <div className="ltv-section-title">
               <Bookmark size={14} /> Saved Scenarios
-              <HelpTip text="현재 파라미터 세트를 이름 붙여 저장합니다. Google Sheets에 저장되어 팀원과 공유되며, 클릭하면 해당 세트를 불러옵니다." />
+              <HelpTip text={"현재 파라미터 세트를 저장하고 불러옵니다.\n---\n구글 시트에 저장되어 팀원과 공유됩니다.\n저장된 항목 클릭 시 즉시 적용됩니다."} />
             </div>
             {!APPS_SCRIPT_URL ? (
               <div className="ltv-script-notice">

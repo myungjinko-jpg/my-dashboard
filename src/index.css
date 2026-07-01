@@ -901,11 +901,22 @@ tbody tr.row-highlight td:first-child {
   font-size: 12px;
   font-weight: 400;
   line-height: 1.65;
-  white-space: normal;
-  width: 240px;
+  width: 260px;
   z-index: 99999;
   pointer-events: none;
   margin-top: -8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ltv-helptip-line {
+  display: block;
+}
+.ltv-helptip-sep {
+  display: block;
+  height: 1px;
+  background: rgba(255,255,255,0.12);
+  margin: 5px 0;
 }
 
 .ltv-helptip-box::after {
