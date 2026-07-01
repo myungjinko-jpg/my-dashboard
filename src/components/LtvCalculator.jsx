@@ -360,7 +360,7 @@ export default function LtvCalculator({ isDark }) {
           data: goalPoints,
           borderColor: "transparent",
           backgroundColor: "transparent",
-          pointRadius: goalPoints.map((v, i) => v !== null ? 5 : 0),
+          pointRadius: goalPoints.map((v, i) => v !== null ? 4 : 0),
           pointStyle: "circle",
           pointBorderColor: goalPoints.map((v, i) => {
             if (v === null) return "transparent";
@@ -368,7 +368,7 @@ export default function LtvCalculator({ isDark }) {
             const sim = d1 * Math.pow(day, k) * 100;
             return sim >= v * 0.85 ? "#22c55e" : "#fb7185";
           }),
-          pointBorderWidth: 2,
+          pointBorderWidth: 1.5,
           pointBackgroundColor: goalPoints.map((v, i) => {
             if (v === null) return "transparent";
             const day = i + 1;
