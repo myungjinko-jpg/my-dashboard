@@ -880,7 +880,7 @@ tbody tr.row-highlight td:first-child {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--muted);
+  color: var(--text-2, #94a3b8);
   border-bottom: 2px solid var(--line);
   white-space: nowrap;
 }
