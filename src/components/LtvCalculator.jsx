@@ -375,6 +375,26 @@ export default function LtvCalculator({ isDark }) {
           borderWidth: 2.5,
         },
         {
+          label: `IAP (${Math.round(iapPct * 100)}%)`,
+          data: monthly.map(m => +m.cumIap.toFixed(4)),
+          borderColor: "#818cf8",
+          backgroundColor: "transparent",
+          borderDash: [4, 3],
+          pointRadius: 0,
+          borderWidth: 1.5,
+          tension: 0.35,
+        },
+        {
+          label: `IAA (${Math.round((1 - iapPct) * 100)}%)`,
+          data: monthly.map(m => +m.cumIaa.toFixed(4)),
+          borderColor: "#64748b",
+          backgroundColor: "transparent",
+          borderDash: [4, 3],
+          pointRadius: 0,
+          borderWidth: 1.5,
+          tension: 0.35,
+        },
+        {
           label: "CPI",
           data: cpiLine,
           borderColor: "#fb7185",
@@ -385,7 +405,7 @@ export default function LtvCalculator({ isDark }) {
         },
       ],
     };
-  }, [monthly, cpi]);
+  }, [monthly, cpi, iapPct]);
 
   const chartOpts = (yFmt) => ({
     responsive: true,
