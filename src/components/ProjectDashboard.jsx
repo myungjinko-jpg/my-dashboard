@@ -292,9 +292,13 @@ function SidePanel({ project: p, onClose }) {
   );
 }
 
-function WeeklySection({ items, onSelect }) {
+const STATUS_FILTER_LABEL = { action: "Action Needed", ua: "UA Testing", dev: "DEV Iteration" };
+const STATUS_FILTER_COLOR = { action: "#ef4444", ua: "#4f9cf0", dev: "#22c55e" };
+
+function WeeklySection({ items, totalCount, statusFilter, onSelect }) {
   const { mon, sun } = getWeekBounds();
   const rangeLabel = `${fmt(mon)}(${DOW_KR[mon.getDay()]}) ~ ${fmt(sun)}(${DOW_KR[sun.getDay()]})`;
+  const isFiltered = statusFilter && statusFilter !== "all";
 
   // group by earliest date in note
   const grouped = useMemo(() => {
@@ -322,12 +326,20 @@ function WeeklySection({ items, onSelect }) {
         <div style={{ width: 3, height: 18, borderRadius: 2, background: "#f59e0b", flexShrink: 0 }} />
         <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>이번 주 체크</span>
         <span style={{ fontSize: 11, color: "var(--muted)" }}>{rangeLabel}</span>
+        {isFiltered && (
+          <span style={{
+            fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 8,
+            background: STATUS_FILTER_COLOR[statusFilter] + "22",
+            color: STATUS_FILTER_COLOR[statusFilter],
+            border: `1px solid ${STATUS_FILTER_COLOR[statusFilter]}44`,
+          }}>{STATUS_FILTER_LABEL[statusFilter]}</span>
+        )}
         <span style={{
           marginLeft: "auto", fontSize: 11, fontWeight: 700,
           background: "#f59e0b22", color: "#f59e0b",
           border: "1px solid #f59e0b44",
           padding: "2px 10px", borderRadius: 10, fontVariantNumeric: "tabular-nums",
-        }}>{items.length}건</span>
+        }}>{items.length}{isFiltered ? ` / ${totalCount}` : ""}건</span>
       </div>
 
       {items.length === 0 ? (
@@ -475,13 +487,21 @@ export default function ProjectDashboard() {
 
   const visibleAll = useMemo(() => PROJECTS.filter(p => showDrop || p.stage !== "Drop"), [showDrop]);
 
-  const filtered = useMemo(() => visibleAll.filter(p => {
-    if (ownerFilter !== "all" && p.owner !== ownerFilter) return false;
+  const matchesStatus = (p) => {
     if (statusFilter === "action") return p.status === "Action Needed";
     if (statusFilter === "ua")     return p.status === "UA testing";
     if (statusFilter === "dev")    return p.status === "DEV Iteration";
     return true;
+  };
+
+  const filtered = useMemo(() => visibleAll.filter(p => {
+    if (ownerFilter !== "all" && p.owner !== ownerFilter) return false;
+    return matchesStatus(p);
   }), [visibleAll, ownerFilter, statusFilter]);
+
+  const filteredWeeklyItems = useMemo(() =>
+    weeklyItems.filter(matchesStatus),
+  [weeklyItems, statusFilter]);
 
   const counts = useMemo(() => ({
     action: visibleAll.filter(p => p.status === "Action Needed").length,
@@ -538,7 +558,7 @@ export default function ProjectDashboard() {
       </div>
 
       {/* weekly section */}
-      <WeeklySection items={weeklyItems} onSelect={setSelected} />
+      <WeeklySection items={filteredWeeklyItems} totalCount={weeklyItems.length} statusFilter={statusFilter} onSelect={setSelected} />
 
       {/* filter bar */}
       <div style={{
