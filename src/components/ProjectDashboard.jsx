@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 
 const OWNERS = {
-  "2bdd": { label: "PM1", color: "#4f7ef0" },
-  "2f4d": { label: "PM2", color: "#a855f7" },
-  "34fd": { label: "PM3", color: "#f59e0b" },
-  "36cd": { label: "PM4", color: "#22c55e" },
+  "2bdd": { label: "권현조", short: "권", color: "#4f7ef0" },
+  "2f4d": { label: "고명진", short: "고", color: "#a855f7" },
+  "34fd": { label: "최장용", short: "최", color: "#f59e0b" },
+  "36cd": { label: "김량희", short: "김", color: "#22c55e" },
 };
 
 const STATUS_MAP = {
@@ -224,7 +224,7 @@ function ProjectRow({ p }) {
         width: 18, height: 18, borderRadius: "50%", background: own.color,
         display: "flex", alignItems: "center", justifyContent: "center",
         fontSize: 8, fontWeight: 800, color: "#fff", flexShrink: 0,
-      }} title={own.label}>{own.label.slice(0, 2)}</div>
+      }} title={own.label}>{own.short}</div>
       {/* contract */}
       <div style={{ fontSize: 10, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
         {p.contract === "-" ? "" : p.contract}
@@ -312,6 +312,7 @@ export default function ProjectDashboard() {
           </button>
         ))}
 
+
         <div style={S.sep} />
 
         {/* drop toggle */}
@@ -326,7 +327,7 @@ export default function ProjectDashboard() {
         <span style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: ".08em" }}>Owner</span>
         {Object.entries(OWNERS).map(([k, v]) => (
           <span key={k} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <span style={{ width: 14, height: 14, borderRadius: "50%", background: v.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 800, color: "#fff" }}>{v.label.slice(0,2)}</span>
+            <span style={{ width: 14, height: 14, borderRadius: "50%", background: v.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 800, color: "#fff" }}>{v.short}</span>
             {v.label}
           </span>
         ))}
