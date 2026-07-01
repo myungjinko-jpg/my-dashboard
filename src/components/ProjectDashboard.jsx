@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 const OWNERS = {
   "2bdd": { label: "권현조", short: "권", color: "#4f7ef0" },
   "2f4d": { label: "고명진", short: "고", color: "#a855f7" },
-  "ban":  { label: "반건욱", short: "반", color: "#ec4899" },
+  "318d": { label: "반건욱", short: "반", color: "#ec4899" },
   "34fd": { label: "최장용", short: "최", color: "#f59e0b" },
   "36cd": { label: "김량희", short: "김", color: "#22c55e" },
 };
@@ -48,6 +48,13 @@ const PROJECTS = [
   { name: "Sort Factory",              studio: "Gameyogi",  stage: "Stage 1 - Iteration", status: "DEV Iteration", platform: ["AOS"],       contract: "파트너십 계약 완료",   iter: "#1",       owner: "36cd", noteType: "ongoing", note: "6/25~6/29 AOS CPI 테스트 진행중",        url: "https://www.notion.so/34fa45eaf6d380a9ab63f65a7161dc79" },
   // Stage 0 - CPI Test
   { name: "Sticker Saga",              studio: "Celesta",   stage: "Stage 0 - CPI Test",  status: "UA testing",    platform: ["AOS"],       contract: "CPI 계약서 검토중",    iter: "cpi test", owner: "2f4d", noteType: "ongoing", note: "6/30~7/4 캠페인 진행 중",                url: "https://www.notion.so/37da45eaf6d3806b98d0e140510f7169" },
+  // Stage 0 - CPI Test (반건욱)
+  { name: "Twisted Arrows",      studio: "Fiber Games", stage: "Stage 0 - CPI Test",  status: "In Preparation", platform: ["AOS"], contract: "-",                    iter: "N/A",      owner: "318d", noteType: "next",    note: "(6/17) 개발사 내부적으로 테스트 진행하고 지표 공유 예정", url: "https://www.notion.so/329a45eaf6d3808f9398d929c9c58081" },
+  { name: "Bearcade Blast",      studio: "Fiber Games", stage: "Stage 0 - CPI Test",  status: "In Preparation", platform: ["AOS"], contract: "-",                    iter: "N/A",      owner: "318d", noteType: "next",    note: "(6/17) 개발사 내부적으로 테스트 진행하고 지표 공유 예정", url: "https://www.notion.so/329a45eaf6d380eea312c37d8336d582" },
+  { name: "Dig Mania",           studio: "Palefire",    stage: "Stage 0 - CPI Test",  status: "UA testing",     platform: ["AOS"], contract: "-",                    iter: "cpi test", owner: "318d", noteType: "ongoing", note: "6/25(목) ~ 6/29(월) 테스트 진행중",                  url: "https://www.notion.so/345a45eaf6d380539754cb524a2e957f" },
+  { name: "Laser Block Jam",     studio: "R2D",         stage: "Stage 0 - CPI Test",  status: "In Preparation", platform: ["AOS"], contract: "-",                    iter: "N/A",      owner: "318d", noteType: "next",    note: "6/26 가이드 전달 및 SDK 세팅 요청",                    url: "https://www.notion.so/356a45eaf6d3809abe3cda2fb18199b6" },
+  { name: "Triple Match Satars", studio: "momosh",      stage: "Stage 0 - CPI Test",  status: "In Preparation", platform: ["AOS"], contract: "-",                    iter: "N/A",      owner: "318d", noteType: "ongoing", note: "6/30(화) 가이드 전달, 7/2(금) 작업 완료 예정",         url: "https://www.notion.so/33ea45eaf6d380bd8e27c8e87fdca79e" },
+  { name: "신작 검토 중",          studio: "Ripple",      stage: "Stage 0 - CPI Test",  status: "In Preparation", platform: ["AOS"], contract: "-",                    iter: "N/A",      owner: "318d", noteType: "next",    note: "",                                                     url: "https://www.notion.so/329a45eaf6d3808496f7e4c3ae6d0827" },
   // Stage 0 - Prototype
   { name: "Screw Flow",                studio: "Pick6",     stage: "Stage 0 - Prototype", status: "Action Needed", platform: ["AOS"],       contract: "파트너십 계약 완료",   iter: "cpi test", owner: "34fd", noteType: "ongoing", note: "6/23~6/27 테스트 진행중",                url: "https://www.notion.so/361a45eaf6d380c1b035ec8b6edd0a8c" },
   { name: "Tasty Merge",               studio: "Easy Goging",stage:"Stage 0 - Prototype", status: "UA testing",    platform: ["AOS","iOS"], contract: "파트너십 계약 검토중", iter: "cpi test", owner: "36cd", noteType: "ongoing", note: "6/23~6/27 iOS CPI 테스트 진행중",        url: "https://www.notion.so/375a45eaf6d3803abcd3cb8b1e71c2a5" },
@@ -307,7 +314,7 @@ export default function ProjectDashboard() {
 
         {/* owner filters */}
         <span style={{ fontSize: 11, color: "var(--muted)" }}>Owner</span>
-        {["all", "2bdd", "2f4d", "ban", "34fd", "36cd"].map(key => (
+        {["all", "2bdd", "2f4d", "318d", "34fd", "36cd"].map(key => (
           <button key={key} style={S.ownerBtn(ownerFilter === key)} onClick={() => setOwnerFilter(key)}>
             {key === "all" ? "전체" : OWNERS[key].label}
           </button>
