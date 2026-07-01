@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { Activity, DollarSign, Layers, Bookmark, Database } from "lucide-react";
+import { Activity, DollarSign, Layers, Bookmark, Database, SlidersHorizontal } from "lucide-react";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler } from "chart.js";
 import { Line } from "react-chartjs-2";
 
@@ -518,6 +518,9 @@ export default function LtvCalculator({ isDark }) {
           </div>
 
           <div className="ltv-section-block">
+            <div className="ltv-section-title">
+              <SlidersHorizontal size={14} /> Manual Inputs
+            </div>
             <SliderInput label={<>IAP : IAA 비중 <HelpTip text="하이브리드 캐주얼 수익 구조. IAA(광고)는 초기 유저에서 주로 발생하고, IAP(인앱결제)는 장기 잔존 유저에서 발생합니다. 일반적으로 IAA 70~90%가 많습니다. 슬라이더로 게임의 실제 비중에 맞게 조절하세요." /></>} value={iapPct} onChange={setIapPct} min={0} max={1} step={0.1} display={ratio} />
             <SliderInput label={<>Install Count <HelpTip text="인스톨 수를 설정하면 D30 Total Rev에서 코호트 전체 예상 매출을 확인할 수 있습니다." /></>} value={installs} onChange={setInstalls} min={1000} max={100000} step={1000} display={(v) => v.toLocaleString()} />
           </div>
