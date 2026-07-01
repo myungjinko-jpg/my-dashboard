@@ -653,8 +653,8 @@ export default function LtvCalculator({ isDark }) {
                         <td style={{ fontWeight: 600 }}>{m.label}</td>
                         <td style={{ color: "var(--muted)" }}>D{i * 30 + 1}~{(i + 1) * 30}</td>
                         <td>{pct(m.avgRet)}</td>
-                        <td style={{ color: "#8b5cf6" }}>{usd4(m.cumIap)}</td>
-                        <td style={{ color: "#d97706" }}>{usd4(m.cumIaa)}</td>
+                        <td style={{ color: "#818cf8" }}>{usd4(m.cumIap)}</td>
+                        <td style={{ color: "#64748b" }}>{usd4(m.cumIaa)}</td>
                         <td style={{ fontWeight: 600 }}>{usd(m.cumLtv)}</td>
                         <td style={{ color: roiOk ? "var(--good)" : "var(--bad)", fontWeight: 600 }}>
                           {roi.toFixed(0)}%
