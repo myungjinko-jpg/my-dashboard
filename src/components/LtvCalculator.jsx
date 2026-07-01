@@ -631,6 +631,7 @@ export default function LtvCalculator({ isDark }) {
 
         {/* Right: Charts */}
         <div className="ltv-charts">
+          <div className="ltv-charts-top">
           <div className="card ltv-chart-card">
             <div className="ltv-chart-title">Retention Curve (D1~D30)</div>
             <div style={{ height: 220 }}>
@@ -670,6 +671,7 @@ export default function LtvCalculator({ isDark }) {
               </div>
             </div>
           </div>
+          </div>{/* ltv-charts-top */}
 
           {/* Monthly table */}
           <div className="card">
