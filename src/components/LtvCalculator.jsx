@@ -400,7 +400,7 @@ export default function LtvCalculator({ isDark }) {
         {
           label: `IAP (${Math.round(iapPct * 100)}%)`,
           data: monthly.map(m => +m.cumIap.toFixed(4)),
-          borderColor: "#818cf8",
+          borderColor: "#a5b4fc",
           backgroundColor: "transparent",
           borderDash: [4, 3],
           pointRadius: 0,
@@ -410,7 +410,7 @@ export default function LtvCalculator({ isDark }) {
         {
           label: `IAA (${Math.round((1 - iapPct) * 100)}%)`,
           data: monthly.map(m => +m.cumIaa.toFixed(4)),
-          borderColor: "#64748b",
+          borderColor: "#94a3b8",
           backgroundColor: "transparent",
           borderDash: [4, 3],
           pointRadius: 0,
