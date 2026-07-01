@@ -594,8 +594,8 @@ tbody tr.row-highlight td:first-child {
   margin-bottom: 7px;
 }
 .ltv-input-value {
-  font-weight: 700;
-  color: #818cf8;
+  font-weight: 600;
+  color: var(--text);
   font-size: 12px;
 }
 
