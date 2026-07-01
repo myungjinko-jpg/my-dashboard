@@ -839,6 +839,7 @@ tbody tr.row-highlight td:first-child {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+  table-layout: fixed;
 }
 .ltv-table th {
   text-align: right;
