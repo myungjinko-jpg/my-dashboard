@@ -3,7 +3,7 @@ const NOTION_VERSION = "2022-06-28";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, PATCH, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -16,6 +16,39 @@ export default async function handler(req, res) {
     "Notion-Version": NOTION_VERSION,
     "Content-Type": "application/json",
   };
+
+  // POST: 신규 항목 생성
+  if (req.method === "POST") {
+    const { project, stepName, done } = req.body;
+    const r = await fetch("https://api.notion.com/v1/pages", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        parent: { database_id: DB_ID },
+        properties: {
+          항목명: { title: [{ text: { content: stepName } }] },
+          프로젝트: { rich_text: [{ text: { content: project } }] },
+          완료: { checkbox: !!done },
+        },
+      }),
+    });
+    const page = await r.json();
+    if (!r.ok) return res.status(r.status).json({ error: page });
+    const p = page.properties;
+    return res.status(200).json({
+      item: {
+        id: page.id,
+        url: page.url,
+        항목명: p["항목명"]?.title?.[0]?.plain_text || "",
+        프로젝트: p["프로젝트"]?.rich_text?.[0]?.plain_text || "",
+        유형: p["유형"]?.select?.name || "",
+        우선순위: p["우선순위"]?.select?.name || "일반",
+        완료: p["완료"]?.checkbox || false,
+        메모: "",
+        마감일: null,
+      },
+    });
+  }
 
   // PATCH: 완료 상태 토글
   if (req.method === "PATCH") {
