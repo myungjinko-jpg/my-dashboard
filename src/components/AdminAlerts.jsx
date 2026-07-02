@@ -297,6 +297,32 @@ export default function AdminAlerts() {
                             {notion?.메모 && (
                               <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{notion.메모}</div>
                             )}
+                          {(notion?.기안링크 || notion?.드라이브링크) && (
+                            <div style={{ display: "flex", gap: 8, marginTop: 5 }}>
+                              {notion.기안링크 && (
+                                <a href={notion.기안링크} target="_blank" rel="noopener noreferrer"
+                                  onClick={e => e.stopPropagation()}
+                                  style={{
+                                    fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4,
+                                    background: "#00c73c18", color: "#00c73c", border: "1px solid #00c73c33",
+                                    textDecoration: "none", display: "flex", alignItems: "center", gap: 3,
+                                  }}>
+                                  📋 네이버웍스 기안
+                                </a>
+                              )}
+                              {notion.드라이브링크 && (
+                                <a href={notion.드라이브링크} target="_blank" rel="noopener noreferrer"
+                                  onClick={e => e.stopPropagation()}
+                                  style={{
+                                    fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4,
+                                    background: "#0078d418", color: "#0078d4", border: "1px solid #0078d433",
+                                    textDecoration: "none", display: "flex", alignItems: "center", gap: 3,
+                                  }}>
+                                  ☁️ 원드라이브
+                                </a>
+                              )}
+                            </div>
+                          )}
                           </div>
 
                           {/* 상태 */}

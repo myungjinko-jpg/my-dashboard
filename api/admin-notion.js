@@ -46,6 +46,8 @@ export default async function handler(req, res) {
         완료: p["완료"]?.checkbox || false,
         메모: "",
         마감일: null,
+        기안링크: null,
+        드라이브링크: null,
       },
     });
   }
@@ -94,6 +96,8 @@ export default async function handler(req, res) {
       완료: p["완료"]?.checkbox || false,
       메모: p["메모"]?.rich_text?.[0]?.plain_text || "",
       마감일: p["마감일"]?.date?.start || null,
+      기안링크: p["기안링크"]?.url || null,
+      드라이브링크: p["드라이브링크"]?.url || null,
     };
   });
 
