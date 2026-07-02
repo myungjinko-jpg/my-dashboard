@@ -128,6 +128,7 @@ export default function AdminAlerts() {
   const [projTypes, setProjTypes]     = useState({});
   const [toggling, setToggling]       = useState({});
   const [expanded, setExpanded]       = useState({});
+  const [guideModal, setGuideModal]   = useState(null);  // { step, guide }
   const [sending, setSending]         = useState(false);
   const [sentMsg, setSentMsg]         = useState("");
   const [showNewProj, setShowNewProj] = useState(false);
@@ -399,13 +400,13 @@ export default function AdminAlerts() {
 
                   {/* Column headers */}
                   <div style={{
-                    display: "grid", gridTemplateColumns: "40px 1fr 70px 18px",
+                    display: "grid", gridTemplateColumns: "40px 1fr 70px 28px 18px",
                     padding: "0 20px", height: 32, alignItems: "center",
                     borderBottom: "1px solid var(--line)", background: "#F8F9FA",
                     gap: 12,
                   }}>
-                    {["#", "항목", "상태", ""].map(h => (
-                      <span key={h} style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--muted)" }}>{h}</span>
+                    {["#", "항목", "상태", "", ""].map((h, i) => (
+                      <span key={i} style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--muted)" }}>{h}</span>
                     ))}
                   </div>
 
@@ -427,7 +428,7 @@ export default function AdminAlerts() {
                           <div
                             onClick={() => setExpanded(e => ({ ...e, [key]: !e[key] }))}
                             style={{
-                              display: "grid", gridTemplateColumns: "40px 1fr 70px 18px",
+                              display: "grid", gridTemplateColumns: "40px 1fr 70px 28px 18px",
                               padding: "0 20px", height: 44, alignItems: "center", gap: 12,
                               cursor: "pointer", opacity: isToggling ? 0.5 : 1,
                               background: "var(--card)",
@@ -469,6 +470,23 @@ export default function AdminAlerts() {
 
                             {/* Status */}
                             <StatusBadge done={done} exists={exists} />
+
+                            {/* Guide button */}
+                            {guide ? (
+                              <button
+                                onClick={e => { e.stopPropagation(); setGuideModal({ step, guide }); }}
+                                style={{
+                                  width: 22, height: 22, borderRadius: 3, border: "1px solid var(--line)",
+                                  background: "transparent", cursor: "pointer", fontFamily: "inherit",
+                                  fontSize: 10, fontWeight: 700, color: "var(--muted)",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                  flexShrink: 0, transition: "all .1s",
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = amberFaint; e.currentTarget.style.borderColor = amber; e.currentTarget.style.color = amber; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "var(--line)"; e.currentTarget.style.color = "var(--muted)"; }}
+                                title="가이드 보기"
+                              >?</button>
+                            ) : <span />}
 
                             {/* Expand arrow */}
                             <span style={{
@@ -592,6 +610,59 @@ export default function AdminAlerts() {
                 </>
               );
             })()}
+          </div>
+        </div>
+      )}
+
+      {/* ── Guide modal ── */}
+      {guideModal && (
+        <div onClick={() => setGuideModal(null)} style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,.35)",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: "var(--card)", border: "1px solid var(--card-border)",
+            borderRadius: 6, width: 460, maxHeight: "80vh", overflow: "hidden",
+            display: "flex", flexDirection: "column",
+            boxShadow: "0 12px 48px rgba(0,0,0,.18)",
+          }}>
+            {/* Modal header */}
+            <div style={{
+              padding: "16px 20px 14px", borderBottom: "1px solid var(--line)",
+              display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12,
+            }}>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: amber, marginBottom: 4 }}>가이드</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)", lineHeight: 1.35 }}>{guideModal.step}</div>
+              </div>
+              <button onClick={() => setGuideModal(null)} style={{
+                width: 26, height: 26, borderRadius: 4, border: "1px solid var(--line)",
+                background: "transparent", cursor: "pointer", fontSize: 14, color: "var(--muted)",
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                fontFamily: "inherit",
+              }}>✕</button>
+            </div>
+
+            {/* Modal body */}
+            <div style={{ padding: "18px 20px", overflowY: "auto" }}>
+              <p style={{ fontSize: 13, color: "var(--muted)", margin: "0 0 18px", lineHeight: 1.65 }}>
+                {guideModal.guide.desc}
+              </p>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 10 }}>처리 절차</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {guideModal.guide.actions.map((action, i) => (
+                  <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                    <span style={{
+                      flexShrink: 0, fontSize: 10, fontWeight: 700, color: "#fff",
+                      background: amber, width: 20, height: 20, borderRadius: 4,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      marginTop: 1,
+                    }}>{i + 1}</span>
+                    <span style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.6 }}>{action}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
