@@ -158,6 +158,7 @@ export default function AdminAlerts() {
     return acc;
   }, {});
   const projects = Object.keys(grouped);
+  const selectedItems = selected ? (grouped[selected] || []) : [];
 
   const getTemplate = (proj) =>
     (projTypes[proj] || "new") === "new" ? TEMPLATE_NEW : TEMPLATE_REPEAT;
