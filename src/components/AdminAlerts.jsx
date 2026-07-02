@@ -401,10 +401,13 @@ export default function AdminAlerts() {
                 placeholder="예: WeChat Mini Game Test"
                 style={{
                   width: "100%", padding: "9px 12px", borderRadius: 7, boxSizing: "border-box",
-                  border: "1px solid var(--card-border)", background: "var(--bg)",
-                  color: "var(--text)", fontSize: 13, fontFamily: "inherit", outline: "none",
+                  border: `1px solid ${projects.includes(newProjName.trim()) ? "#ef4444" : "var(--card-border)"}`,
+                  background: "var(--bg)", color: "var(--text)", fontSize: 13, fontFamily: "inherit", outline: "none",
                 }}
               />
+              {projects.includes(newProjName.trim()) && (
+                <div style={{ fontSize: 11, color: "#ef4444", marginTop: 4 }}>이미 존재하는 프로젝트명입니다</div>
+              )}
             </div>
 
             <div style={{ marginBottom: 20 }}>
@@ -428,12 +431,12 @@ export default function AdminAlerts() {
                 flex: 1, padding: "9px 0", borderRadius: 7, border: "1px solid var(--card-border)",
                 background: "transparent", cursor: "pointer", fontSize: 13, color: "var(--muted)", fontFamily: "inherit",
               }}>취소</button>
-              <button onClick={createProject} disabled={!newProjName.trim() || creating} style={{
+              <button onClick={createProject} disabled={!newProjName.trim() || creating || projects.includes(newProjName.trim())} style={{
                 flex: 2, padding: "9px 0", borderRadius: 7, border: "none",
-                background: "var(--primary)", color: "#fff", cursor: creating || !newProjName.trim() ? "not-allowed" : "pointer",
+                background: "var(--primary)", color: "#fff", cursor: creating || !newProjName.trim() || projects.includes(newProjName.trim()) ? "not-allowed" : "pointer",
                 fontSize: 13, fontWeight: 700, fontFamily: "inherit", opacity: creating ? 0.7 : 1,
               }}>
-                {creating ? "생성 중…" : "프로젝트 생성"}
+                {creating ? "생성 중…" : projects.includes(newProjName.trim()) ? "중복된 프로젝트명" : "프로젝트 생성"}
               </button>
             </div>
           </div>
