@@ -69,13 +69,17 @@ export default async function handler(req, res) {
     return res.status(200).json({ item });
   }
 
-  // PATCH: 완료 상태 토글
+  // PATCH: 완료 상태 토글 or URL 필드 업데이트
   if (req.method === "PATCH") {
-    const { pageId, done } = req.body;
+    const { pageId, done, 기안링크, 드라이브링크 } = req.body;
+    const properties = {};
+    if (done !== undefined) properties["완료"] = { checkbox: done };
+    if (기안링크 !== undefined) properties["기안링크"] = 기안링크 ? { url: 기안링크 } : { url: null };
+    if (드라이브링크 !== undefined) properties["드라이브링크"] = 드라이브링크 ? { url: 드라이브링크 } : { url: null };
     const r = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
       method: "PATCH",
       headers,
-      body: JSON.stringify({ properties: { 완료: { checkbox: done } } }),
+      body: JSON.stringify({ properties }),
     });
     const data = await r.json();
     return res.status(r.status).json(data);

@@ -135,6 +135,8 @@ export default function AdminAlerts() {
   const [newStudioName, setNewStudioName] = useState("");
   const [newProjType, setNewProjType] = useState("new");
   const [creating, setCreating]       = useState(false);
+  const [linkDraft, setLinkDraft]     = useState({});   // { key: { 기안링크: "", 드라이브링크: "" } }
+  const [savingLink, setSavingLink]   = useState({});
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
@@ -195,6 +197,23 @@ export default function AdminAlerts() {
       setNewProjName(""); setNewStudioName(""); setShowNewProj(false);
     } catch { /* ignore */ }
     finally { setCreating(false); }
+  };
+
+  const saveLink = async (project, step, field, url) => {
+    const notion = findItem(project, step);
+    if (!notion) return;
+    const key = `${project}__${step}__${field}`;
+    setSavingLink(s => ({ ...s, [key]: true }));
+    try {
+      await fetch(`${API_BASE}/api/admin-notion`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pageId: notion.id, [field]: url || null }),
+      });
+      setItems(prev => prev.map(i => i.id === notion.id ? { ...i, [field]: url || null } : i));
+      setLinkDraft(d => { const n = { ...d }; delete n[`${project}__${step}`]; return n; });
+    } finally {
+      setSavingLink(s => { const n = { ...s }; delete n[key]; return n; });
+    }
   };
 
   const sendAlert = async () => {
@@ -492,24 +511,78 @@ export default function AdminAlerts() {
                                   {notion.메모}
                                 </div>
                               )}
-                              {(notion?.기안링크 || notion?.드라이브링크) && (
-                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                                  {notion.기안링크 && (
-                                    <a href={notion.기안링크} target="_blank" rel="noopener noreferrer" style={{
-                                      fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 3,
-                                      background: "rgba(0,199,60,.08)", color: "#16a34a",
-                                      border: "1px solid rgba(0,199,60,.2)", textDecoration: "none", letterSpacing: ".02em",
-                                    }}>네이버웍스 기안 →</a>
-                                  )}
-                                  {notion.드라이브링크 && (
-                                    <a href={notion.드라이브링크} target="_blank" rel="noopener noreferrer" style={{
-                                      fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 3,
-                                      background: "rgba(0,120,212,.08)", color: "#0078d4",
-                                      border: "1px solid rgba(0,120,212,.2)", textDecoration: "none", letterSpacing: ".02em",
-                                    }}>원드라이브 →</a>
-                                  )}
-                                </div>
-                              )}
+                              {/* Link inputs — only shown when Notion item exists */}
+                              {exists && (() => {
+                                const draft = linkDraft[key] || {};
+                                const links = [
+                                  { field: "기안링크",   label: "네이버웍스 기안",  color: "#16a34a", bg: "rgba(22,163,74,.08)",   border: "rgba(22,163,74,.25)"   },
+                                  { field: "드라이브링크", label: "원드라이브",       color: "#0078d4", bg: "rgba(0,120,212,.08)",  border: "rgba(0,120,212,.25)"  },
+                                ];
+                                return (
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
+                                    {links.map(({ field, label, color, bg, border }) => {
+                                      const saved = notion?.[field];
+                                      const editing = field in draft;
+                                      const savKey = `${key}__${field}`;
+                                      const isSaving = !!savingLink[savKey];
+                                      return (
+                                        <div key={field} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                          <span style={{ fontSize: 10, fontWeight: 700, color: "var(--muted)", width: 76, flexShrink: 0, letterSpacing: ".03em" }}>{label}</span>
+                                          {saved && !editing ? (
+                                            <>
+                                              <a href={saved} target="_blank" rel="noopener noreferrer" style={{
+                                                fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 3,
+                                                background: bg, color, border: `1px solid ${border}`,
+                                                textDecoration: "none", letterSpacing: ".02em", maxWidth: 280,
+                                                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                                              }}>{saved.replace(/^https?:\/\//, "").slice(0, 48)}{saved.length > 54 ? "…" : ""} →</a>
+                                              <button onClick={() => setLinkDraft(d => ({ ...d, [key]: { ...d[key], [field]: saved } }))} style={{
+                                                fontSize: 10, padding: "2px 6px", borderRadius: 3,
+                                                border: "1px solid var(--line)", background: "transparent",
+                                                color: "var(--muted)", cursor: "pointer", fontFamily: "inherit",
+                                              }}>수정</button>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <input
+                                                value={editing ? draft[field] : ""}
+                                                onChange={e => setLinkDraft(d => ({ ...d, [key]: { ...d[key], [field]: e.target.value } }))}
+                                                onFocus={() => { if (!editing) setLinkDraft(d => ({ ...d, [key]: { ...d[key], [field]: saved || "" } })); }}
+                                                onKeyDown={e => {
+                                                  if (e.key === "Enter") saveLink(selected, step, field, draft[field]);
+                                                  if (e.key === "Escape") setLinkDraft(d => { const n = { ...d }; if (n[key]) delete n[key][field]; return n; });
+                                                }}
+                                                placeholder="URL 붙여넣기 후 Enter"
+                                                style={{
+                                                  flex: 1, fontSize: 11, padding: "3px 8px", borderRadius: 3,
+                                                  border: `1px solid ${editing ? color : "var(--line)"}`,
+                                                  background: editing ? bg : "var(--card)", color: "var(--text)",
+                                                  fontFamily: "inherit", outline: "none", maxWidth: 320,
+                                                  opacity: isSaving ? 0.5 : 1,
+                                                }}
+                                              />
+                                              {editing && draft[field] && (
+                                                <button onClick={() => saveLink(selected, step, field, draft[field])} disabled={isSaving} style={{
+                                                  fontSize: 10, padding: "3px 8px", borderRadius: 3,
+                                                  border: `1px solid ${color}`, background: bg,
+                                                  color, cursor: isSaving ? "wait" : "pointer", fontFamily: "inherit", fontWeight: 600,
+                                                }}>저장</button>
+                                              )}
+                                              {saved && editing && (
+                                                <button onClick={() => setLinkDraft(d => { const n = { ...d }; if (n[key]) delete n[key][field]; return n; })} style={{
+                                                  fontSize: 10, padding: "3px 6px", borderRadius: 3,
+                                                  border: "1px solid var(--line)", background: "transparent",
+                                                  color: "var(--muted)", cursor: "pointer", fontFamily: "inherit",
+                                                }}>취소</button>
+                                              )}
+                                            </>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           )}
                         </div>
