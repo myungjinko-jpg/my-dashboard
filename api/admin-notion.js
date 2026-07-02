@@ -3,7 +3,7 @@ const NOTION_VERSION = "2022-06-28";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   if (req.method === "POST") {
     const { project, stepName, done, steps } = req.body;
 
-    const createPage = async (name, proj, studio) => {
+    const createPage = async (name, proj, studio, projType) => {
       const r = await fetch("https://api.notion.com/v1/pages", {
         method: "POST",
         headers,
@@ -30,7 +30,8 @@ export default async function handler(req, res) {
           properties: {
             항목명: { title: [{ text: { content: name } }] },
             프로젝트: { rich_text: [{ text: { content: proj } }] },
-            ...(studio ? { 스튜디오: { rich_text: [{ text: { content: studio } }] } } : {}),
+            ...(studio   ? { 스튜디오: { rich_text: [{ text: { content: studio } }] } } : {}),
+            ...(projType ? { 유형: { select: { name: projType } } } : {}),
             완료: { checkbox: false },
           },
         }),
@@ -52,13 +53,13 @@ export default async function handler(req, res) {
     if (steps && Array.isArray(steps)) {
       const items = [];
       for (const name of steps) {
-        items.push(await createPage(name, project, studio));
+        items.push(await createPage(name, project, studio, projType));
       }
       return res.status(200).json({ items });
     }
 
     // 단건 생성
-    const item = await createPage(stepName, project, studio);
+    const item = await createPage(stepName, project, studio, null);
     if (done) {
       await fetch(`https://api.notion.com/v1/pages/${item.id}`, {
         method: "PATCH", headers,
@@ -83,6 +84,26 @@ export default async function handler(req, res) {
     });
     const data = await r.json();
     return res.status(r.status).json(data);
+  }
+
+  // DELETE: 프로젝트 전체 항목 아카이브
+  if (req.method === "DELETE") {
+    const { project } = req.body;
+    const r = await fetch(`https://api.notion.com/v1/databases/${DB_ID}/query`, {
+      method: "POST", headers,
+      body: JSON.stringify({
+        filter: { property: "프로젝트", rich_text: { equals: project } },
+        page_size: 100,
+      }),
+    });
+    const data = await r.json();
+    await Promise.all(data.results.map(page =>
+      fetch(`https://api.notion.com/v1/pages/${page.id}`, {
+        method: "PATCH", headers,
+        body: JSON.stringify({ archived: true }),
+      })
+    ));
+    return res.status(200).json({ deleted: data.results.length });
   }
 
   // GET: DB 항목 조회
