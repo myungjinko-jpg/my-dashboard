@@ -53,6 +53,7 @@ export default function AdminAlerts() {
   const [sentMsg, setSentMsg]       = useState("");
   const [showNewProj, setShowNewProj] = useState(false);
   const [newProjName, setNewProjName] = useState("");
+  const [newStudioName, setNewStudioName] = useState("");
   const [newProjType, setNewProjType] = useState("new");
   const [creating, setCreating]     = useState(false);
 
@@ -124,13 +125,14 @@ export default function AdminAlerts() {
       const r = await fetch(`${API_BASE}/api/admin-notion`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ project: newProjName.trim(), steps: tpl }),
+        body: JSON.stringify({ project: newProjName.trim(), studio: newStudioName.trim(), steps: tpl }),
       });
       const { items: newItems } = await r.json();
       setItems(prev => [...prev, ...newItems]);
       setProjTypes(t => ({ ...t, [newProjName.trim()]: newProjType }));
       setSelected(newProjName.trim());
       setNewProjName("");
+      setNewStudioName("");
       setShowNewProj(false);
     } catch { /* ignore */ }
     finally { setCreating(false); }
@@ -245,6 +247,9 @@ export default function AdminAlerts() {
                   <div style={{ fontSize: 13, fontWeight: isActive ? 700 : 500, color: isActive ? "var(--primary)" : "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {proj}
                   </div>
+                  {(() => { const studio = grouped[proj]?.[0]?.스튜디오; return studio ? (
+                    <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{studio}</div>
+                  ) : null; })()}
                   <ProgressBar done={done} total={tpl.length} />
                 </div>
               );
@@ -262,7 +267,12 @@ export default function AdminAlerts() {
                 <div style={{ background: "var(--card)", border: "1px solid var(--card-border)", borderRadius: 10, overflow: "hidden" }}>
                   {/* 헤더 */}
                   <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", flex: 1 }}>{selected}</span>
+                    <div style={{ flex: 1 }}>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: "var(--text)" }}>{selected}</span>
+                    {selectedItems[0]?.스튜디오 && (
+                      <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: 8 }}>{selectedItems[0].스튜디오}</span>
+                    )}
+                  </div>
                     {/* 템플릿 타입 토글 */}
                     <div style={{ display: "flex", gap: 4, background: "var(--bg)", borderRadius: 6, padding: 3, border: "1px solid var(--line)" }}>
                       {[["new", "신규 스튜디오"], ["repeat", "기존 스튜디오"]].map(([val, label]) => (
@@ -390,6 +400,20 @@ export default function AdminAlerts() {
             borderRadius: 12, padding: 24, width: 360, boxShadow: "0 8px 32px #0002",
           }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", marginBottom: 16 }}>새 프로젝트 추가</div>
+
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--muted)", marginBottom: 6 }}>스튜디오명</div>
+              <input
+                value={newStudioName}
+                onChange={e => setNewStudioName(e.target.value)}
+                placeholder="예: Neptune Studio"
+                style={{
+                  width: "100%", padding: "9px 12px", borderRadius: 7, boxSizing: "border-box",
+                  border: "1px solid var(--card-border)", background: "var(--bg)",
+                  color: "var(--text)", fontSize: 13, fontFamily: "inherit", outline: "none",
+                }}
+              />
+            </div>
 
             <div style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: "var(--muted)", marginBottom: 6 }}>프로젝트명</div>

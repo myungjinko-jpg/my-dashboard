@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   if (req.method === "POST") {
     const { project, stepName, done, steps } = req.body;
 
-    const createPage = async (name, proj) => {
+    const createPage = async (name, proj, studio) => {
       const r = await fetch("https://api.notion.com/v1/pages", {
         method: "POST",
         headers,
@@ -30,6 +30,7 @@ export default async function handler(req, res) {
           properties: {
             항목명: { title: [{ text: { content: name } }] },
             프로젝트: { rich_text: [{ text: { content: proj } }] },
+            ...(studio ? { 스튜디오: { rich_text: [{ text: { content: studio } }] } } : {}),
             완료: { checkbox: false },
           },
         }),
@@ -42,6 +43,7 @@ export default async function handler(req, res) {
         항목명: p["항목명"]?.title?.[0]?.plain_text || "",
         프로젝트: p["프로젝트"]?.rich_text?.[0]?.plain_text || "",
         유형: "", 우선순위: "일반", 완료: false,
+        스튜디오: proj.studio || "",
         메모: "", 마감일: null, 기안링크: null, 드라이브링크: null,
       };
     };
@@ -50,13 +52,13 @@ export default async function handler(req, res) {
     if (steps && Array.isArray(steps)) {
       const items = [];
       for (const name of steps) {
-        items.push(await createPage(name, project));
+        items.push(await createPage(name, project, studio));
       }
       return res.status(200).json({ items });
     }
 
     // 단건 생성
-    const item = await createPage(stepName, project);
+    const item = await createPage(stepName, project, studio);
     if (done) {
       await fetch(`https://api.notion.com/v1/pages/${item.id}`, {
         method: "PATCH", headers,
@@ -109,6 +111,7 @@ export default async function handler(req, res) {
       유형: p["유형"]?.select?.name || "",
       우선순위: p["우선순위"]?.select?.name || "일반",
       완료: p["완료"]?.checkbox || false,
+      스튜디오: p["스튜디오"]?.rich_text?.[0]?.plain_text || "",
       메모: p["메모"]?.rich_text?.[0]?.plain_text || "",
       마감일: p["마감일"]?.date?.start || null,
       기안링크: p["기안링크"]?.url || null,
