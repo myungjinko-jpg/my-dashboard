@@ -48,9 +48,13 @@ export default function AdminAlerts() {
   const [selected, setSelected]     = useState(null);
   // 프로젝트별 템플릿 타입: "new" | "repeat"
   const [projTypes, setProjTypes]   = useState({});
-  const [toggling, setToggling]     = useState({}); // { [stepName]: true } 처리중
+  const [toggling, setToggling]     = useState({});
   const [sending, setSending]       = useState(false);
   const [sentMsg, setSentMsg]       = useState("");
+  const [showNewProj, setShowNewProj] = useState(false);
+  const [newProjName, setNewProjName] = useState("");
+  const [newProjType, setNewProjType] = useState("new");
+  const [creating, setCreating]     = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
@@ -110,6 +114,26 @@ export default function AdminAlerts() {
     } finally {
       setToggling(t => { const n = { ...t }; delete n[key]; return n; });
     }
+  };
+
+  const createProject = async () => {
+    if (!newProjName.trim()) return;
+    setCreating(true);
+    const tpl = newProjType === "new" ? TEMPLATE_NEW : TEMPLATE_REPEAT;
+    try {
+      const r = await fetch(`${API_BASE}/api/admin-notion`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project: newProjName.trim(), steps: tpl }),
+      });
+      const { items: newItems } = await r.json();
+      setItems(prev => [...prev, ...newItems]);
+      setProjTypes(t => ({ ...t, [newProjName.trim()]: newProjType }));
+      setSelected(newProjName.trim());
+      setNewProjName("");
+      setShowNewProj(false);
+    } catch { /* ignore */ }
+    finally { setCreating(false); }
   };
 
   const sendAlert = async () => {
@@ -190,10 +214,17 @@ export default function AdminAlerts() {
           }}>
             <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--line)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", letterSpacing: ".06em", textTransform: "uppercase" }}>프로젝트</span>
-              <button onClick={load} style={{
-                padding: "2px 8px", borderRadius: 4, border: "1px solid var(--card-border)",
-                background: "transparent", cursor: "pointer", fontSize: 10, color: "var(--muted)", fontFamily: "inherit",
-              }}>↻</button>
+              <div style={{ display: "flex", gap: 4 }}>
+                <button onClick={() => setShowNewProj(true)} style={{
+                  padding: "2px 8px", borderRadius: 4, border: "1px solid var(--primary)",
+                  background: "transparent", cursor: "pointer", fontSize: 10, color: "var(--primary)",
+                  fontFamily: "inherit", fontWeight: 700,
+                }}>+ 추가</button>
+                <button onClick={load} style={{
+                  padding: "2px 8px", borderRadius: 4, border: "1px solid var(--card-border)",
+                  background: "transparent", cursor: "pointer", fontSize: 10, color: "var(--muted)", fontFamily: "inherit",
+                }}>↻</button>
+              </div>
             </div>
             {projects.length === 0 ? (
               <div style={{ padding: 20, fontSize: 12, color: "var(--muted)", textAlign: "center" }}>항목 없음</div>
@@ -344,6 +375,67 @@ export default function AdminAlerts() {
                 </div>
               );
             })()}
+          </div>
+        </div>
+      )}
+
+      {/* 새 프로젝트 모달 */}
+      {showNewProj && (
+        <div onClick={() => setShowNewProj(false)} style={{
+          position: "fixed", inset: 0, background: "#00000055",
+          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: "var(--card)", border: "1px solid var(--card-border)",
+            borderRadius: 12, padding: 24, width: 360, boxShadow: "0 8px 32px #0002",
+          }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", marginBottom: 16 }}>새 프로젝트 추가</div>
+
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--muted)", marginBottom: 6 }}>프로젝트명</div>
+              <input
+                autoFocus
+                value={newProjName}
+                onChange={e => setNewProjName(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && createProject()}
+                placeholder="예: WeChat Mini Game Test"
+                style={{
+                  width: "100%", padding: "9px 12px", borderRadius: 7, boxSizing: "border-box",
+                  border: "1px solid var(--card-border)", background: "var(--bg)",
+                  color: "var(--text)", fontSize: 13, fontFamily: "inherit", outline: "none",
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--muted)", marginBottom: 6 }}>계약 유형</div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {[["new", "신규 스튜디오", `${TEMPLATE_NEW.length}단계`], ["repeat", "기존 스튜디오", `${TEMPLATE_REPEAT.length}단계`]].map(([val, label, sub]) => (
+                  <div key={val} onClick={() => setNewProjType(val)} style={{
+                    flex: 1, padding: "10px 12px", borderRadius: 8, cursor: "pointer",
+                    border: `1.5px solid ${newProjType === val ? "var(--primary)" : "var(--card-border)"}`,
+                    background: newProjType === val ? "color-mix(in srgb, var(--primary) 8%, transparent)" : "var(--bg)",
+                  }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: newProjType === val ? "var(--primary)" : "var(--text)" }}>{label}</div>
+                    <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>{sub}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setShowNewProj(false)} style={{
+                flex: 1, padding: "9px 0", borderRadius: 7, border: "1px solid var(--card-border)",
+                background: "transparent", cursor: "pointer", fontSize: 13, color: "var(--muted)", fontFamily: "inherit",
+              }}>취소</button>
+              <button onClick={createProject} disabled={!newProjName.trim() || creating} style={{
+                flex: 2, padding: "9px 0", borderRadius: 7, border: "none",
+                background: "var(--primary)", color: "#fff", cursor: creating || !newProjName.trim() ? "not-allowed" : "pointer",
+                fontSize: 13, fontWeight: 700, fontFamily: "inherit", opacity: creating ? 0.7 : 1,
+              }}>
+                {creating ? "생성 중…" : "프로젝트 생성"}
+              </button>
+            </div>
           </div>
         </div>
       )}
