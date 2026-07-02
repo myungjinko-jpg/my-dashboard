@@ -23,6 +23,84 @@ const TEMPLATE_REPEAT = [
   "이터레이션 비용 기안 (발생 시)",
 ];
 
+const STEP_GUIDE = {
+  "파트너십 계약서 검토": {
+    desc: "법무팀 또는 경영지원팀에 계약서 검토를 요청합니다.",
+    actions: [
+      "원드라이브에 계약서 초안 업로드 후 링크 공유",
+      "검토 의견 반영 후 최종본 확정",
+      "드라이브링크 필드에 최종 계약서 링크 등록",
+    ],
+  },
+  "파트너십 계약서 기안": {
+    desc: "네이버웍스에서 계약서 기안을 상신합니다.",
+    actions: [
+      "결재선 확인 후 기안 상신",
+      "결재 완료 후 기안링크 필드에 링크 등록",
+    ],
+  },
+  "거래처 등록 서류 확보": {
+    desc: "스튜디오로부터 거래처 등록에 필요한 서류를 수령합니다.",
+    actions: [
+      "사업자등록증 사본 요청",
+      "통장 사본 요청 (예금주·계좌번호 확인)",
+      "수령 후 원드라이브에 업로드",
+    ],
+  },
+  "거래처 등록": {
+    desc: "경영지원팀에 거래처 등록을 요청합니다.",
+    actions: [
+      "서류 첨부하여 경영지원팀에 등록 요청",
+      "등록 완료 여부 확인 후 체크",
+    ],
+  },
+  "빌드 상세내역 확보": {
+    desc: "스튜디오로부터 빌드 상세내역을 수령합니다.",
+    actions: [
+      "CPI 테스트 결과 데이터 수령 (설치수, D1 리텐션 등)",
+      "원드라이브에 업로드 후 드라이브링크 등록",
+    ],
+  },
+  "인보이스 준비": {
+    desc: "스튜디오에 인보이스 발행을 요청합니다.",
+    actions: [
+      "지급 금액·항목 안내 후 인보이스 발행 요청",
+      "수령한 인보이스 원드라이브에 업로드",
+      "드라이브링크 필드에 링크 등록",
+    ],
+  },
+  "프로토타입 비용 기안": {
+    desc: "네이버웍스에서 프로토타입 비용 지급 기안을 상신합니다.",
+    actions: [
+      "인보이스 확인 후 지급 금액 확정",
+      "기안 상신 후 결재 완료 시 기안링크 등록",
+    ],
+  },
+  "이터레이션 비용 기안 (발생 시)": {
+    desc: "이터레이션이 진행된 경우에만 해당합니다. 추가 비용 기안을 상신합니다.",
+    actions: [
+      "이터레이션 횟수 및 비용 확정",
+      "인보이스 수령 후 기안 상신",
+      "결재 완료 후 기안링크 등록",
+    ],
+  },
+  "부속합의서 작성 및 검토": {
+    desc: "기존 파트너십 계약에 부속합의서를 추가합니다.",
+    actions: [
+      "기존 계약 조건 기반으로 부속합의서 초안 작성",
+      "법무팀 또는 경영지원팀 검토 요청",
+      "최종본 원드라이브에 업로드 후 드라이브링크 등록",
+    ],
+  },
+  "부속합의서 기안": {
+    desc: "네이버웍스에서 부속합의서 기안을 상신합니다.",
+    actions: [
+      "결재선 확인 후 기안 상신",
+      "결재 완료 후 기안링크 필드에 링크 등록",
+    ],
+  },
+};
+
 function ProgressBar({ done, total }) {
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
   return (
@@ -49,6 +127,7 @@ export default function AdminAlerts() {
   // 프로젝트별 템플릿 타입: "new" | "repeat"
   const [projTypes, setProjTypes]   = useState({});
   const [toggling, setToggling]     = useState({});
+  const [expanded, setExpanded]     = useState({}); // { [proj__step]: true }
   const [sending, setSending]       = useState(false);
   const [sentMsg, setSentMsg]       = useState("");
   const [showNewProj, setShowNewProj] = useState(false);
@@ -300,85 +379,114 @@ export default function AdminAlerts() {
                       const key = `${selected}__${step}`;
                       const isToggling = !!toggling[key];
                       const optional = step.includes("(발생 시)");
+                      const isExpanded = !!expanded[key];
+                      const guide = STEP_GUIDE[step];
 
                       return (
-                        <div key={step} onClick={() => !isToggling && toggleStep(selected, step)} style={{
-                          display: "flex", alignItems: "flex-start", gap: 12,
-                          padding: "13px 18px",
+                        <div key={step} style={{
                           borderBottom: idx < tpl.length - 1 ? "1px solid var(--line)" : "none",
-                          cursor: isToggling ? "wait" : "pointer",
                           background: done ? "var(--bg)" : "var(--card)",
-                          opacity: isToggling ? 0.6 : 1,
-                          transition: "all .12s",
-                        }}
-                          onMouseEnter={e => { if (!done && !isToggling) e.currentTarget.style.background = "var(--bg)"; }}
-                          onMouseLeave={e => e.currentTarget.style.background = done ? "var(--bg)" : "var(--card)"}
-                        >
-                          {/* 순번 */}
-                          <span style={{
-                            width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: 11, fontWeight: 700, fontVariantNumeric: "tabular-nums",
-                            background: done ? "#22c55e" : exists ? "var(--primary)" : "var(--line)",
-                            color: done || exists ? "#fff" : "var(--muted)",
-                            transition: "all .2s",
-                          }}>
-                            {done ? "✓" : idx + 1}
-                          </span>
+                          transition: "background .12s",
+                        }}>
+                          {/* 행 */}
+                          <div
+                            onClick={() => setExpanded(e => ({ ...e, [key]: !e[key] }))}
+                            style={{
+                              display: "flex", alignItems: "center", gap: 12,
+                              padding: "13px 18px", cursor: "pointer",
+                              opacity: isToggling ? 0.6 : 1,
+                            }}
+                          >
+                            {/* 체크박스 */}
+                            <div
+                              onClick={e => { e.stopPropagation(); if (!isToggling) toggleStep(selected, step); }}
+                              style={{
+                                width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                fontSize: 11, fontWeight: 700,
+                                background: done ? "#22c55e" : exists ? "var(--primary)" : "var(--line)",
+                                color: done || exists ? "#fff" : "var(--muted)",
+                                transition: "all .2s", cursor: isToggling ? "wait" : "pointer",
+                              }}
+                            >
+                              {done ? "✓" : idx + 1}
+                            </div>
 
-                          {/* 내용 */}
-                          <div style={{ flex: 1 }}>
-                            <span style={{
-                              fontSize: 13, fontWeight: done ? 400 : 600,
-                              color: done ? "var(--muted)" : "var(--text)",
-                              textDecoration: done ? "line-through" : "none",
-                            }}>{step}</span>
-                            {optional && !done && (
-                              <span style={{ marginLeft: 6, fontSize: 10, color: "var(--muted)", background: "var(--bg)", border: "1px solid var(--line)", padding: "1px 6px", borderRadius: 4 }}>선택</span>
-                            )}
-                            {notion?.메모 && (
-                              <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{notion.메모}</div>
-                            )}
-                          {(notion?.기안링크 || notion?.드라이브링크) && (
-                            <div style={{ display: "flex", gap: 8, marginTop: 5 }}>
-                              {notion.기안링크 && (
-                                <a href={notion.기안링크} target="_blank" rel="noopener noreferrer"
-                                  onClick={e => e.stopPropagation()}
-                                  style={{
-                                    fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4,
-                                    background: "#00c73c18", color: "#00c73c", border: "1px solid #00c73c33",
-                                    textDecoration: "none", display: "flex", alignItems: "center", gap: 3,
-                                  }}>
-                                  📋 네이버웍스 기안
-                                </a>
+                            {/* 제목 */}
+                            <div style={{ flex: 1 }}>
+                              <span style={{
+                                fontSize: 13, fontWeight: done ? 400 : 600,
+                                color: done ? "var(--muted)" : "var(--text)",
+                                textDecoration: done ? "line-through" : "none",
+                              }}>{step}</span>
+                              {optional && !done && (
+                                <span style={{ marginLeft: 6, fontSize: 10, color: "var(--muted)", background: "var(--bg)", border: "1px solid var(--line)", padding: "1px 6px", borderRadius: 4 }}>선택</span>
                               )}
-                              {notion.드라이브링크 && (
-                                <a href={notion.드라이브링크} target="_blank" rel="noopener noreferrer"
-                                  onClick={e => e.stopPropagation()}
-                                  style={{
-                                    fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4,
-                                    background: "#0078d418", color: "#0078d4", border: "1px solid #0078d433",
-                                    textDecoration: "none", display: "flex", alignItems: "center", gap: 3,
-                                  }}>
-                                  ☁️ 원드라이브
-                                </a>
+                            </div>
+
+                            {/* 상태 + 펼치기 화살표 */}
+                            <span style={{
+                              fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 4, flexShrink: 0,
+                              ...(done
+                                ? { background: "#22c55e18", color: "#22c55e", border: "1px solid #22c55e33" }
+                                : exists
+                                ? { background: "#f59e0b18", color: "#f59e0b", border: "1px solid #f59e0b33" }
+                                : { background: "var(--bg)", color: "var(--muted)", border: "1px solid var(--line)" }
+                              ),
+                            }}>
+                              {done ? "완료" : exists ? "진행중" : "미시작"}
+                            </span>
+                            <span style={{ color: "var(--muted)", fontSize: 11, transition: "transform .2s", display: "inline-block", transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}>▾</span>
+                          </div>
+
+                          {/* 펼쳐지는 상세 영역 */}
+                          {isExpanded && (
+                            <div style={{
+                              margin: "0 18px 14px", padding: 14,
+                              background: "var(--bg)", borderRadius: 8,
+                              border: "1px solid var(--line)",
+                            }}>
+                              {guide && (
+                                <>
+                                  <div style={{ fontSize: 12, color: "var(--text)", marginBottom: 10, lineHeight: 1.6 }}>
+                                    {guide.desc}
+                                  </div>
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: notion?.메모 || notion?.기안링크 || notion?.드라이브링크 ? 12 : 0 }}>
+                                    {guide.actions.map((action, i) => (
+                                      <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                                        <span style={{ width: 16, height: 16, borderRadius: "50%", background: "var(--line)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "var(--muted)", marginTop: 1, fontWeight: 700 }}>{i + 1}</span>
+                                        <span style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.5 }}>{action}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </>
+                              )}
+                              {notion?.메모 && (
+                                <div style={{ fontSize: 11, color: "#f59e0b", background: "#f59e0b10", border: "1px solid #f59e0b22", borderRadius: 6, padding: "6px 10px", marginBottom: 8 }}>
+                                  📌 {notion.메모}
+                                </div>
+                              )}
+                              {(notion?.기안링크 || notion?.드라이브링크) && (
+                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                  {notion.기안링크 && (
+                                    <a href={notion.기안링크} target="_blank" rel="noopener noreferrer"
+                                      style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 5, background: "#00c73c18", color: "#00c73c", border: "1px solid #00c73c33", textDecoration: "none" }}>
+                                      📋 네이버웍스 기안 열기
+                                    </a>
+                                  )}
+                                  {notion.드라이브링크 && (
+                                    <a href={notion.드라이브링크} target="_blank" rel="noopener noreferrer"
+                                      style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 5, background: "#0078d418", color: "#0078d4", border: "1px solid #0078d433", textDecoration: "none" }}>
+                                      ☁️ 원드라이브 열기
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+                              {!guide && !notion?.메모 && !notion?.기안링크 && !notion?.드라이브링크 && (
+                                <div style={{ fontSize: 12, color: "var(--muted)" }}>등록된 가이드가 없습니다.</div>
                               )}
                             </div>
                           )}
-                          </div>
-
-                          {/* 상태 */}
-                          <span style={{
-                            fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 4, flexShrink: 0,
-                            ...(done
-                              ? { background: "#22c55e18", color: "#22c55e", border: "1px solid #22c55e33" }
-                              : exists
-                              ? { background: "#f59e0b18", color: "#f59e0b", border: "1px solid #f59e0b33" }
-                              : { background: "var(--bg)", color: "var(--muted)", border: "1px solid var(--line)" }
-                            ),
-                          }}>
-                            {done ? "완료" : exists ? "진행중" : "미시작"}
-                          </span>
                         </div>
                       );
                     })}
