@@ -17,6 +17,7 @@ import {
 import LtvCalculator from "./components/LtvCalculator";
 import ProjectDashboard from "./components/ProjectDashboard";
 import AdminAlerts from "./components/AdminAlerts";
+import GddLibrary from "./components/GddLibrary";
 
 const SHEET_ID = "1pBJWVce2CgrPBlFMGbS2yCp6tBQnNn4gkEHz7jG3LZk";
 const SHEET_NAME = "Test_Raw%20Data";
@@ -288,6 +289,9 @@ export default function App() {
         <button className={`tab-btn ${activeTab === "admin" ? "active" : ""}`} onClick={() => setActiveTab("admin")}>
           📋 행정 알림 <span style={{ fontSize: "10px", opacity: 0.6 }}>(테스트중)</span>
         </button>
+        <button className={`tab-btn ${activeTab === "gdd" ? "active" : ""}`} onClick={() => setActiveTab("gdd")}>
+          📚 GDD 라이브러리 <span style={{ fontSize: "10px", opacity: 0.6 }}>(테스트중)</span>
+        </button>
       </div>
 
       {error && <div className="error-box">데이터 로드 실패: {error}</div>}
@@ -322,6 +326,17 @@ export default function App() {
             <p className="section-desc">파트너사별 행정 처리 항목 트래킹 — 거래처 등록, 기안 제출, 인보이스 수령 등 미처리 항목 관리.</p>
           </div>
           <AdminAlerts />
+        </section>
+      )}
+
+      {activeTab === "gdd" && (
+        <section className="section-block">
+          <div className="section-header">
+            <div className="section-eyebrow">GDD Review</div>
+            <h2 className="section-heading">GDD 라이브러리</h2>
+            <p className="section-desc">개발사별 GDD 제출 이력 관리 — PDF 업로드 시 AI 리뷰 보드 자동 생성.</p>
+          </div>
+          <GddLibrary />
         </section>
       )}
 
