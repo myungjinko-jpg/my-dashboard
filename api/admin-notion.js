@@ -43,7 +43,7 @@ export default async function handler(req, res) {
         항목명: p["항목명"]?.title?.[0]?.plain_text || "",
         프로젝트: p["프로젝트"]?.rich_text?.[0]?.plain_text || "",
         유형: "", 우선순위: "일반", 완료: false,
-        스튜디오: proj.studio || "",
+        스튜디오: studio || "",
         메모: "", 마감일: null, 기안링크: null, 드라이브링크: null,
       };
     };

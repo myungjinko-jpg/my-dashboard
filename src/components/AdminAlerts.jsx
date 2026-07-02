@@ -238,7 +238,7 @@ export default function AdminAlerts() {
                 <div key={proj} onClick={() => setSelected(proj)} style={{
                   padding: "10px 14px", cursor: "pointer", transition: "background .12s",
                   borderBottom: "1px solid var(--line)",
-                  background: isActive ? "color-mix(in srgb, var(--primary) 10%, transparent)" : "transparent",
+                  background: isActive ? "#4f9cf018" : "transparent",
                   borderLeft: `3px solid ${isActive ? "var(--primary)" : "transparent"}`,
                 }}
                   onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "var(--bg)"; }}
