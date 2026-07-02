@@ -245,7 +245,7 @@ export default function AdminAlerts() {
           {sentMsg && <span style={{ fontSize: 11, color: green, fontWeight: 600 }}>{sentMsg}</span>}
           <button onClick={sendAlert} disabled={sending} style={{
             padding: "7px 14px", borderRadius: 4, border: "1px solid var(--line)",
-            background: "var(--bg)", color: "var(--text)", fontSize: 12, fontWeight: 600,
+            background: "var(--card)", color: "var(--text)", fontSize: 12, fontWeight: 600,
             fontFamily: "inherit", cursor: sending ? "not-allowed" : "pointer", opacity: sending ? 0.6 : 1,
             letterSpacing: ".02em",
           }}>
@@ -269,7 +269,7 @@ export default function AdminAlerts() {
           {/* ── Left nav ── */}
           <div style={{
             width: 200, flexShrink: 0, borderRight: "1px solid var(--line)",
-            display: "flex", flexDirection: "column", background: "var(--bg)",
+            display: "flex", flexDirection: "column", background: "var(--card)",
           }}>
             {/* Nav header */}
             <div style={{
@@ -309,7 +309,7 @@ export default function AdminAlerts() {
                     borderBottom: "1px solid var(--line)",
                     transition: "background .1s",
                   }}
-                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "var(--card)"; }}
+                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "#F8F9FA"; }}
                     onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
                   >
                     <div style={{ fontSize: 13, fontWeight: isActive ? 600 : 400, color: isActive ? "var(--text)" : "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 1 }}>
@@ -382,7 +382,7 @@ export default function AdminAlerts() {
                   <div style={{
                     display: "grid", gridTemplateColumns: "40px 1fr 70px 18px",
                     padding: "0 20px", height: 32, alignItems: "center",
-                    borderBottom: "1px solid var(--line)", background: "var(--bg)",
+                    borderBottom: "1px solid var(--line)", background: "#F8F9FA",
                     gap: 12,
                   }}>
                     {["#", "항목", "상태", ""].map(h => (
@@ -411,11 +411,11 @@ export default function AdminAlerts() {
                               display: "grid", gridTemplateColumns: "40px 1fr 70px 18px",
                               padding: "0 20px", height: 44, alignItems: "center", gap: 12,
                               cursor: "pointer", opacity: isToggling ? 0.5 : 1,
-                              background: done ? "var(--bg)" : isExpanded ? "var(--card)" : "var(--card)",
+                              background: "var(--card)",
                               transition: "background .1s",
                             }}
-                            onMouseEnter={e => { e.currentTarget.style.background = "var(--bg)"; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = done ? "var(--bg)" : "var(--card)"; }}
+                            onMouseEnter={e => { e.currentTarget.style.background = "#F8F9FA"; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = "var(--card)"; }}
                           >
                             {/* Step number / check */}
                             <div
@@ -462,7 +462,7 @@ export default function AdminAlerts() {
                           {isExpanded && (
                             <div style={{
                               padding: "14px 20px 14px 72px",
-                              background: "var(--bg)", borderTop: "1px dashed var(--line)",
+                              background: "#FAFBFC", borderTop: "1px dashed var(--line)",
                             }}>
                               {guide && (
                                 <div style={{ marginBottom: 12 }}>
