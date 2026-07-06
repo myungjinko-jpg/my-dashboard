@@ -59,6 +59,10 @@ export default function Contracts() {
   const [statusEdit, setStatusEdit] = useState(null); // pageId of open dropdown
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [busy, setBusy]           = useState({});
+  const [adminItems, setAdminItems]       = useState([]);
+  const [adminError, setAdminError]       = useState("");
+  const [adminToggling, setAdminToggling] = useState({});
+  const [adminExpand, setAdminExpand]     = useState({});
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
@@ -73,6 +77,45 @@ export default function Contracts() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    fetch(`${API_BASE}/api/admin-notion`)
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+      .then(({ items }) => setAdminItems(items))
+      .catch(e => setAdminError(e.message));
+  }, []);
+
+  const adminProjects = useMemo(() => {
+    const map = {};
+    adminItems.forEach(i => {
+      const proj = i.프로젝트 || "기타";
+      if (!map[proj]) map[proj] = { project: proj, studio: i.스튜디오 || "", items: [] };
+      if (!map[proj].studio && i.스튜디오) map[proj].studio = i.스튜디오;
+      map[proj].items.push(i);
+    });
+    let list = Object.values(map);
+    if (selected !== "전체") list = list.filter(p => p.studio === selected);
+    return list
+      .map(p => ({ ...p, done: p.items.filter(i => i.완료).length, total: p.items.length }))
+      .sort((a, b) => (a.done === a.total) - (b.done === b.total) || a.project.localeCompare(b.project));
+  }, [adminItems, selected]);
+
+  const toggleAdminStep = async (item) => {
+    if (item.완료 && !window.confirm(`"${item.항목명}" 완료를 취소하시겠습니까?`)) return;
+    const newDone = !item.완료;
+    setAdminToggling(t => ({ ...t, [item.id]: true }));
+    setAdminItems(prev => prev.map(i => i.id === item.id ? { ...i, 완료: newDone } : i));
+    try {
+      await fetch(`${API_BASE}/api/admin-notion`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pageId: item.id, done: newDone }),
+      });
+    } catch {
+      setAdminItems(prev => prev.map(i => i.id === item.id ? { ...i, 완료: item.완료 } : i));
+    } finally {
+      setAdminToggling(t => { const n = { ...t }; delete n[item.id]; return n; });
+    }
+  };
+
   const studios = useMemo(() => {
     const map = {};
     items.forEach(i => {
@@ -82,8 +125,11 @@ export default function Contracts() {
       const d = dday(i.만료일);
       if (d !== null && d <= 30 && i.상태 !== "만료") map[s].alert += 1;
     });
+    adminItems.forEach(i => {
+      if (i.스튜디오 && !map[i.스튜디오]) map[i.스튜디오] = { total: 0, alert: 0 };
+    });
     return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
-  }, [items]);
+  }, [items, adminItems]);
 
   const expiring = useMemo(() =>
     items.filter(i => { const d = dday(i.만료일); return d !== null && d <= 30 && d >= 0 && i.상태 !== "만료"; }),
@@ -277,6 +323,49 @@ export default function Contracts() {
               </span>
             </div>
           ))}
+        </div>
+
+        {/* 행정 체크리스트 통합 뷰 */}
+        <div style={{ margin: "0 14px 16px" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "12px 2px 8px", borderTop: "1px solid var(--line)" }}>
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", color: "var(--muted)", textTransform: "uppercase" }}>행정 체크리스트</span>
+            <span style={{ fontSize: 11, color: "var(--muted)" }}>
+              {selected === "전체" ? "전체 프로젝트" : `${selected} 프로젝트`} · {adminProjects.length}건
+            </span>
+          </div>
+          {adminError && <div style={{ fontSize: 12, color: "var(--muted)", padding: "6px 2px" }}>행정 데이터 로드 실패: {adminError}</div>}
+          {!adminError && adminProjects.length === 0 && (
+            <div style={{ fontSize: 12, color: "var(--muted)", padding: "6px 2px" }}>
+              {selected === "전체" ? "등록된 행정 프로젝트가 없습니다." : "이 스튜디오에 연결된 행정 프로젝트가 없습니다. (행정 알림 탭에서 프로젝트 생성 시 스튜디오명을 입력하면 여기 연결됩니다)"}
+            </div>
+          )}
+          {adminProjects.map(p => {
+            const isOpen = adminExpand[p.project] ?? (selected !== "전체" && p.done < p.total);
+            const complete = p.done === p.total;
+            return (
+              <div key={p.project} style={{ border: "1px solid var(--line)", borderRadius: 6, marginBottom: 8, overflow: "hidden" }}>
+                <button onClick={() => setAdminExpand(e => ({ ...e, [p.project]: !isOpen }))}
+                  style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "9px 14px", border: "none", background: "#F8F9FA", cursor: "pointer", textAlign: "left" }}>
+                  <span style={{ fontSize: 10, color: "var(--muted)", width: 10 }}>{isOpen ? "▾" : "▸"}</span>
+                  <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text)" }}>{p.project}</span>
+                  {selected === "전체" && p.studio && <span style={{ fontSize: 10.5, color: "var(--muted)" }}>{p.studio}</span>}
+                  <span style={{ flex: 1 }} />
+                  <span style={{ width: 90, height: 4, borderRadius: 2, background: "var(--line)", overflow: "hidden" }}>
+                    <span style={{ display: "block", height: "100%", width: `${p.total ? (p.done / p.total) * 100 : 0}%`, background: complete ? "#16A34A" : "#F5B400" }} />
+                  </span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: complete ? "#16A34A" : "var(--muted)", width: 38, textAlign: "right" }}>{p.done}/{p.total}</span>
+                </button>
+                {isOpen && p.items.map(item => (
+                  <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 14px 7px 34px", borderTop: "1px solid var(--line)", fontSize: 12.5, opacity: adminToggling[item.id] ? 0.5 : 1 }}>
+                    <input type="checkbox" checked={item.완료} onChange={() => toggleAdminStep(item)} style={{ cursor: "pointer", accentColor: "#16A34A" }} />
+                    <span style={{ flex: 1, color: item.완료 ? "var(--muted)" : "var(--text)", textDecoration: item.완료 ? "line-through" : "none" }}>{item.항목명}</span>
+                    {item.기안링크 && <a href={item.기안링크} target="_blank" rel="noreferrer" style={{ fontSize: 10.5, color: "#0078D4", textDecoration: "none", fontWeight: 600 }}>기안 ↗</a>}
+                    {item.드라이브링크 && <a href={item.드라이브링크} target="_blank" rel="noreferrer" style={{ fontSize: 10.5, color: "#0078D4", textDecoration: "none", fontWeight: 600 }}>드라이브 ↗</a>}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
         </div>
       </div>
 
