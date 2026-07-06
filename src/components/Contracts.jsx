@@ -321,14 +321,20 @@ export default function Contracts() {
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div>
-                  <span style={label}>체결일</span>
-                  <input type="date" style={input} value={form.체결일} onChange={e => setForm(f => ({ ...f, 체결일: e.target.value }))} />
-                </div>
-                <div>
-                  <span style={label}>만료일</span>
-                  <input type="date" style={input} value={form.만료일} onChange={e => setForm(f => ({ ...f, 만료일: e.target.value }))} />
-                </div>
+                {["체결일", "만료일"].map(field => (
+                  <div key={field}>
+                    <span style={label}>
+                      {field}
+                      {form[field] && (
+                        <button onClick={() => setForm(f => ({ ...f, [field]: "" }))}
+                          style={{ marginLeft: 6, fontSize: 10, padding: "0 5px", border: "1px solid var(--line)", borderRadius: 3, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>
+                          없음
+                        </button>
+                      )}
+                    </span>
+                    <input type="date" style={input} value={form[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} />
+                  </div>
+                ))}
               </div>
               <div>
                 <span style={label}>계약서 링크</span>
