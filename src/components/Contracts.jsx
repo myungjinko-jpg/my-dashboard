@@ -55,6 +55,7 @@ export default function Contracts() {
   const [showForm, setShowForm]   = useState(false);
   const [form, setForm]           = useState(EMPTY_FORM);
   const [saving, setSaving]       = useState(false);
+  const [editingId, setEditingId] = useState(null); // 수정 모드일 때 pageId
   const [statusEdit, setStatusEdit] = useState(null); // pageId of open dropdown
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [busy, setBusy]           = useState({});
@@ -132,21 +133,35 @@ export default function Contracts() {
     if (!form.계약명.trim() || !form.스튜디오.trim()) return;
     setSaving(true);
     try {
+      const payload = { ...form, 계약명: form.계약명.trim(), 스튜디오: form.스튜디오.trim() };
       const r = await fetch(`${API_BASE}/api/contracts-notion`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, 계약명: form.계약명.trim(), 스튜디오: form.스튜디오.trim() }),
+        method: editingId ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editingId ? { pageId: editingId, ...payload } : payload),
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const { item } = await r.json();
-      setItems(prev => [item, ...prev]);
+      setItems(prev => editingId ? prev.map(i => i.id === editingId ? item : i) : [item, ...prev]);
       setShowForm(false);
       setForm(EMPTY_FORM);
+      setEditingId(null);
     } catch (e) { alert(`저장 실패: ${e.message}`); }
     finally { setSaving(false); }
   };
 
   const openSubForm = (main) => {
+    setEditingId(null);
     setForm({ ...EMPTY_FORM, 스튜디오: main.스튜디오, 계약유형: "부속합의서", 상위계약: main.계약명, 계약명: `${main.스튜디오} 부속합의서 ` });
+    setShowForm(true);
+  };
+
+  const openEditForm = (item) => {
+    setEditingId(item.id);
+    setForm({
+      계약명: item.계약명, 스튜디오: item.스튜디오, 계약유형: item.계약유형, 상태: item.상태,
+      체결일: item.체결일 || "", 만료일: item.만료일 || "", 자동갱신: item.자동갱신,
+      계약서링크: item.계약서링크 || "", 메모: item.메모 || "", 상위계약: item.상위계약 || "",
+    });
     setShowForm(true);
   };
 
@@ -178,7 +193,7 @@ export default function Contracts() {
           </button>
         ))}
         <div style={{ padding: "12px 14px 0" }}>
-          <button onClick={() => { setForm(EMPTY_FORM); setShowForm(true); }}
+          <button onClick={() => { setEditingId(null); setForm(EMPTY_FORM); setShowForm(true); }}
             style={{ width: "100%", padding: "7px 0", fontSize: 12, fontWeight: 600, border: "1px dashed var(--line)", borderRadius: 5, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>
             + 계약 추가
           </button>
@@ -207,7 +222,9 @@ export default function Contracts() {
             <div key={item.id} style={{ display: "grid", gridTemplateColumns: "1fr 90px 84px 90px 90px 72px 60px 40px", gap: 8, padding: "10px 16px", borderTop: "1px solid var(--line)", fontSize: 12.5, alignItems: "center", opacity: busy[item.id] ? 0.5 : 1, background: "var(--card)" }}>
               <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
                 {item._nested && <span style={{ color: "var(--muted)", flexShrink: 0 }}>└</span>}
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: item._nested ? 400 : 500 }} title={item.메모 || item.계약명}>
+                <span onClick={() => openEditForm(item)}
+                  style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: item._nested ? 400 : 500, cursor: "pointer" }}
+                  title={`클릭하여 수정${item.메모 ? ` — ${item.메모}` : ""}`}>
                   {item.계약명}
                 </span>
                 {selected === "전체" && !item._nested && <span style={{ fontSize: 10, color: "var(--muted)", flexShrink: 0 }}>{item.스튜디오}</span>}
@@ -270,7 +287,7 @@ export default function Contracts() {
           <div onClick={e => e.stopPropagation()}
             style={{ width: 420, maxWidth: "92vw", background: "var(--card)", borderRadius: 10, padding: 22, boxShadow: "0 8px 30px rgba(0,0,0,0.18)" }}>
             <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>
-              {form.계약유형 === "부속합의서" && form.상위계약 ? `부속합의서 추가 — ${form.상위계약}` : "계약 추가"}
+              {editingId ? `계약 수정 — ${form.계약명}` : form.계약유형 === "부속합의서" && form.상위계약 ? `부속합의서 추가 — ${form.상위계약}` : "계약 추가"}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div>
