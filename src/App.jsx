@@ -18,6 +18,7 @@ import LtvCalculator from "./components/LtvCalculator";
 import ProjectDashboard from "./components/ProjectDashboard";
 import AdminAlerts from "./components/AdminAlerts";
 import GddLibrary from "./components/GddLibrary";
+import Contracts from "./components/Contracts";
 
 const SHEET_ID = "1pBJWVce2CgrPBlFMGbS2yCp6tBQnNn4gkEHz7jG3LZk";
 const SHEET_NAME = "Test_Raw%20Data";
@@ -292,6 +293,9 @@ export default function App() {
         <button className={`tab-btn ${activeTab === "gdd" ? "active" : ""}`} onClick={() => setActiveTab("gdd")}>
           📚 GDD 라이브러리 <span style={{ fontSize: "10px", opacity: 0.6 }}>(테스트중)</span>
         </button>
+        <button className={`tab-btn ${activeTab === "contracts" ? "active" : ""}`} onClick={() => setActiveTab("contracts")}>
+          📝 계약 관리 <span style={{ fontSize: "10px", opacity: 0.6 }}>(테스트중)</span>
+        </button>
       </div>
 
       {error && <div className="error-box">데이터 로드 실패: {error}</div>}
@@ -337,6 +341,17 @@ export default function App() {
             <p className="section-desc">개발사별 GDD 제출 이력 관리 — PDF 업로드 시 AI 리뷰 보드 자동 생성.</p>
           </div>
           <GddLibrary />
+        </section>
+      )}
+
+      {activeTab === "contracts" && (
+        <section className="section-block">
+          <div className="section-header">
+            <div className="section-eyebrow">Notion DB</div>
+            <h2 className="section-heading">계약 관리</h2>
+            <p className="section-desc">개발사별 계약 현황 트래킹 — 본계약/부속합의서 이력, 상태, 만료 알림 관리.</p>
+          </div>
+          <Contracts />
         </section>
       )}
 
