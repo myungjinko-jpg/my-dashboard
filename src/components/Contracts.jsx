@@ -78,6 +78,8 @@ export default function Contracts() {
   const [saving, setSaving]       = useState(false);
   const [busy, setBusy]           = useState({});
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [addingPartner, setAddingPartner] = useState(false);
+  const [newPartnerName, setNewPartnerName] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
@@ -272,10 +274,27 @@ export default function Contracts() {
           );
         })}
         <div style={{ padding: "12px 14px 0" }}>
-          <button onClick={() => openAdd("파트너십계약", selected !== "전체" ? selected : "")}
-            style={{ width: "100%", padding: "7px 0", fontSize: 12, fontWeight: 600, border: "1px dashed var(--line)", borderRadius: 5, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>
-            + 항목 추가
-          </button>
+          {addingPartner ? (
+            <form onSubmit={e => {
+              e.preventDefault();
+              const name = newPartnerName.trim();
+              if (!name) return;
+              setPartners(prev => prev.includes(name) ? prev : [...prev, name]);
+              setSelected(name);
+              setAddingPartner(false);
+              setNewPartnerName("");
+            }}>
+              <input autoFocus value={newPartnerName} onChange={e => setNewPartnerName(e.target.value)}
+                onBlur={() => { if (!newPartnerName.trim()) setAddingPartner(false); }}
+                placeholder="파트너사명 입력 후 Enter"
+                style={{ width: "100%", padding: "6px 9px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 5, background: "var(--card)", color: "var(--text)", boxSizing: "border-box" }} />
+            </form>
+          ) : (
+            <button onClick={() => setAddingPartner(true)}
+              style={{ width: "100%", padding: "7px 0", fontSize: 12, fontWeight: 600, border: "1px dashed var(--line)", borderRadius: 5, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>
+              + 파트너사 추가
+            </button>
+          )}
         </div>
       </div>
 
