@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 const IS_DEV = import.meta.env.DEV;
 const API_BASE = IS_DEV ? "http://localhost:5601" : "";
 
+const NOTION_DB_URL = "https://app.notion.com/p/519164c16c9145679dafce69b6d9ab58";
+
 const CONTRACT_KINDS = ["파트너십계약", "부속합의서", "NDA"];
 const PARTNER_LEVEL_KINDS = ["파트너십계약", "NDA", "거래처등록"];
 const PROJECT_LEVEL_KINDS = ["부속합의서", "지출기안"];
@@ -300,6 +302,12 @@ export default function Contracts() {
 
       {/* 메인 */}
       <div style={{ flex: 1, minWidth: 0, padding: 14 }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+          <a href={NOTION_DB_URL} target="_blank" rel="noreferrer"
+            style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: "var(--muted)", textDecoration: "none", padding: "4px 10px", border: "1px solid var(--line)", borderRadius: 5 }}>
+            Notion DB 열기 ↗
+          </a>
+        </div>
         {alerts.length > 0 && (
           <div style={{ marginBottom: 12, padding: "8px 14px", borderRadius: 6, border: "1px solid var(--line)", borderLeft: "3px solid #C2410C", fontSize: 12, color: "var(--text)" }}>
             <span style={{ fontWeight: 600, color: "#C2410C" }}>만료 임박</span>
