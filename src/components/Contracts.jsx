@@ -70,6 +70,9 @@ export default function Contracts() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [addingPartner, setAddingPartner] = useState(false);
   const [newPartnerName, setNewPartnerName] = useState("");
+  const [addingProject, setAddingProject] = useState(false);
+  const [newProjectName, setNewProjectName] = useState("");
+  const [creatingTpl, setCreatingTpl] = useState(false);
   const [titleTouched, setTitleTouched] = useState(false);
 
   const load = useCallback(async () => {
@@ -173,6 +176,35 @@ export default function Contracts() {
     const t = autoTitle(form.구분, form.파트너사.trim(), form.프로젝트.trim());
     setForm(f => f.제목 === t ? f : { ...f, 제목: t });
   }, [showForm, editingId, titleTouched, form.구분, form.파트너사, form.프로젝트, autoTitle]); // eslint-disable-line
+
+  // 템플릿 일괄 생성
+  const createRows = async (rows) => {
+    setCreatingTpl(true);
+    try {
+      for (const fields of rows) {
+        const r = await fetch(`${API_BASE}/api/partner-admin`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(fields),
+        });
+        if (r.ok) {
+          const { item } = await r.json();
+          setItems(prev => [item, ...prev]);
+        }
+      }
+    } finally { setCreatingTpl(false); }
+  };
+
+  // 신규 파트너 템플릿: 파트너십계약 + 거래처등록
+  const createPartnerTemplate = (partner) => createRows([
+    { 제목: `[${partner}] 파트너십계약`, 파트너사: partner, 구분: "파트너십계약", 상태: "요청전" },
+    { 제목: `[${partner}] 거래처등록`, 파트너사: partner, 구분: "거래처등록", 상태: "요청전" },
+  ]);
+
+  // 신규 프로젝트 템플릿: 부속합의서 + 프로토타입 지출기안
+  const createProjectTemplate = (partner, proj) => createRows([
+    { 제목: `[${proj}] 부속합의서`, 파트너사: partner, 프로젝트: proj, 구분: "부속합의서", 상태: "요청전" },
+    { 제목: `[${proj}] 프로토타입 지출기안`, 파트너사: partner, 프로젝트: proj, 구분: "지출기안", 이터레이션구분: "프로토타입", 상태: "요청전" },
+  ]);
 
   const openAdd = (구분, partner, project) => {
     setEditingId(null);
@@ -426,6 +458,7 @@ export default function Contracts() {
                   setSelected(name);
                   setAddingPartner(false);
                   setNewPartnerName("");
+                  if (!items.some(i => i.파트너사 === name)) createPartnerTemplate(name);
                 }}>
                 <input autoFocus value={newPartnerName} onChange={e => setNewPartnerName(e.target.value)}
                   onBlur={() => { if (!newPartnerName.trim()) setAddingPartner(false); }}
@@ -458,6 +491,26 @@ export default function Contracts() {
                       </span>
                     )}
                   </div>
+                  {addingProject ? (
+                    <form onSubmit={e => {
+                      e.preventDefault();
+                      const name = newProjectName.trim();
+                      if (!name) return;
+                      setAddingProject(false);
+                      setNewProjectName("");
+                      createProjectTemplate(selected, name);
+                    }}>
+                      <input autoFocus value={newProjectName} onChange={e => setNewProjectName(e.target.value)}
+                        onBlur={() => { if (!newProjectName.trim()) setAddingProject(false); }}
+                        placeholder="프로젝트명 입력 후 Enter"
+                        style={{ padding: "4px 9px", fontSize: 11, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", width: 160 }} />
+                    </form>
+                  ) : (
+                    <button onClick={() => setAddingProject(true)} disabled={creatingTpl} style={{
+                      padding: "4px 11px", borderRadius: 4, border: `1px solid ${amber}`, background: amberFaint,
+                      color: amber, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", opacity: creatingTpl ? 0.5 : 1,
+                    }}>{creatingTpl ? "생성 중…" : "+ 프로젝트"}</button>
+                  )}
                   <button onClick={() => openAdd("파트너십계약", selected)} style={{
                     padding: "4px 11px", borderRadius: 4, border: "1px solid var(--line)", background: "transparent",
                     color: "var(--muted)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
