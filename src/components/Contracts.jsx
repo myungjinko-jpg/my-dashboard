@@ -4,19 +4,11 @@ const IS_DEV = import.meta.env.DEV;
 const API_BASE = IS_DEV ? "http://localhost:5601" : "";
 
 const CONTRACT_KINDS = ["파트너십계약", "부속합의서", "NDA"];
+const PARTNER_LEVEL_KINDS = ["파트너십계약", "NDA", "거래처등록"];
+const PROJECT_LEVEL_KINDS = ["부속합의서", "지출기안"];
+const ALL_KINDS = ["파트너십계약", "NDA", "거래처등록", "부속합의서", "지출기안"];
 const STATUS_ORDER = ["요청전", "진행중", "완료"];
-const STATUS_COLOR = {
-  요청전: { fg: "#6B7280", bg: "rgba(107,114,128,0.10)" },
-  진행중: { fg: "#B45309", bg: "rgba(245,180,0,0.14)" },
-  완료:   { fg: "#16A34A", bg: "rgba(22,163,74,0.10)" },
-};
-const KIND_COLOR = {
-  파트너십계약: { fg: "#1D4ED8", bg: "rgba(29,78,216,0.08)" },
-  부속합의서:   { fg: "#BE185D", bg: "rgba(190,24,93,0.08)" },
-  NDA:          { fg: "#7C3AED", bg: "rgba(124,58,237,0.08)" },
-  거래처등록:   { fg: "#B45309", bg: "rgba(245,180,0,0.12)" },
-  지출기안:     { fg: "#0F766E", bg: "rgba(15,118,110,0.08)" },
-};
+const STATUS_DOT = { 요청전: "#C9CDD4", 진행중: "#F5B400", 완료: "#16A34A" };
 
 const DOCS_BY_KIND = {
   거래처등록: ["법인등록증", "법인통장"],
@@ -35,22 +27,12 @@ const VENDOR_FIELDS = [
 const BANK_FIELDS = ["BankName", "BranchName", "BankAddress", "BeneficiaryName", "AccountNumber"];
 
 const EMPTY_FORM = {
-  제목: "", 파트너사: "", 구분: "파트너십계약", 상태: "요청전", 메모: "",
+  제목: "", 파트너사: "", 프로젝트: "", 구분: "파트너십계약", 상태: "요청전", 메모: "",
   체결일: "", 만료일: "", 자동갱신: false, 계약서URL: "", 기안링크: "", 이터레이션구분: "",
   법인등록증: false, 법인통장: false, 부속합의서: false, 스펙내용: false, 인보이스: false,
   거래처식별번호: "", 거래처명: "", 거래처국가: "", 거래처주소: "", 거래처대표: "", 거래처담당자: "", 거래처Email: "",
   BankName: "", BranchName: "", BankAddress: "", BeneficiaryName: "", AccountNumber: "",
 };
-
-function Pill({ label, color, onClick, title }) {
-  const c = color || { fg: "#6B7280", bg: "rgba(107,114,128,0.08)" };
-  return (
-    <span onClick={onClick} title={title}
-      style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".03em", padding: "2px 7px", borderRadius: 3, background: c.bg, color: c.fg, whiteSpace: "nowrap", cursor: onClick ? "pointer" : "default", userSelect: "none" }}>
-      {label}
-    </span>
-  );
-}
 
 function dday(만료일) {
   if (!만료일) return null;
@@ -59,35 +41,27 @@ function dday(만료일) {
   return Math.round((exp - today) / 86400000);
 }
 
-function DdayBadge({ 만료일 }) {
-  const d = dday(만료일);
-  if (d === null) return null;
-  let fg = "var(--muted)", bg = "transparent", label = `D-${d}`;
-  if (d < 0) { fg = "#6B7280"; bg = "rgba(107,114,128,0.10)"; label = "만료"; }
-  else if (d <= 7)  { fg = "#DC2626"; bg = "rgba(220,38,38,0.10)"; }
-  else if (d <= 30) { fg = "#C2410C"; bg = "rgba(234,88,12,0.10)"; }
-  else return <span style={{ fontSize: 10.5, color: "var(--muted)" }}>D-{d}</span>;
-  return <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 3, background: bg, color: fg }}>{label}</span>;
+function StatusDot({ 상태, onClick, busy }) {
+  const s = 상태 || "요청전";
+  return (
+    <button onClick={onClick} title="클릭해서 상태 변경" disabled={busy}
+      style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "none", background: "transparent", cursor: "pointer", padding: 0, fontSize: 11.5, color: "var(--muted)", whiteSpace: "nowrap", opacity: busy ? 0.5 : 1 }}>
+      <span style={{ width: 7, height: 7, borderRadius: "50%", background: STATUS_DOT[s], flexShrink: 0 }} />
+      {s}
+    </button>
+  );
 }
 
-function DocChips({ item, onToggle, busy }) {
+function DocSummary({ item }) {
   const docs = DOCS_BY_KIND[item.구분] || [];
-  if (!docs.length) return null;
+  if (!docs.length) return <span />;
+  const done = docs.filter(d => item[d]).length;
+  const missing = docs.filter(d => !item[d]);
+  const complete = done === docs.length;
   return (
-    <span style={{ display: "inline-flex", gap: 4, flexWrap: "wrap" }}>
-      {docs.map(doc => (
-        <span key={doc} onClick={() => !busy && onToggle(item, doc)}
-          title={`${doc} ${item[doc] ? "수령 완료" : "미수령"} — 클릭해서 토글`}
-          style={{
-            fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 3, cursor: "pointer", userSelect: "none",
-            background: item[doc] ? "rgba(22,163,74,0.10)" : "rgba(220,38,38,0.07)",
-            color: item[doc] ? "#16A34A" : "#DC2626",
-            border: `1px solid ${item[doc] ? "rgba(22,163,74,0.25)" : "rgba(220,38,38,0.2)"}`,
-            opacity: busy ? 0.5 : 1,
-          }}>
-          {item[doc] ? "✓" : "✕"} {doc}
-        </span>
-      ))}
+    <span title={complete ? "서류 완비" : `미수령: ${missing.join(", ")}`}
+      style={{ fontSize: 11, fontVariantNumeric: "tabular-nums", color: complete ? "var(--muted)" : "#C2410C", fontWeight: complete ? 400 : 600, whiteSpace: "nowrap" }}>
+      서류 {done}/{docs.length}
     </span>
   );
 }
@@ -131,17 +105,6 @@ export default function Contracts() {
     return map;
   }, [items, allPartners]);
 
-  // 파트너별 파이프라인 요약: 계약 → 거래처등록 → 지출기안
-  const pipeline = useCallback((rows) => {
-    const contract = rows.filter(i => CONTRACT_KINDS.includes(i.구분));
-    const vendor = rows.find(i => i.구분 === "거래처등록");
-    const expenses = rows.filter(i => i.구분 === "지출기안");
-    const mainContract = rows.find(i => i.구분 === "파트너십계약");
-    const missingDocs = rows.reduce((n, i) => n + (DOCS_BY_KIND[i.구분] || []).filter(d => !i[d] && i.상태 !== "요청전").length, 0);
-    const expiring = contract.some(i => { const d = dday(i.만료일); return d !== null && d >= 0 && d <= 30; });
-    return { contract, mainContract, vendor, expenses, missingDocs, expiring };
-  }, []);
-
   const alerts = useMemo(() => {
     const out = [];
     items.forEach(i => {
@@ -173,8 +136,6 @@ export default function Contracts() {
     patch(item.id, { 상태: next });
   };
 
-  const toggleDoc = (item, doc) => patch(item.id, { [doc]: !item[doc] });
-
   const remove = async (item) => {
     setBusy(b => ({ ...b, [item.id]: true }));
     try {
@@ -189,23 +150,27 @@ export default function Contracts() {
     }
   };
 
-  const openAdd = (구분, partner) => {
+  const openAdd = (구분, partner, project) => {
     setEditingId(null);
     let 제목 = "";
-    if (partner) {
+    const scope = project || partner;
+    if (scope) {
       if (구분 === "지출기안") {
-        const n = (byPartner[partner] || []).filter(i => i.구분 === "지출기안").length;
-        제목 = `[${partner}] ${n === 0 ? "프로토타입" : `이터레이션#${n}`} 지출기안`;
-      } else 제목 = `[${partner}] ${구분}`;
+        const n = (byPartner[partner] || []).filter(i => i.구분 === "지출기안" && (!project || i.프로젝트 === project)).length;
+        제목 = `[${scope}] ${n === 0 ? "프로토타입" : `이터레이션#${n}`} 지출기안`;
+      } else 제목 = `[${scope}] ${구분}`;
     }
-    setForm({ ...EMPTY_FORM, 구분, 파트너사: partner || "", 제목, 이터레이션구분: 구분 === "지출기안" ? "" : "" });
+    setForm({ ...EMPTY_FORM, 구분, 파트너사: partner || "", 프로젝트: project || "", 제목 });
     setShowForm(true);
   };
 
   const openEdit = (item) => {
     setEditingId(item.id);
     const f = { ...EMPTY_FORM };
-    Object.keys(EMPTY_FORM).forEach(k => { f[k] = item[k] ?? EMPTY_FORM[k]; if (f[k] === null) f[k] = typeof EMPTY_FORM[k] === "boolean" ? false : ""; });
+    Object.keys(EMPTY_FORM).forEach(k => {
+      f[k] = item[k] ?? EMPTY_FORM[k];
+      if (f[k] === null) f[k] = typeof EMPTY_FORM[k] === "boolean" ? false : "";
+    });
     setForm(f);
     setShowForm(true);
   };
@@ -214,7 +179,7 @@ export default function Contracts() {
     if (!form.제목.trim() || !form.파트너사.trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, 제목: form.제목.trim(), 파트너사: form.파트너사.trim() };
+      const payload = { ...form, 제목: form.제목.trim(), 파트너사: form.파트너사.trim(), 프로젝트: form.프로젝트.trim() };
       const r = await fetch(`${API_BASE}/api/partner-admin`, {
         method: editingId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
@@ -233,11 +198,47 @@ export default function Contracts() {
   const input = { width: "100%", padding: "7px 10px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", boxSizing: "border-box" };
   const label = { fontSize: 11, fontWeight: 600, color: "var(--muted)", marginBottom: 4, display: "block" };
   const isContract = CONTRACT_KINDS.includes(form.구분);
+  const isProjectLevel = PROJECT_LEVEL_KINDS.includes(form.구분);
 
   if (loading) return <div style={{ padding: 40, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>데이터 불러오는 중...</div>;
   if (error) return <div style={{ padding: 40, textAlign: "center", color: "#DC2626", fontSize: 13 }}>로드 실패: {error} <button onClick={load} style={{ marginLeft: 8 }}>재시도</button></div>;
 
   const visiblePartners = selected === "전체" ? allPartners : [selected];
+
+  // 공통 행 렌더러 — 정갈한 그리드 행
+  const Row = ({ item, indent }) => {
+    const d = dday(item.만료일);
+    const dateInfo = CONTRACT_KINDS.includes(item.구분)
+      ? (item.만료일
+          ? (d < 0 ? "만료" : `~${item.만료일.slice(2)}`)
+          : item.체결일 ? item.체결일.slice(2) : "")
+      : "";
+    const dateColor = d !== null && d >= 0 && d <= 30 ? (d <= 7 ? "#DC2626" : "#C2410C") : "var(--muted)";
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 64px 70px 76px 70px 24px", gap: 10, alignItems: "center", padding: `7px 16px 7px ${indent ? 34 : 16}px`, borderTop: "1px solid var(--line)", fontSize: 12.5 }}>
+        <span onClick={() => openEdit(item)} title={`클릭하여 상세 수정${item.메모 ? ` — ${item.메모}` : ""}`}
+          style={{ cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text)" }}>
+          {item.제목}
+          {item.자동갱신 && <span title="자동갱신" style={{ marginLeft: 4, fontSize: 10, color: "var(--muted)" }}>갱신</span>}
+        </span>
+        <StatusDot 상태={item.상태} onClick={() => cycleStatus(item)} busy={busy[item.id]} />
+        <DocSummary item={item} />
+        <span style={{ fontSize: 11, color: dateColor, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+          {dateInfo}{d !== null && d >= 0 && d <= 30 ? ` (D-${d})` : ""}
+        </span>
+        <span style={{ display: "flex", gap: 8 }}>
+          {item.계약서URL && <a href={item.계약서URL} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "var(--muted)", textDecoration: "none" }}>문서 ↗</a>}
+          {item.기안링크 && <a href={item.기안링크} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "var(--muted)", textDecoration: "none" }}>기안 ↗</a>}
+        </span>
+        {deleteConfirm === item.id ? (
+          <button onClick={() => remove(item)} style={{ fontSize: 10, fontWeight: 700, color: "#fff", background: "#DC2626", border: "none", borderRadius: 3, padding: "2px 5px", cursor: "pointer" }}>확인</button>
+        ) : (
+          <button onClick={() => { setDeleteConfirm(item.id); setTimeout(() => setDeleteConfirm(c => c === item.id ? null : c), 3000); }}
+            style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", opacity: 0.35 }} title="삭제">✕</button>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div style={{ display: "flex", border: "1px solid var(--line)", borderRadius: 8, overflow: "hidden", background: "var(--card)", minHeight: 460 }}>
@@ -246,8 +247,12 @@ export default function Contracts() {
         <div style={{ padding: "0 14px 10px", fontSize: 10, fontWeight: 700, letterSpacing: ".08em", color: "var(--muted)", textTransform: "uppercase" }}>파트너사</div>
         {["전체", ...allPartners].map(name => {
           const rows = name === "전체" ? items : (byPartner[name] || []);
-          const pl = pipeline(rows);
-          const warn = pl.missingDocs > 0 || pl.expiring;
+          const warn = name !== "전체" && rows.some(i => {
+            const d = dday(i.만료일);
+            const docsMissing = (DOCS_BY_KIND[i.구분] || []).some(doc => !i[doc]) && i.상태 !== "요청전" && i.상태 !== "완료";
+            return docsMissing || (CONTRACT_KINDS.includes(i.구분) && d !== null && d >= 0 && d <= 30);
+          });
+          const projCount = name !== "전체" ? new Set(rows.filter(i => i.프로젝트).map(i => i.프로젝트)).size : 0;
           return (
             <button key={name} onClick={() => setSelected(name)}
               style={{
@@ -258,9 +263,10 @@ export default function Contracts() {
                 color: "var(--text)", fontWeight: selected === name ? 600 : 400,
               }}>
               <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
-              <span style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                {name !== "전체" && warn && <span style={{ fontSize: 9, fontWeight: 700, color: "#DC2626" }}>●</span>}
-                <span style={{ fontSize: 10, color: "var(--muted)" }}>{rows.length}</span>
+              <span style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                {warn && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#DC2626" }} />}
+                {name !== "전체" && projCount > 0 && <span style={{ fontSize: 10, color: "var(--muted)" }}>{projCount}</span>}
+                {name === "전체" && <span style={{ fontSize: 10, color: "var(--muted)" }}>{items.length}</span>}
               </span>
             </button>
           );
@@ -276,8 +282,9 @@ export default function Contracts() {
       {/* 메인 */}
       <div style={{ flex: 1, minWidth: 0, padding: 14 }}>
         {alerts.length > 0 && (
-          <div style={{ marginBottom: 12, padding: "9px 14px", borderRadius: 6, background: "rgba(234,88,12,0.07)", border: "1px solid rgba(234,88,12,0.25)", fontSize: 12, color: "#C2410C", fontWeight: 500 }}>
-            ⏰ {alerts.join(" · ")}
+          <div style={{ marginBottom: 12, padding: "8px 14px", borderRadius: 6, border: "1px solid var(--line)", borderLeft: "3px solid #C2410C", fontSize: 12, color: "var(--text)" }}>
+            <span style={{ fontWeight: 600, color: "#C2410C" }}>만료 임박</span>
+            <span style={{ color: "var(--muted)", marginLeft: 8 }}>{alerts.join(" · ")}</span>
           </div>
         )}
 
@@ -287,63 +294,53 @@ export default function Contracts() {
 
         {visiblePartners.map(partner => {
           const rows = byPartner[partner] || [];
-          const pl = pipeline(rows);
-          const contractDone = pl.mainContract?.상태 === "완료";
-          const vendorDone = pl.vendor?.상태 === "완료";
-          const groups = [
-            ["계약", rows.filter(i => CONTRACT_KINDS.includes(i.구분))],
-            ["거래처 등록", rows.filter(i => i.구분 === "거래처등록")],
-            ["지출기안", rows.filter(i => i.구분 === "지출기안")],
-          ];
+          const common = rows.filter(i => PARTNER_LEVEL_KINDS.includes(i.구분));
+          const projectRows = rows.filter(i => PROJECT_LEVEL_KINDS.includes(i.구분));
+          const projects = [...new Set(projectRows.map(i => i.프로젝트 || "(프로젝트 미지정)"))].sort();
           return (
             <div key={partner} style={{ border: "1px solid var(--line)", borderRadius: 8, marginBottom: 12, overflow: "hidden" }}>
-              {/* 파트너 헤더 + 파이프라인 */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: "#F8F9FA", flexWrap: "wrap" }}>
+              {/* 파트너 헤더 */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", background: "#F8F9FA" }}>
                 <span style={{ fontSize: 13.5, fontWeight: 700 }}>{partner}</span>
-                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--muted)" }}>
-                  <Pill label={`계약 ${pl.mainContract ? (contractDone ? "✓" : pl.mainContract.상태) : "—"}`} color={contractDone ? STATUS_COLOR.완료 : pl.mainContract ? STATUS_COLOR[pl.mainContract.상태] : undefined} />
-                  <span>→</span>
-                  <Pill label={`거래처 ${pl.vendor ? (vendorDone ? "✓" : pl.vendor.상태) : "—"}`} color={vendorDone ? STATUS_COLOR.완료 : pl.vendor ? STATUS_COLOR[pl.vendor.상태] : undefined} />
-                  <span>→</span>
-                  <Pill label={`지출기안 ${pl.expenses.filter(e => e.상태 === "완료").length}/${pl.expenses.length}`} color={pl.expenses.length && pl.expenses.every(e => e.상태 === "완료") ? STATUS_COLOR.완료 : pl.expenses.length ? STATUS_COLOR.진행중 : undefined} />
+                <span style={{ fontSize: 11, color: "var(--muted)" }}>
+                  프로젝트 {projects.filter(p => p !== "(프로젝트 미지정)").length} · 항목 {rows.length}
                 </span>
-                {pl.missingDocs > 0 && <span style={{ fontSize: 10.5, fontWeight: 700, color: "#DC2626" }}>서류 누락 {pl.missingDocs}</span>}
                 <span style={{ flex: 1 }} />
-                <button onClick={() => openAdd("지출기안", partner)}
-                  style={{ fontSize: 10.5, padding: "2px 8px", border: "1px dashed var(--line)", borderRadius: 4, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>
-                  + 지출기안
+                <button onClick={() => openAdd("부속합의서", partner)}
+                  style={{ fontSize: 10.5, padding: "2px 8px", border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--muted)", cursor: "pointer" }}>
+                  + 프로젝트 항목
                 </button>
               </div>
 
-              {groups.map(([title, list]) => list.length > 0 && (
-                <div key={title}>
-                  <div style={{ padding: "7px 16px 3px", fontSize: 10, fontWeight: 700, letterSpacing: ".06em", color: "var(--muted)", textTransform: "uppercase" }}>{title}</div>
-                  {list.map(item => (
-                    <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px", borderTop: "1px solid var(--line)", fontSize: 12.5, opacity: busy[item.id] ? 0.5 : 1, flexWrap: "wrap" }}>
-                      <Pill label={item.구분} color={KIND_COLOR[item.구분]} />
-                      <span onClick={() => openEdit(item)} title="클릭하여 상세 수정"
-                        style={{ fontWeight: 500, cursor: "pointer", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {item.제목}
-                      </span>
-                      {item.이터레이션구분 && <span style={{ fontSize: 10.5, color: "var(--muted)" }}>{item.이터레이션구분}</span>}
-                      <Pill label={item.상태 || "요청전"} color={STATUS_COLOR[item.상태 || "요청전"]}
-                        onClick={() => cycleStatus(item)} title="클릭해서 상태 변경" />
-                      <DocChips item={item} onToggle={toggleDoc} busy={busy[item.id]} />
-                      <span style={{ flex: 1 }} />
-                      {CONTRACT_KINDS.includes(item.구분) && item.만료일 && <DdayBadge 만료일={item.만료일} />}
-                      {item.체결일 && <span style={{ fontSize: 10.5, color: "var(--muted)" }}>{item.체결일}{item.자동갱신 ? " 🔄" : ""}</span>}
-                      {item.계약서URL && <a href={item.계약서URL} target="_blank" rel="noreferrer" style={{ fontSize: 10.5, color: "#0078D4", textDecoration: "none", fontWeight: 600 }}>계약서 ↗</a>}
-                      {item.기안링크 && <a href={item.기안링크} target="_blank" rel="noreferrer" style={{ fontSize: 10.5, color: "#0078D4", textDecoration: "none", fontWeight: 600 }}>기안 ↗</a>}
-                      {deleteConfirm === item.id ? (
-                        <button onClick={() => remove(item)} style={{ fontSize: 10, fontWeight: 700, color: "#fff", background: "#DC2626", border: "none", borderRadius: 3, padding: "2px 6px", cursor: "pointer" }}>확인</button>
-                      ) : (
-                        <button onClick={() => { setDeleteConfirm(item.id); setTimeout(() => setDeleteConfirm(c => c === item.id ? null : c), 3000); }}
-                          style={{ fontSize: 12, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", opacity: 0.5 }} title="삭제">✕</button>
-                      )}
-                    </div>
-                  ))}
+              {/* 파트너 공통 */}
+              {common.length > 0 && (
+                <div>
+                  <div style={{ padding: "8px 16px 4px", fontSize: 10, fontWeight: 700, letterSpacing: ".06em", color: "var(--muted)", textTransform: "uppercase" }}>파트너 공통</div>
+                  {common.map(item => <Row key={item.id} item={item} />)}
                 </div>
-              ))}
+              )}
+
+              {/* 프로젝트별 */}
+              {projects.map(proj => {
+                const list = projectRows.filter(i => (i.프로젝트 || "(프로젝트 미지정)") === proj);
+                return (
+                  <div key={proj}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px 4px", borderTop: "1px solid var(--line)" }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)" }}>{proj}</span>
+                      <span style={{ fontSize: 10.5, color: "var(--muted)" }}>
+                        지출기안 {list.filter(i => i.구분 === "지출기안" && i.상태 === "완료").length}/{list.filter(i => i.구분 === "지출기안").length}
+                      </span>
+                      <span style={{ flex: 1 }} />
+                      <button onClick={() => openAdd("지출기안", partner, proj === "(프로젝트 미지정)" ? "" : proj)}
+                        style={{ fontSize: 10, padding: "1px 7px", border: "1px dashed var(--line)", borderRadius: 3, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>
+                        + 지출기안
+                      </button>
+                    </div>
+                    {list.map(item => <Row key={item.id} item={item} indent />)}
+                  </div>
+                );
+              })}
+
               {rows.length === 0 && (
                 <div style={{ padding: "14px 16px", fontSize: 12, color: "var(--muted)" }}>
                   아직 항목이 없습니다.
@@ -375,10 +372,20 @@ export default function Contracts() {
                 <div>
                   <span style={label}>구분</span>
                   <select style={input} value={form.구분} onChange={e => setForm(f => ({ ...f, 구분: e.target.value }))}>
-                    {Object.keys(KIND_COLOR).map(t => <option key={t}>{t}</option>)}
+                    {ALL_KINDS.map(t => <option key={t}>{t}</option>)}
                   </select>
                 </div>
               </div>
+              {isProjectLevel && (
+                <div>
+                  <span style={label}>프로젝트 *</span>
+                  <input style={input} list="project-list" value={form.프로젝트}
+                    onChange={e => setForm(f => ({ ...f, 프로젝트: e.target.value }))} placeholder="예: Dice Battle" />
+                  <datalist id="project-list">
+                    {[...new Set(items.filter(i => i.파트너사 === form.파트너사 && i.프로젝트).map(i => i.프로젝트))].map(p => <option key={p} value={p} />)}
+                  </datalist>
+                </div>
+              )}
               <div>
                 <span style={label}>제목 *</span>
                 <input style={input} value={form.제목} onChange={e => setForm(f => ({ ...f, 제목: e.target.value }))} placeholder="예: [MMC] 파트너십계약" />
@@ -475,8 +482,8 @@ export default function Contracts() {
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 18 }}>
               <button onClick={() => setShowForm(false)} disabled={saving}
                 style={{ padding: "8px 16px", fontSize: 12.5, border: "1px solid var(--line)", borderRadius: 6, background: "var(--card)", color: "var(--text)", cursor: "pointer" }}>취소</button>
-              <button onClick={submit} disabled={saving || !form.제목.trim() || !form.파트너사.trim()}
-                style={{ padding: "8px 18px", fontSize: 12.5, fontWeight: 600, border: "none", borderRadius: 6, background: "#F5B400", color: "#1a1a1a", cursor: "pointer", opacity: saving || !form.제목.trim() || !form.파트너사.trim() ? 0.5 : 1 }}>
+              <button onClick={submit} disabled={saving || !form.제목.trim() || !form.파트너사.trim() || (isProjectLevel && !form.프로젝트.trim())}
+                style={{ padding: "8px 18px", fontSize: 12.5, fontWeight: 600, border: "none", borderRadius: 6, background: "#F5B400", color: "#1a1a1a", cursor: "pointer", opacity: saving || !form.제목.trim() || !form.파트너사.trim() || (isProjectLevel && !form.프로젝트.trim()) ? 0.5 : 1 }}>
                 {saving ? "저장 중..." : "저장"}
               </button>
             </div>
