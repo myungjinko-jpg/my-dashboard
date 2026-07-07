@@ -10,7 +10,14 @@ const PARTNER_LEVEL_KINDS = ["파트너십계약", "NDA", "거래처등록"];
 const PROJECT_LEVEL_KINDS = ["부속합의서", "지출기안"];
 const ALL_KINDS = ["파트너십계약", "NDA", "거래처등록", "부속합의서", "지출기안"];
 const STATUS_ORDER = ["요청전", "진행중", "완료"];
-const STATUS_DOT = { 요청전: "#C9CDD4", 진행중: "#F5B400", 완료: "#16A34A" };
+
+const amber = "#F5B400";
+const amberFaint = "rgba(245,180,0,0.10)";
+const green = "#16A34A";
+const greenFaint = "rgba(22,163,74,0.10)";
+const red = "#DC2626";
+const blue = "#0078D4";
+const blueFaint = "rgba(0,120,212,0.08)";
 
 const DOCS_BY_KIND = {
   거래처등록: ["법인등록증", "법인통장"],
@@ -43,29 +50,10 @@ function dday(만료일) {
   return Math.round((exp - today) / 86400000);
 }
 
-function StatusDot({ 상태, onClick, busy }) {
-  const s = 상태 || "요청전";
-  return (
-    <button onClick={onClick} title="클릭해서 상태 변경" disabled={busy}
-      style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "none", background: "transparent", cursor: "pointer", padding: 0, fontSize: 11.5, color: "var(--muted)", whiteSpace: "nowrap", opacity: busy ? 0.5 : 1 }}>
-      <span style={{ width: 7, height: 7, borderRadius: "50%", background: STATUS_DOT[s], flexShrink: 0 }} />
-      {s}
-    </button>
-  );
-}
-
-function DocSummary({ item }) {
-  const docs = DOCS_BY_KIND[item.구분] || [];
-  if (!docs.length) return <span />;
-  const done = docs.filter(d => item[d]).length;
-  const missing = docs.filter(d => !item[d]);
-  const complete = done === docs.length;
-  return (
-    <span title={complete ? "서류 완비" : `미수령: ${missing.join(", ")}`}
-      style={{ fontSize: 11, fontVariantNumeric: "tabular-nums", color: complete ? "var(--muted)" : "#C2410C", fontWeight: complete ? 400 : 600, whiteSpace: "nowrap" }}>
-      서류 {done}/{docs.length}
-    </span>
-  );
+function StatusBadge({ 상태 }) {
+  if (상태 === "완료") return <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".03em", padding: "2px 7px", borderRadius: 3, background: greenFaint, color: green }}>완료</span>;
+  if (상태 === "진행중") return <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".03em", padding: "2px 7px", borderRadius: 3, background: amberFaint, color: amber }}>진행중</span>;
+  return <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".03em", padding: "2px 7px", borderRadius: 3, background: "var(--card)", color: "var(--muted)", border: "1px solid var(--line)" }}>요청전</span>;
 }
 
 export default function Contracts() {
@@ -73,7 +61,7 @@ export default function Contracts() {
   const [partners, setPartners]   = useState([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState("");
-  const [selected, setSelected]   = useState("전체");
+  const [selected, setSelected]   = useState(null);
   const [showForm, setShowForm]   = useState(false);
   const [form, setForm]           = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
@@ -104,6 +92,15 @@ export default function Contracts() {
     return [...set].sort();
   }, [items, partners]);
 
+  // 항목이 하나라도 있는 파트너만 (select 옵션 잔여물 제외), 단 신규 추가 직후는 표시
+  const visiblePartnerList = useMemo(() => {
+    return allPartners.filter(p => items.some(i => i.파트너사 === p) || p === selected);
+  }, [allPartners, items, selected]);
+
+  useEffect(() => {
+    if (!selected && visiblePartnerList.length > 0) setSelected(visiblePartnerList[0]);
+  }, [visiblePartnerList, selected]);
+
   const byPartner = useMemo(() => {
     const map = {};
     allPartners.forEach(p => { map[p] = items.filter(i => i.파트너사 === p); });
@@ -118,6 +115,9 @@ export default function Contracts() {
     });
     return out;
   }, [items]);
+
+  const totalDone = items.filter(i => i.상태 === "완료").length;
+  const totalPending = items.length - totalDone;
 
   const patch = async (pageId, fields) => {
     setBusy(b => ({ ...b, [pageId]: true }));
@@ -137,6 +137,7 @@ export default function Contracts() {
   };
 
   const cycleStatus = (item) => {
+    if (item.상태 === "완료" && !window.confirm(`"${item.제목}" 완료를 취소하시겠습니까?`)) return;
     const next = STATUS_ORDER[(STATUS_ORDER.indexOf(item.상태 || "요청전") + 1) % STATUS_ORDER.length];
     patch(item.id, { 상태: next });
   };
@@ -165,7 +166,6 @@ export default function Contracts() {
     return `[${scope}] ${구분}`;
   }, [items]);
 
-  // 추가 모드에서 파트너사/구분/프로젝트 변경 시 제목 자동 완성 (직접 수정 전까지)
   useEffect(() => {
     if (!showForm || editingId || titleTouched) return;
     const t = autoTitle(form.구분, form.파트너사.trim(), form.프로젝트.trim());
@@ -216,180 +216,289 @@ export default function Contracts() {
   const isContract = CONTRACT_KINDS.includes(form.구분);
   const isProjectLevel = PROJECT_LEVEL_KINDS.includes(form.구분);
 
-  if (loading) return <div style={{ padding: 40, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>데이터 불러오는 중...</div>;
-  if (error) return <div style={{ padding: 40, textAlign: "center", color: "#DC2626", fontSize: 13 }}>로드 실패: {error} <button onClick={load} style={{ marginLeft: 8 }}>재시도</button></div>;
-
-  const visiblePartners = selected === "전체" ? allPartners : [selected];
-
-  // 공통 행 렌더러 — 정갈한 그리드 행
-  const Row = ({ item, indent }) => {
-    const d = dday(item.만료일);
-    const dateInfo = CONTRACT_KINDS.includes(item.구분)
-      ? (item.만료일
-          ? (d < 0 ? "만료" : `~${item.만료일.slice(2)}`)
-          : item.체결일 ? item.체결일.slice(2) : "")
-      : "";
-    const dateColor = d !== null && d >= 0 && d <= 30 ? (d <= 7 ? "#DC2626" : "#C2410C") : "var(--muted)";
+  // ── 사이드바 파트너 항목 ──
+  const renderSidebarPartner = (partner) => {
+    const rows = byPartner[partner] || [];
+    const done = rows.filter(i => i.상태 === "완료").length;
+    const pct = rows.length === 0 ? 0 : Math.round((done / rows.length) * 100);
+    const isActive = selected === partner;
+    const projCount = new Set(rows.filter(i => i.프로젝트).map(i => i.프로젝트)).size;
+    const warn = rows.some(i => {
+      const d = dday(i.만료일);
+      const docsMissing = (DOCS_BY_KIND[i.구분] || []).some(doc => !i[doc]) && i.상태 === "진행중";
+      return docsMissing || (CONTRACT_KINDS.includes(i.구분) && d !== null && d >= 0 && d <= 30);
+    });
     return (
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 64px 70px 76px 70px 24px", gap: 10, alignItems: "center", padding: `7px 16px 7px ${indent ? 34 : 16}px`, borderTop: "1px solid var(--line)", fontSize: 12.5 }}>
-        <span onClick={() => openEdit(item)} title={`클릭하여 상세 수정${item.메모 ? ` — ${item.메모}` : ""}`}
-          style={{ cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text)" }}>
-          {item.제목}
-          {item.자동갱신 && <span title="자동갱신" style={{ marginLeft: 4, fontSize: 10, color: "var(--muted)" }}>갱신</span>}
-        </span>
-        <StatusDot 상태={item.상태} onClick={() => cycleStatus(item)} busy={busy[item.id]} />
-        <DocSummary item={item} />
-        <span style={{ fontSize: 11, color: dateColor, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-          {dateInfo}{d !== null && d >= 0 && d <= 30 ? ` (D-${d})` : ""}
-        </span>
-        <span style={{ display: "flex", gap: 8 }}>
-          {item.계약서URL && <a href={item.계약서URL} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "var(--muted)", textDecoration: "none" }}>문서 ↗</a>}
-          {item.기안링크 && <a href={item.기안링크} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "var(--muted)", textDecoration: "none" }}>기안 ↗</a>}
-        </span>
+      <div key={partner} style={{ borderBottom: "1px solid var(--line)" }}>
+        <div onClick={() => setSelected(partner)}
+          style={{
+            padding: "10px 14px", cursor: "pointer",
+            borderLeft: `2px solid ${isActive ? amber : "transparent"}`,
+            background: isActive ? amberFaint : "transparent",
+            transition: "background .1s",
+          }}
+          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "#F8F9FA"; }}
+          onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 5 }}>
+            <span style={{ fontSize: 13, fontWeight: isActive ? 600 : 400, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{partner}</span>
+            {warn && <span style={{ width: 6, height: 6, borderRadius: "50%", background: red, flexShrink: 0 }} />}
+            {projCount > 0 && <span style={{ fontSize: 10, color: "var(--muted)", flexShrink: 0 }}>프로젝트 {projCount}</span>}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ flex: 1, height: 2, background: "var(--line)", borderRadius: 1, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${pct}%`, background: done === rows.length && rows.length > 0 ? green : amber, borderRadius: 1, transition: "width .3s" }} />
+            </div>
+            <span style={{ fontSize: 9, color: "var(--muted)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{done}/{rows.length}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ── 행 렌더러 (행정 탭 스타일) ──
+  const renderRow = (item, idx) => {
+    const done = item.상태 === "완료";
+    const inProgress = item.상태 === "진행중";
+    const isBusy = !!busy[item.id];
+    const docs = DOCS_BY_KIND[item.구분] || [];
+    const docsDone = docs.filter(d => item[d]).length;
+    const docsMissing = docs.filter(d => !item[d]);
+    const d = dday(item.만료일);
+
+    return (
+      <div key={item.id} style={{
+        display: "grid", gridTemplateColumns: "40px 1fr 76px 66px 70px 150px 28px",
+        padding: "0 20px", height: 44, alignItems: "center", gap: 12,
+        opacity: isBusy ? 0.5 : 1, background: "var(--card)",
+        borderBottom: "1px solid var(--line)",
+      }}
+        onMouseEnter={e => { e.currentTarget.style.background = "#F8F9FA"; }}
+        onMouseLeave={e => { e.currentTarget.style.background = "var(--card)"; }}>
+        {/* 체크 서클 — 클릭 시 상태 순환 */}
+        <div onClick={() => !isBusy && cycleStatus(item)} title="클릭해서 상태 변경" style={{
+          width: 22, height: 22, borderRadius: "50%",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 10, fontWeight: 700, fontVariantNumeric: "tabular-nums",
+          cursor: isBusy ? "wait" : "pointer",
+          border: `1.5px solid ${done ? green : inProgress ? amber : "var(--line)"}`,
+          background: done ? greenFaint : inProgress ? amberFaint : "transparent",
+          color: done ? green : inProgress ? amber : "var(--muted)",
+          transition: "all .15s", flexShrink: 0,
+        }}>{done ? "✓" : idx + 1}</div>
+
+        {/* 제목 */}
+        <div style={{ minWidth: 0, overflow: "hidden" }}>
+          <span onClick={() => openEdit(item)} title="클릭하여 상세 수정" style={{
+            fontSize: 13, fontWeight: done ? 400 : 500, cursor: "pointer",
+            color: done ? "var(--muted)" : "var(--text)",
+            textDecoration: done ? "line-through" : "none",
+            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block",
+          }}>{item.제목}</span>
+          {(item.메모 || (d !== null && d >= 0 && d <= 30)) && !done && (
+            <span style={{ fontSize: 9, letterSpacing: ".03em", color: d !== null && d <= 30 && d >= 0 ? (d <= 7 ? red : "#C2410C") : "var(--muted)", fontWeight: 600, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {d !== null && d >= 0 && d <= 30 ? `만료 D-${d}${item.메모 ? " · " : ""}` : ""}{item.메모}
+            </span>
+          )}
+        </div>
+
+        {/* 구분 */}
+        <span style={{ fontSize: 10.5, color: "var(--muted)", whiteSpace: "nowrap" }}>{item.구분}</span>
+
+        {/* 상태 */}
+        <StatusBadge 상태={item.상태 || "요청전"} />
+
+        {/* 서류 */}
+        {docs.length > 0 ? (
+          <span title={docsMissing.length ? `미수령: ${docsMissing.join(", ")}` : "서류 완비"}
+            style={{ fontSize: 10.5, fontVariantNumeric: "tabular-nums", color: docsMissing.length && inProgress ? "#C2410C" : "var(--muted)", fontWeight: docsMissing.length && inProgress ? 700 : 400, whiteSpace: "nowrap" }}>
+            서류 {docsDone}/{docs.length}
+          </span>
+        ) : <span />}
+
+        {/* 링크 */}
+        <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+          {item.계약서URL ? (
+            <a href={item.계약서URL} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, background: blueFaint, color: blue, border: "1px solid rgba(0,120,212,.25)", textDecoration: "none", whiteSpace: "nowrap" }}>계약서 →</a>
+          ) : CONTRACT_KINDS.includes(item.구분) ? (
+            <button onClick={() => openEdit(item)} style={{ fontSize: 10, fontWeight: 500, padding: "3px 7px", borderRadius: 3, border: "1px dashed var(--line)", background: "transparent", color: "var(--muted)", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>+ 계약서</button>
+          ) : null}
+          {item.기안링크 ? (
+            <a href={item.기안링크} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, background: greenFaint, color: green, border: "1px solid rgba(22,163,74,.25)", textDecoration: "none", whiteSpace: "nowrap" }}>기안 →</a>
+          ) : item.구분 === "지출기안" ? (
+            <button onClick={() => openEdit(item)} style={{ fontSize: 10, fontWeight: 500, padding: "3px 7px", borderRadius: 3, border: "1px dashed var(--line)", background: "transparent", color: "var(--muted)", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>+ 기안</button>
+          ) : null}
+        </div>
+
+        {/* 삭제 */}
         {deleteConfirm === item.id ? (
-          <button onClick={() => remove(item)} style={{ fontSize: 10, fontWeight: 700, color: "#fff", background: "#DC2626", border: "none", borderRadius: 3, padding: "2px 5px", cursor: "pointer" }}>확인</button>
+          <button onClick={() => remove(item)} style={{ fontSize: 10, fontWeight: 700, color: "#fff", background: red, border: "none", borderRadius: 3, padding: "2px 5px", cursor: "pointer" }}>확인</button>
         ) : (
           <button onClick={() => { setDeleteConfirm(item.id); setTimeout(() => setDeleteConfirm(c => c === item.id ? null : c), 3000); }}
-            style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", opacity: 0.35 }} title="삭제">✕</button>
+            style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", opacity: 0.35, fontFamily: "inherit" }} title="삭제">✕</button>
         )}
       </div>
     );
   };
 
-  return (
-    <div style={{ display: "flex", border: "1px solid var(--line)", borderRadius: 8, overflow: "hidden", background: "var(--card)", minHeight: 460 }}>
-      {/* 사이드바 */}
-      <div style={{ width: 210, flexShrink: 0, borderRight: "1px solid var(--line)", padding: "12px 0" }}>
-        <div style={{ padding: "0 14px 10px", fontSize: 10, fontWeight: 700, letterSpacing: ".08em", color: "var(--muted)", textTransform: "uppercase" }}>파트너사</div>
-        {["전체", ...allPartners].map(name => {
-          const rows = name === "전체" ? items : (byPartner[name] || []);
-          const warn = name !== "전체" && rows.some(i => {
-            const d = dday(i.만료일);
-            const docsMissing = (DOCS_BY_KIND[i.구분] || []).some(doc => !i[doc]) && i.상태 !== "요청전" && i.상태 !== "완료";
-            return docsMissing || (CONTRACT_KINDS.includes(i.구분) && d !== null && d >= 0 && d <= 30);
-          });
-          const projCount = name !== "전체" ? new Set(rows.filter(i => i.프로젝트).map(i => i.프로젝트)).size : 0;
-          return (
-            <button key={name} onClick={() => setSelected(name)}
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%",
-                padding: "7px 14px", border: "none", cursor: "pointer", textAlign: "left", fontSize: 12.5,
-                background: selected === name ? "#F8F9FA" : "transparent",
-                borderLeft: selected === name ? "3px solid #F5B400" : "3px solid transparent",
-                color: "var(--text)", fontWeight: selected === name ? 600 : 400,
-              }}>
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
-              <span style={{ display: "flex", gap: 5, alignItems: "center" }}>
-                {warn && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#DC2626" }} />}
-                {name !== "전체" && projCount > 0 && <span style={{ fontSize: 10, color: "var(--muted)" }}>{projCount}</span>}
-                {name === "전체" && <span style={{ fontSize: 10, color: "var(--muted)" }}>{items.length}</span>}
-              </span>
-            </button>
-          );
-        })}
-        <div style={{ padding: "12px 14px 0" }}>
-          {addingPartner ? (
-            <form onSubmit={e => {
-              e.preventDefault();
-              const name = newPartnerName.trim();
-              if (!name) return;
-              setPartners(prev => prev.includes(name) ? prev : [...prev, name]);
-              setSelected(name);
-              setAddingPartner(false);
-              setNewPartnerName("");
-            }}>
-              <input autoFocus value={newPartnerName} onChange={e => setNewPartnerName(e.target.value)}
-                onBlur={() => { if (!newPartnerName.trim()) setAddingPartner(false); }}
-                placeholder="파트너사명 입력 후 Enter"
-                style={{ width: "100%", padding: "6px 9px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 5, background: "var(--card)", color: "var(--text)", boxSizing: "border-box" }} />
-            </form>
-          ) : (
-            <button onClick={() => setAddingPartner(true)}
-              style={{ width: "100%", padding: "7px 0", fontSize: 12, fontWeight: 600, border: "1px dashed var(--line)", borderRadius: 5, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>
-              + 파트너사 추가
-            </button>
-          )}
-        </div>
-      </div>
+  // 그룹 디바이더 (프로젝트 헤더)
+  const renderDivider = (text, right) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 20px", background: "#F8F9FA", borderTop: "1px solid var(--line)", borderBottom: "1px solid var(--line)" }}>
+      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--muted)" }}>{text}</span>
+      <div style={{ flex: 1, height: 1, background: "var(--line)" }} />
+      {right}
+    </div>
+  );
 
-      {/* 메인 */}
-      <div style={{ flex: 1, minWidth: 0, padding: 14 }}>
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
-          <a href={NOTION_DB_URL} target="_blank" rel="noreferrer"
-            style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, color: "var(--muted)", textDecoration: "none", padding: "4px 10px", border: "1px solid var(--line)", borderRadius: 5 }}>
-            Notion DB 열기 ↗
+  const selectedRows = selected ? (byPartner[selected] || []) : [];
+  const commonRows = selectedRows.filter(i => PARTNER_LEVEL_KINDS.includes(i.구분));
+  const projectNames = [...new Set(selectedRows.filter(i => PROJECT_LEVEL_KINDS.includes(i.구분)).map(i => i.프로젝트 || "(프로젝트 미지정)"))].sort();
+  const sortByDone = list => [...list.filter(i => i.상태 !== "완료"), ...list.filter(i => i.상태 === "완료")];
+  const doneCount = selectedRows.filter(i => i.상태 === "완료").length;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", minHeight: 500, border: "1px solid var(--line)", borderRadius: 8, overflow: "hidden", background: "var(--card)" }}>
+
+      {/* ── Metrics strip ── */}
+      <div style={{ display: "flex", alignItems: "center", padding: "12px 20px", borderBottom: "1px solid var(--line)", background: "var(--card)", flexWrap: "wrap", gap: 8 }}>
+        {[
+          { label: "파트너사", value: visiblePartnerList.length, color: "var(--text)" },
+          { label: "진행중 항목", value: totalPending, color: amber },
+          { label: "완료", value: totalDone, color: green },
+        ].map(({ label: l, value, color }, i) => (
+          <div key={l} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "0 20px", borderRight: i < 2 ? "1px solid var(--line)" : "none" }}>
+            <span style={{ fontSize: 22, fontWeight: 700, color, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{value}</span>
+            <span style={{ fontSize: 11, color: "var(--muted)", letterSpacing: ".04em" }}>{l}</span>
+          </div>
+        ))}
+        {alerts.length > 0 && (
+          <span style={{ fontSize: 11, color: "#C2410C", fontWeight: 600, marginLeft: 8 }} title={alerts.join("\n")}>⏰ 만료 임박 {alerts.length}건</span>
+        )}
+        <div style={{ marginLeft: "auto" }}>
+          <a href={NOTION_DB_URL} target="_blank" rel="noopener noreferrer"
+            style={{ padding: "7px 14px", borderRadius: 4, border: "1px solid var(--line)", background: "var(--card)", color: "var(--text)", fontSize: 12, fontWeight: 600, textDecoration: "none", letterSpacing: ".02em" }}>
+            Notion DB ↗
           </a>
         </div>
-        {alerts.length > 0 && (
-          <div style={{ marginBottom: 12, padding: "8px 14px", borderRadius: 6, border: "1px solid var(--line)", borderLeft: "3px solid #C2410C", fontSize: 12, color: "var(--text)" }}>
-            <span style={{ fontWeight: 600, color: "#C2410C" }}>만료 임박</span>
-            <span style={{ color: "var(--muted)", marginLeft: 8 }}>{alerts.join(" · ")}</span>
-          </div>
-        )}
-
-        {visiblePartners.length === 0 && (
-          <div style={{ padding: 36, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>등록된 파트너가 없습니다. "+ 항목 추가"로 시작하세요.</div>
-        )}
-
-        {visiblePartners.map(partner => {
-          const rows = byPartner[partner] || [];
-          const common = rows.filter(i => PARTNER_LEVEL_KINDS.includes(i.구분));
-          const projectRows = rows.filter(i => PROJECT_LEVEL_KINDS.includes(i.구분));
-          const projects = [...new Set(projectRows.map(i => i.프로젝트 || "(프로젝트 미지정)"))].sort();
-          return (
-            <div key={partner} style={{ border: "1px solid var(--line)", borderRadius: 8, marginBottom: 12, overflow: "hidden" }}>
-              {/* 파트너 헤더 */}
-              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", background: "#F8F9FA" }}>
-                <span style={{ fontSize: 13.5, fontWeight: 700 }}>{partner}</span>
-                <span style={{ fontSize: 11, color: "var(--muted)" }}>
-                  프로젝트 {projects.filter(p => p !== "(프로젝트 미지정)").length} · 항목 {rows.length}
-                </span>
-                <span style={{ flex: 1 }} />
-                <button onClick={() => openAdd("부속합의서", partner)}
-                  style={{ fontSize: 10.5, padding: "2px 8px", border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--muted)", cursor: "pointer" }}>
-                  + 프로젝트 항목
-                </button>
-              </div>
-
-              {/* 파트너 공통 */}
-              {common.length > 0 && (
-                <div>
-                  <div style={{ padding: "8px 16px 4px", fontSize: 10, fontWeight: 700, letterSpacing: ".06em", color: "var(--muted)", textTransform: "uppercase" }}>파트너 공통</div>
-                  {common.map(item => <Row key={item.id} item={item} />)}
-                </div>
-              )}
-
-              {/* 프로젝트별 */}
-              {projects.map(proj => {
-                const list = projectRows.filter(i => (i.프로젝트 || "(프로젝트 미지정)") === proj);
-                return (
-                  <div key={proj}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px 4px", borderTop: "1px solid var(--line)" }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)" }}>{proj}</span>
-                      <span style={{ fontSize: 10.5, color: "var(--muted)" }}>
-                        지출기안 {list.filter(i => i.구분 === "지출기안" && i.상태 === "완료").length}/{list.filter(i => i.구분 === "지출기안").length}
-                      </span>
-                      <span style={{ flex: 1 }} />
-                      <button onClick={() => openAdd("지출기안", partner, proj === "(프로젝트 미지정)" ? "" : proj)}
-                        style={{ fontSize: 10, padding: "1px 7px", border: "1px dashed var(--line)", borderRadius: 3, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>
-                        + 지출기안
-                      </button>
-                    </div>
-                    {list.map(item => <Row key={item.id} item={item} indent />)}
-                  </div>
-                );
-              })}
-
-              {rows.length === 0 && (
-                <div style={{ padding: "14px 16px", fontSize: 12, color: "var(--muted)" }}>
-                  아직 항목이 없습니다.
-                  <button onClick={() => openAdd("파트너십계약", partner)} style={{ marginLeft: 8, fontSize: 11, padding: "2px 8px", border: "1px dashed var(--line)", borderRadius: 4, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>+ 파트너십계약</button>
-                </div>
-              )}
-            </div>
-          );
-        })}
       </div>
+
+      {/* ── Body ── */}
+      {loading ? (
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)", fontSize: 13, minHeight: 300 }}>노션 데이터 불러오는 중…</div>
+      ) : error ? (
+        <div style={{ margin: 20, padding: "12px 16px", fontSize: 13, color: red, background: "rgba(220,38,38,.06)", border: "1px solid rgba(220,38,38,.2)", borderRadius: 4 }}>
+          데이터 로드 실패: {error} <button onClick={load} style={{ marginLeft: 8 }}>재시도</button>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+
+          {/* ── Left nav ── */}
+          <div style={{ width: 210, flexShrink: 0, borderRight: "1px solid var(--line)", display: "flex", flexDirection: "column", background: "var(--card)" }}>
+            <div style={{ padding: "10px 14px 8px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--muted)", flex: 1 }}>파트너사</span>
+              <button onClick={() => setAddingPartner(true)} title="파트너사 추가" style={{
+                fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 3,
+                border: `1px solid ${amber}`, color: amber, background: amberFaint, cursor: "pointer", fontFamily: "inherit",
+              }}>+</button>
+              <button onClick={load} title="새로고침" style={{
+                fontSize: 11, padding: "2px 6px", borderRadius: 3,
+                border: "1px solid var(--line)", color: "var(--muted)", background: "transparent", cursor: "pointer", fontFamily: "inherit",
+              }}>↻</button>
+            </div>
+
+            {addingPartner && (
+              <form style={{ padding: "8px 12px", borderBottom: "1px solid var(--line)" }}
+                onSubmit={e => {
+                  e.preventDefault();
+                  const name = newPartnerName.trim();
+                  if (!name) return;
+                  setPartners(prev => prev.includes(name) ? prev : [...prev, name]);
+                  setSelected(name);
+                  setAddingPartner(false);
+                  setNewPartnerName("");
+                }}>
+                <input autoFocus value={newPartnerName} onChange={e => setNewPartnerName(e.target.value)}
+                  onBlur={() => { if (!newPartnerName.trim()) setAddingPartner(false); }}
+                  placeholder="파트너사명 입력 후 Enter"
+                  style={{ width: "100%", padding: "6px 9px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", boxSizing: "border-box" }} />
+              </form>
+            )}
+
+            <div style={{ flex: 1, overflowY: "auto" }}>
+              {visiblePartnerList.length === 0 && (
+                <div style={{ padding: "24px 14px", fontSize: 12, color: "var(--muted)", textAlign: "center" }}>파트너사 없음</div>
+              )}
+              {visiblePartnerList.map(renderSidebarPartner)}
+            </div>
+          </div>
+
+          {/* ── Right detail ── */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
+            {!selected ? (
+              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)", fontSize: 13 }}>파트너사를 선택하세요</div>
+            ) : (
+              <>
+                {/* Detail header */}
+                <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", background: "var(--card)" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{selected}</span>
+                    {projectNames.filter(p => p !== "(프로젝트 미지정)").length > 0 && (
+                      <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: 8 }}>
+                        프로젝트 {projectNames.filter(p => p !== "(프로젝트 미지정)").length}개
+                      </span>
+                    )}
+                  </div>
+                  <button onClick={() => openAdd("파트너십계약", selected)} style={{
+                    padding: "4px 11px", borderRadius: 4, border: "1px solid var(--line)", background: "transparent",
+                    color: "var(--muted)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                  }}>+ 항목</button>
+                  <span style={{ fontSize: 11, color: "var(--muted)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+                    <span style={{ fontWeight: 700, color: green }}>{doneCount}</span>/{selectedRows.length} 완료
+                  </span>
+                </div>
+
+                {/* Column headers */}
+                <div style={{ display: "grid", gridTemplateColumns: "40px 1fr 76px 66px 70px 150px 28px", padding: "0 20px", height: 32, alignItems: "center", borderBottom: "1px solid var(--line)", background: "#F8F9FA", gap: 12 }}>
+                  {["#", "항목", "구분", "상태", "서류", "링크", ""].map((h, i) => (
+                    <span key={i} style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--muted)" }}>{h}</span>
+                  ))}
+                </div>
+
+                {/* Rows */}
+                <div style={{ flex: 1, overflowY: "auto" }}>
+                  {selectedRows.length === 0 && (
+                    <div style={{ padding: "30px 20px", fontSize: 12.5, color: "var(--muted)", textAlign: "center" }}>
+                      아직 항목이 없습니다.
+                      <button onClick={() => openAdd("파트너십계약", selected)} style={{ marginLeft: 8, fontSize: 11, padding: "2px 8px", border: "1px dashed var(--line)", borderRadius: 4, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>+ 파트너십계약</button>
+                    </div>
+                  )}
+
+                  {commonRows.length > 0 && (
+                    <>
+                      {renderDivider("파트너 공통")}
+                      {sortByDone(commonRows).map((item, idx) => renderRow(item, idx))}
+                    </>
+                  )}
+
+                  {projectNames.map(proj => {
+                    const list = selectedRows.filter(i => PROJECT_LEVEL_KINDS.includes(i.구분) && (i.프로젝트 || "(프로젝트 미지정)") === proj);
+                    return (
+                      <div key={proj}>
+                        {renderDivider(proj,
+                          <button onClick={() => openAdd("지출기안", selected, proj === "(프로젝트 미지정)" ? "" : proj)}
+                            style={{ fontSize: 9, fontWeight: 600, padding: "1px 7px", border: "1px dashed var(--line)", borderRadius: 3, background: "transparent", color: "var(--muted)", cursor: "pointer", fontFamily: "inherit" }}>
+                            + 지출기안
+                          </button>
+                        )}
+                        {sortByDone(list).map((item, idx) => renderRow(item, idx))}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 추가/수정 모달 */}
       {showForm && (
@@ -464,7 +573,7 @@ export default function Contracts() {
                     <span style={label}>계약서 URL</span>
                     <input style={input} value={form.계약서URL} onChange={e => setForm(f => ({ ...f, 계약서URL: e.target.value }))} placeholder="https:// (원드라이브)" />
                   </div>
-                  <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", paddingBottom: 8 }}>
+                  <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", paddingBottom: 8 }} title="자동갱신 조항이 있는 계약">
                     <input type="checkbox" checked={form.자동갱신} onChange={e => setForm(f => ({ ...f, 자동갱신: e.target.checked }))} />
                     자동갱신
                   </label>
@@ -522,7 +631,7 @@ export default function Contracts() {
               <button onClick={() => setShowForm(false)} disabled={saving}
                 style={{ padding: "8px 16px", fontSize: 12.5, border: "1px solid var(--line)", borderRadius: 6, background: "var(--card)", color: "var(--text)", cursor: "pointer" }}>취소</button>
               <button onClick={submit} disabled={saving || !form.제목.trim() || !form.파트너사.trim() || (isProjectLevel && !form.프로젝트.trim())}
-                style={{ padding: "8px 18px", fontSize: 12.5, fontWeight: 600, border: "none", borderRadius: 6, background: "#F5B400", color: "#1a1a1a", cursor: "pointer", opacity: saving || !form.제목.trim() || !form.파트너사.trim() || (isProjectLevel && !form.프로젝트.trim()) ? 0.5 : 1 }}>
+                style={{ padding: "8px 18px", fontSize: 12.5, fontWeight: 600, border: "none", borderRadius: 6, background: amber, color: "#1a1a1a", cursor: "pointer", opacity: saving || !form.제목.trim() || !form.파트너사.trim() || (isProjectLevel && !form.프로젝트.trim()) ? 0.5 : 1 }}>
                 {saving ? "저장 중..." : "저장"}
               </button>
             </div>
