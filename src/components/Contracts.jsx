@@ -82,6 +82,7 @@ export default function Contracts() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [addingPartner, setAddingPartner] = useState(false);
   const [newPartnerName, setNewPartnerName] = useState("");
+  const [titleTouched, setTitleTouched] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
@@ -154,22 +155,33 @@ export default function Contracts() {
     }
   };
 
+  const autoTitle = useCallback((구분, partner, project) => {
+    const scope = project || partner;
+    if (!scope) return "";
+    if (구분 === "지출기안") {
+      const n = items.filter(i => i.파트너사 === partner && i.구분 === "지출기안" && (!project || i.프로젝트 === project)).length;
+      return `[${scope}] ${n === 0 ? "프로토타입" : `이터레이션#${n}`} 지출기안`;
+    }
+    return `[${scope}] ${구분}`;
+  }, [items]);
+
+  // 추가 모드에서 파트너사/구분/프로젝트 변경 시 제목 자동 완성 (직접 수정 전까지)
+  useEffect(() => {
+    if (!showForm || editingId || titleTouched) return;
+    const t = autoTitle(form.구분, form.파트너사.trim(), form.프로젝트.trim());
+    setForm(f => f.제목 === t ? f : { ...f, 제목: t });
+  }, [showForm, editingId, titleTouched, form.구분, form.파트너사, form.프로젝트, autoTitle]); // eslint-disable-line
+
   const openAdd = (구분, partner, project) => {
     setEditingId(null);
-    let 제목 = "";
-    const scope = project || partner;
-    if (scope) {
-      if (구분 === "지출기안") {
-        const n = (byPartner[partner] || []).filter(i => i.구분 === "지출기안" && (!project || i.프로젝트 === project)).length;
-        제목 = `[${scope}] ${n === 0 ? "프로토타입" : `이터레이션#${n}`} 지출기안`;
-      } else 제목 = `[${scope}] ${구분}`;
-    }
-    setForm({ ...EMPTY_FORM, 구분, 파트너사: partner || "", 프로젝트: project || "", 제목 });
+    setTitleTouched(false);
+    setForm({ ...EMPTY_FORM, 구분, 파트너사: partner || "", 프로젝트: project || "", 제목: autoTitle(구분, partner, project) });
     setShowForm(true);
   };
 
   const openEdit = (item) => {
     setEditingId(item.id);
+    setTitleTouched(true);
     const f = { ...EMPTY_FORM };
     Object.keys(EMPTY_FORM).forEach(k => {
       f[k] = item[k] ?? EMPTY_FORM[k];
@@ -415,7 +427,7 @@ export default function Contracts() {
               )}
               <div>
                 <span style={label}>제목 *</span>
-                <input style={input} value={form.제목} onChange={e => setForm(f => ({ ...f, 제목: e.target.value }))} placeholder="예: [MMC] 파트너십계약" />
+                <input style={input} value={form.제목} onChange={e => { setTitleTouched(true); setForm(f => ({ ...f, 제목: e.target.value })); }} placeholder="파트너사·구분 선택 시 자동 완성" />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
