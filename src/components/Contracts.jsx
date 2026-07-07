@@ -92,10 +92,12 @@ export default function Contracts() {
     return [...set].sort();
   }, [items, partners]);
 
-  // 항목이 하나라도 있는 파트너만 (select 옵션 잔여물 제외), 단 신규 추가 직후는 표시
+  // 항목 있는 파트너 먼저, 빈 파트너(DB select 등록만 된 곳)는 아래에
   const visiblePartnerList = useMemo(() => {
-    return allPartners.filter(p => items.some(i => i.파트너사 === p) || p === selected);
-  }, [allPartners, items, selected]);
+    const has = allPartners.filter(p => items.some(i => i.파트너사 === p));
+    const empty = allPartners.filter(p => !items.some(i => i.파트너사 === p));
+    return [...has, ...empty];
+  }, [allPartners, items]);
 
   useEffect(() => {
     if (!selected && visiblePartnerList.length > 0) setSelected(visiblePartnerList[0]);
