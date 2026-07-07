@@ -349,7 +349,7 @@ export default function App() {
           <div className="section-header">
             <div className="section-eyebrow">Notion DB</div>
             <h2 className="section-heading">계약 관리</h2>
-            <p className="section-desc">개발사별 계약 현황 트래킹 — 본계약/부속합의서 이력, 상태, 만료 알림 관리.</p>
+            <p className="section-desc">파트너사별 계약·행정 통합 트래킹 — 계약 → 거래처등록 → 지출기안 파이프라인, 서류 체크, 만료 알림.</p>
           </div>
           <Contracts />
         </section>

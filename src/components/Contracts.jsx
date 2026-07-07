@@ -3,25 +3,50 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 const IS_DEV = import.meta.env.DEV;
 const API_BASE = IS_DEV ? "http://localhost:5601" : "";
 
-const STATUS_ORDER = ["협상중", "법무검토", "서명대기", "체결완료", "만료"];
+const CONTRACT_KINDS = ["파트너십계약", "부속합의서", "NDA"];
+const STATUS_ORDER = ["요청전", "진행중", "완료"];
 const STATUS_COLOR = {
-  협상중:   { fg: "#B45309", bg: "rgba(245,180,0,0.12)" },
-  법무검토: { fg: "#C2410C", bg: "rgba(234,88,12,0.10)" },
-  서명대기: { fg: "#0369A1", bg: "rgba(3,105,161,0.08)" },
-  체결완료: { fg: "#16A34A", bg: "rgba(22,163,74,0.10)" },
-  만료:     { fg: "#6B7280", bg: "rgba(107,114,128,0.10)" },
+  요청전: { fg: "#6B7280", bg: "rgba(107,114,128,0.10)" },
+  진행중: { fg: "#B45309", bg: "rgba(245,180,0,0.14)" },
+  완료:   { fg: "#16A34A", bg: "rgba(22,163,74,0.10)" },
 };
-const TYPE_COLOR = {
-  본계약:     { fg: "#1D4ED8", bg: "rgba(29,78,216,0.08)" },
-  부속합의서: { fg: "#BE185D", bg: "rgba(190,24,93,0.08)" },
-  NDA:        { fg: "#7C3AED", bg: "rgba(124,58,237,0.08)" },
-  기타:       { fg: "#6B7280", bg: "rgba(107,114,128,0.08)" },
+const KIND_COLOR = {
+  파트너십계약: { fg: "#1D4ED8", bg: "rgba(29,78,216,0.08)" },
+  부속합의서:   { fg: "#BE185D", bg: "rgba(190,24,93,0.08)" },
+  NDA:          { fg: "#7C3AED", bg: "rgba(124,58,237,0.08)" },
+  거래처등록:   { fg: "#B45309", bg: "rgba(245,180,0,0.12)" },
+  지출기안:     { fg: "#0F766E", bg: "rgba(15,118,110,0.08)" },
 };
 
-function Pill({ label, color }) {
-  const c = color || TYPE_COLOR.기타;
+const DOCS_BY_KIND = {
+  거래처등록: ["법인등록증", "법인통장"],
+  지출기안: ["법인등록증", "법인통장", "부속합의서", "스펙내용", "인보이스"],
+};
+
+const VENDOR_FIELDS = [
+  ["거래처식별번호", "법인등록증 내 기재"],
+  ["거래처명", "법인등록증 내 기재"],
+  ["거래처국가", ""],
+  ["거래처주소", "주소 / 도시 / 우편번호"],
+  ["거래처대표", ""],
+  ["거래처담당자", ""],
+  ["거래처Email", ""],
+];
+const BANK_FIELDS = ["BankName", "BranchName", "BankAddress", "BeneficiaryName", "AccountNumber"];
+
+const EMPTY_FORM = {
+  제목: "", 파트너사: "", 구분: "파트너십계약", 상태: "요청전", 메모: "",
+  체결일: "", 만료일: "", 자동갱신: false, 계약서URL: "", 기안링크: "", 이터레이션구분: "",
+  법인등록증: false, 법인통장: false, 부속합의서: false, 스펙내용: false, 인보이스: false,
+  거래처식별번호: "", 거래처명: "", 거래처국가: "", 거래처주소: "", 거래처대표: "", 거래처담당자: "", 거래처Email: "",
+  BankName: "", BranchName: "", BankAddress: "", BeneficiaryName: "", AccountNumber: "",
+};
+
+function Pill({ label, color, onClick, title }) {
+  const c = color || { fg: "#6B7280", bg: "rgba(107,114,128,0.08)" };
   return (
-    <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".03em", padding: "2px 7px", borderRadius: 3, background: c.bg, color: c.fg, whiteSpace: "nowrap" }}>
+    <span onClick={onClick} title={title}
+      style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".03em", padding: "2px 7px", borderRadius: 3, background: c.bg, color: c.fg, whiteSpace: "nowrap", cursor: onClick ? "pointer" : "default", userSelect: "none" }}>
       {label}
     </span>
   );
@@ -34,153 +59,163 @@ function dday(만료일) {
   return Math.round((exp - today) / 86400000);
 }
 
-function DdayBadge({ 만료일, 상태 }) {
+function DdayBadge({ 만료일 }) {
   const d = dday(만료일);
-  if (d === null) return <span style={{ color: "var(--muted)", fontSize: 11 }}>—</span>;
+  if (d === null) return null;
   let fg = "var(--muted)", bg = "transparent", label = `D-${d}`;
-  if (d < 0 || 상태 === "만료") { fg = "#6B7280"; bg = "rgba(107,114,128,0.10)"; label = "만료"; }
+  if (d < 0) { fg = "#6B7280"; bg = "rgba(107,114,128,0.10)"; label = "만료"; }
   else if (d <= 7)  { fg = "#DC2626"; bg = "rgba(220,38,38,0.10)"; }
   else if (d <= 30) { fg = "#C2410C"; bg = "rgba(234,88,12,0.10)"; }
-  else return <span style={{ fontSize: 11, color: "var(--muted)" }}>D-{d}</span>;
+  else return <span style={{ fontSize: 10.5, color: "var(--muted)" }}>D-{d}</span>;
   return <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 3, background: bg, color: fg }}>{label}</span>;
 }
 
-const EMPTY_FORM = { 계약명: "", 스튜디오: "", 계약유형: "본계약", 상태: "협상중", 체결일: "", 만료일: "", 자동갱신: false, 계약서링크: "", 메모: "", 상위계약: "" };
+function DocChips({ item, onToggle, busy }) {
+  const docs = DOCS_BY_KIND[item.구분] || [];
+  if (!docs.length) return null;
+  return (
+    <span style={{ display: "inline-flex", gap: 4, flexWrap: "wrap" }}>
+      {docs.map(doc => (
+        <span key={doc} onClick={() => !busy && onToggle(item, doc)}
+          title={`${doc} ${item[doc] ? "수령 완료" : "미수령"} — 클릭해서 토글`}
+          style={{
+            fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 3, cursor: "pointer", userSelect: "none",
+            background: item[doc] ? "rgba(22,163,74,0.10)" : "rgba(220,38,38,0.07)",
+            color: item[doc] ? "#16A34A" : "#DC2626",
+            border: `1px solid ${item[doc] ? "rgba(22,163,74,0.25)" : "rgba(220,38,38,0.2)"}`,
+            opacity: busy ? 0.5 : 1,
+          }}>
+          {item[doc] ? "✓" : "✕"} {doc}
+        </span>
+      ))}
+    </span>
+  );
+}
 
 export default function Contracts() {
   const [items, setItems]         = useState([]);
+  const [partners, setPartners]   = useState([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState("");
   const [selected, setSelected]   = useState("전체");
   const [showForm, setShowForm]   = useState(false);
   const [form, setForm]           = useState(EMPTY_FORM);
+  const [editingId, setEditingId] = useState(null);
   const [saving, setSaving]       = useState(false);
-  const [editingId, setEditingId] = useState(null); // 수정 모드일 때 pageId
-  const [statusEdit, setStatusEdit] = useState(null); // pageId of open dropdown
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [busy, setBusy]           = useState({});
-  const [adminItems, setAdminItems]       = useState([]);
-  const [adminError, setAdminError]       = useState("");
-  const [adminToggling, setAdminToggling] = useState({});
-  const [adminExpand, setAdminExpand]     = useState({});
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      const r = await fetch(`${API_BASE}/api/contracts-notion`);
+      const r = await fetch(`${API_BASE}/api/partner-admin`);
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const { items: data } = await r.json();
-      setItems(data);
+      const data = await r.json();
+      setItems(data.items);
+      setPartners(data.partners || []);
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  useEffect(() => {
-    fetch(`${API_BASE}/api/admin-notion`)
-      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-      .then(({ items }) => setAdminItems(items))
-      .catch(e => setAdminError(e.message));
+  const allPartners = useMemo(() => {
+    const set = new Set(partners);
+    items.forEach(i => i.파트너사 && set.add(i.파트너사));
+    return [...set].sort();
+  }, [items, partners]);
+
+  const byPartner = useMemo(() => {
+    const map = {};
+    allPartners.forEach(p => { map[p] = items.filter(i => i.파트너사 === p); });
+    return map;
+  }, [items, allPartners]);
+
+  // 파트너별 파이프라인 요약: 계약 → 거래처등록 → 지출기안
+  const pipeline = useCallback((rows) => {
+    const contract = rows.filter(i => CONTRACT_KINDS.includes(i.구분));
+    const vendor = rows.find(i => i.구분 === "거래처등록");
+    const expenses = rows.filter(i => i.구분 === "지출기안");
+    const mainContract = rows.find(i => i.구분 === "파트너십계약");
+    const missingDocs = rows.reduce((n, i) => n + (DOCS_BY_KIND[i.구분] || []).filter(d => !i[d] && i.상태 !== "요청전").length, 0);
+    const expiring = contract.some(i => { const d = dday(i.만료일); return d !== null && d >= 0 && d <= 30; });
+    return { contract, mainContract, vendor, expenses, missingDocs, expiring };
   }, []);
 
-  const adminProjects = useMemo(() => {
-    const map = {};
-    adminItems.forEach(i => {
-      const proj = i.프로젝트 || "기타";
-      if (!map[proj]) map[proj] = { project: proj, studio: i.스튜디오 || "", items: [] };
-      if (!map[proj].studio && i.스튜디오) map[proj].studio = i.스튜디오;
-      map[proj].items.push(i);
-    });
-    let list = Object.values(map);
-    if (selected !== "전체") list = list.filter(p => p.studio === selected);
-    return list
-      .map(p => ({ ...p, done: p.items.filter(i => i.완료).length, total: p.items.length }))
-      .sort((a, b) => (a.done === a.total) - (b.done === b.total) || a.project.localeCompare(b.project));
-  }, [adminItems, selected]);
-
-  const toggleAdminStep = async (item) => {
-    if (item.완료 && !window.confirm(`"${item.항목명}" 완료를 취소하시겠습니까?`)) return;
-    const newDone = !item.완료;
-    setAdminToggling(t => ({ ...t, [item.id]: true }));
-    setAdminItems(prev => prev.map(i => i.id === item.id ? { ...i, 완료: newDone } : i));
-    try {
-      await fetch(`${API_BASE}/api/admin-notion`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pageId: item.id, done: newDone }),
-      });
-    } catch {
-      setAdminItems(prev => prev.map(i => i.id === item.id ? { ...i, 완료: item.완료 } : i));
-    } finally {
-      setAdminToggling(t => { const n = { ...t }; delete n[item.id]; return n; });
-    }
-  };
-
-  const studios = useMemo(() => {
-    const map = {};
-    items.forEach(i => {
-      const s = i.스튜디오 || "미지정";
-      if (!map[s]) map[s] = { total: 0, alert: 0 };
-      map[s].total += 1;
-      const d = dday(i.만료일);
-      if (d !== null && d <= 30 && i.상태 !== "만료") map[s].alert += 1;
-    });
-    adminItems.forEach(i => {
-      if (i.스튜디오 && !map[i.스튜디오]) map[i.스튜디오] = { total: 0, alert: 0 };
-    });
-    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
-  }, [items, adminItems]);
-
-  const expiring = useMemo(() =>
-    items.filter(i => { const d = dday(i.만료일); return d !== null && d <= 30 && d >= 0 && i.상태 !== "만료"; }),
-  [items]);
-
-  const visible = useMemo(() => {
-    const list = selected === "전체" ? items : items.filter(i => (i.스튜디오 || "미지정") === selected);
-    // 본계약 먼저, 그 아래 해당 부속합의서 묶음
-    const mains = list.filter(i => i.계약유형 !== "부속합의서");
-    const subs = list.filter(i => i.계약유형 === "부속합의서");
+  const alerts = useMemo(() => {
     const out = [];
-    mains.forEach(m => {
-      out.push(m);
-      subs.filter(s => s.상위계약 && s.상위계약 === m.계약명).forEach(s => out.push({ ...s, _nested: true }));
+    items.forEach(i => {
+      const d = dday(i.만료일);
+      if (CONTRACT_KINDS.includes(i.구분) && d !== null && d >= 0 && d <= 30) out.push(`${i.제목} 만료 D-${d}`);
     });
-    subs.filter(s => !mains.some(m => m.계약명 === s.상위계약)).forEach(s => out.push(s));
     return out;
-  }, [items, selected]);
+  }, [items]);
 
   const patch = async (pageId, fields) => {
     setBusy(b => ({ ...b, [pageId]: true }));
-    setItems(prev => prev.map(i => i.id === pageId ? { ...i, ...fields } : i));
+    const prev = items.find(i => i.id === pageId);
+    setItems(list => list.map(i => i.id === pageId ? { ...i, ...fields } : i));
     try {
-      await fetch(`${API_BASE}/api/contracts-notion`, {
+      const r = await fetch(`${API_BASE}/api/partner-admin`, {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pageId, ...fields }),
       });
-    } catch { load(); }
-    finally { setBusy(b => ({ ...b, [pageId]: false })); }
+      if (!r.ok) throw new Error();
+    } catch {
+      if (prev) setItems(list => list.map(i => i.id === pageId ? prev : i));
+    } finally {
+      setBusy(b => { const n = { ...b }; delete n[pageId]; return n; });
+    }
   };
+
+  const cycleStatus = (item) => {
+    const next = STATUS_ORDER[(STATUS_ORDER.indexOf(item.상태 || "요청전") + 1) % STATUS_ORDER.length];
+    patch(item.id, { 상태: next });
+  };
+
+  const toggleDoc = (item, doc) => patch(item.id, { [doc]: !item[doc] });
 
   const remove = async (item) => {
     setBusy(b => ({ ...b, [item.id]: true }));
     try {
-      await fetch(`${API_BASE}/api/contracts-notion`, {
+      await fetch(`${API_BASE}/api/partner-admin`, {
         method: "DELETE", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pageId: item.id }),
       });
       setItems(prev => prev.filter(i => i.id !== item.id));
     } finally {
-      setBusy(b => ({ ...b, [item.id]: false }));
+      setBusy(b => { const n = { ...b }; delete n[item.id]; return n; });
       setDeleteConfirm(null);
     }
   };
 
+  const openAdd = (구분, partner) => {
+    setEditingId(null);
+    let 제목 = "";
+    if (partner) {
+      if (구분 === "지출기안") {
+        const n = (byPartner[partner] || []).filter(i => i.구분 === "지출기안").length;
+        제목 = `[${partner}] ${n === 0 ? "프로토타입" : `이터레이션#${n}`} 지출기안`;
+      } else 제목 = `[${partner}] ${구분}`;
+    }
+    setForm({ ...EMPTY_FORM, 구분, 파트너사: partner || "", 제목, 이터레이션구분: 구분 === "지출기안" ? "" : "" });
+    setShowForm(true);
+  };
+
+  const openEdit = (item) => {
+    setEditingId(item.id);
+    const f = { ...EMPTY_FORM };
+    Object.keys(EMPTY_FORM).forEach(k => { f[k] = item[k] ?? EMPTY_FORM[k]; if (f[k] === null) f[k] = typeof EMPTY_FORM[k] === "boolean" ? false : ""; });
+    setForm(f);
+    setShowForm(true);
+  };
+
   const submit = async () => {
-    if (!form.계약명.trim() || !form.스튜디오.trim()) return;
+    if (!form.제목.trim() || !form.파트너사.trim()) return;
     setSaving(true);
     try {
-      const payload = { ...form, 계약명: form.계약명.trim(), 스튜디오: form.스튜디오.trim() };
-      const r = await fetch(`${API_BASE}/api/contracts-notion`, {
+      const payload = { ...form, 제목: form.제목.trim(), 파트너사: form.파트너사.trim() };
+      const r = await fetch(`${API_BASE}/api/partner-admin`, {
         method: editingId ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editingId ? { pageId: editingId, ...payload } : payload),
@@ -195,205 +230,158 @@ export default function Contracts() {
     finally { setSaving(false); }
   };
 
-  const openSubForm = (main) => {
-    setEditingId(null);
-    setForm({ ...EMPTY_FORM, 스튜디오: main.스튜디오, 계약유형: "부속합의서", 상위계약: main.계약명, 계약명: `${main.스튜디오} 부속합의서 ` });
-    setShowForm(true);
-  };
-
-  const openEditForm = (item) => {
-    setEditingId(item.id);
-    setForm({
-      계약명: item.계약명, 스튜디오: item.스튜디오, 계약유형: item.계약유형, 상태: item.상태,
-      체결일: item.체결일 || "", 만료일: item.만료일 || "", 자동갱신: item.자동갱신,
-      계약서링크: item.계약서링크 || "", 메모: item.메모 || "", 상위계약: item.상위계약 || "",
-    });
-    setShowForm(true);
-  };
-
   const input = { width: "100%", padding: "7px 10px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", boxSizing: "border-box" };
   const label = { fontSize: 11, fontWeight: 600, color: "var(--muted)", marginBottom: 4, display: "block" };
+  const isContract = CONTRACT_KINDS.includes(form.구분);
 
-  if (loading) return <div style={{ padding: 40, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>계약 데이터 불러오는 중...</div>;
+  if (loading) return <div style={{ padding: 40, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>데이터 불러오는 중...</div>;
   if (error) return <div style={{ padding: 40, textAlign: "center", color: "#DC2626", fontSize: 13 }}>로드 실패: {error} <button onClick={load} style={{ marginLeft: 8 }}>재시도</button></div>;
 
+  const visiblePartners = selected === "전체" ? allPartners : [selected];
+
   return (
-    <div style={{ display: "flex", gap: 0, border: "1px solid var(--line)", borderRadius: 8, overflow: "hidden", background: "var(--card)", minHeight: 420 }}>
+    <div style={{ display: "flex", border: "1px solid var(--line)", borderRadius: 8, overflow: "hidden", background: "var(--card)", minHeight: 460 }}>
       {/* 사이드바 */}
-      <div style={{ width: 200, flexShrink: 0, borderRight: "1px solid var(--line)", background: "var(--card)", padding: "12px 0" }}>
-        <div style={{ padding: "0 14px 10px", fontSize: 10, fontWeight: 700, letterSpacing: ".08em", color: "var(--muted)", textTransform: "uppercase" }}>스튜디오</div>
-        {[["전체", { total: items.length, alert: expiring.length }], ...studios].map(([name, info]) => (
-          <button key={name} onClick={() => setSelected(name)}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%",
-              padding: "8px 14px", border: "none", cursor: "pointer", textAlign: "left", fontSize: 12.5,
-              background: selected === name ? "#F8F9FA" : "transparent",
-              borderLeft: selected === name ? "3px solid #F5B400" : "3px solid transparent",
-              color: "var(--text)", fontWeight: selected === name ? 600 : 400,
-            }}>
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
-            <span style={{ display: "flex", gap: 4, alignItems: "center" }}>
-              {info.alert > 0 && <span style={{ fontSize: 9, fontWeight: 700, color: "#DC2626", background: "rgba(220,38,38,0.10)", padding: "1px 5px", borderRadius: 8 }}>{info.alert}</span>}
-              <span style={{ fontSize: 10, color: "var(--muted)" }}>{info.total}</span>
-            </span>
-          </button>
-        ))}
+      <div style={{ width: 210, flexShrink: 0, borderRight: "1px solid var(--line)", padding: "12px 0" }}>
+        <div style={{ padding: "0 14px 10px", fontSize: 10, fontWeight: 700, letterSpacing: ".08em", color: "var(--muted)", textTransform: "uppercase" }}>파트너사</div>
+        {["전체", ...allPartners].map(name => {
+          const rows = name === "전체" ? items : (byPartner[name] || []);
+          const pl = pipeline(rows);
+          const warn = pl.missingDocs > 0 || pl.expiring;
+          return (
+            <button key={name} onClick={() => setSelected(name)}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%",
+                padding: "7px 14px", border: "none", cursor: "pointer", textAlign: "left", fontSize: 12.5,
+                background: selected === name ? "#F8F9FA" : "transparent",
+                borderLeft: selected === name ? "3px solid #F5B400" : "3px solid transparent",
+                color: "var(--text)", fontWeight: selected === name ? 600 : 400,
+              }}>
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+              <span style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                {name !== "전체" && warn && <span style={{ fontSize: 9, fontWeight: 700, color: "#DC2626" }}>●</span>}
+                <span style={{ fontSize: 10, color: "var(--muted)" }}>{rows.length}</span>
+              </span>
+            </button>
+          );
+        })}
         <div style={{ padding: "12px 14px 0" }}>
-          <button onClick={() => { setEditingId(null); setForm(EMPTY_FORM); setShowForm(true); }}
+          <button onClick={() => openAdd("파트너십계약", selected !== "전체" ? selected : "")}
             style={{ width: "100%", padding: "7px 0", fontSize: 12, fontWeight: 600, border: "1px dashed var(--line)", borderRadius: 5, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>
-            + 계약 추가
+            + 항목 추가
           </button>
         </div>
       </div>
 
       {/* 메인 */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        {/* 만료 임박 배너 */}
-        {expiring.length > 0 && (
-          <div style={{ margin: 14, marginBottom: 0, padding: "9px 14px", borderRadius: 6, background: "rgba(234,88,12,0.07)", border: "1px solid rgba(234,88,12,0.25)", fontSize: 12, color: "#C2410C", fontWeight: 500 }}>
-            ⏰ 30일 내 만료 예정 계약 {expiring.length}건: {expiring.map(i => `${i.계약명}(D-${dday(i.만료일)})`).join(", ")}
+      <div style={{ flex: 1, minWidth: 0, padding: 14 }}>
+        {alerts.length > 0 && (
+          <div style={{ marginBottom: 12, padding: "9px 14px", borderRadius: 6, background: "rgba(234,88,12,0.07)", border: "1px solid rgba(234,88,12,0.25)", fontSize: 12, color: "#C2410C", fontWeight: 500 }}>
+            ⏰ {alerts.join(" · ")}
           </div>
         )}
 
-        {/* 테이블 헤더 */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 90px 84px 90px 90px 72px 60px 40px", gap: 8, padding: "10px 16px", margin: "14px 14px 0", background: "#F8F9FA", borderRadius: "6px 6px 0 0", fontSize: 10, fontWeight: 700, letterSpacing: ".05em", color: "var(--muted)", textTransform: "uppercase", alignItems: "center" }}>
-          <span>계약명</span><span>유형</span><span>상태</span><span>체결일</span><span>만료일</span><span>D-Day</span><span>문서</span><span></span>
-        </div>
+        {visiblePartners.length === 0 && (
+          <div style={{ padding: 36, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>등록된 파트너가 없습니다. "+ 항목 추가"로 시작하세요.</div>
+        )}
 
-        <div style={{ margin: "0 14px 14px", border: "1px solid var(--line)", borderTop: "none", borderRadius: "0 0 6px 6px" }}>
-          {visible.length === 0 && (
-            <div style={{ padding: 36, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>등록된 계약이 없습니다. 좌측 "+ 계약 추가"로 시작하세요.</div>
-          )}
-          {visible.map((item) => (
-            <div key={item.id} style={{ display: "grid", gridTemplateColumns: "1fr 90px 84px 90px 90px 72px 60px 40px", gap: 8, padding: "10px 16px", borderTop: "1px solid var(--line)", fontSize: 12.5, alignItems: "center", opacity: busy[item.id] ? 0.5 : 1, background: "var(--card)" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                {item._nested && <span style={{ color: "var(--muted)", flexShrink: 0 }}>└</span>}
-                <span onClick={() => openEditForm(item)}
-                  style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: item._nested ? 400 : 500, cursor: "pointer" }}
-                  title={`클릭하여 수정${item.메모 ? ` — ${item.메모}` : ""}`}>
-                  {item.계약명}
+        {visiblePartners.map(partner => {
+          const rows = byPartner[partner] || [];
+          const pl = pipeline(rows);
+          const contractDone = pl.mainContract?.상태 === "완료";
+          const vendorDone = pl.vendor?.상태 === "완료";
+          const groups = [
+            ["계약", rows.filter(i => CONTRACT_KINDS.includes(i.구분))],
+            ["거래처 등록", rows.filter(i => i.구분 === "거래처등록")],
+            ["지출기안", rows.filter(i => i.구분 === "지출기안")],
+          ];
+          return (
+            <div key={partner} style={{ border: "1px solid var(--line)", borderRadius: 8, marginBottom: 12, overflow: "hidden" }}>
+              {/* 파트너 헤더 + 파이프라인 */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", background: "#F8F9FA", flexWrap: "wrap" }}>
+                <span style={{ fontSize: 13.5, fontWeight: 700 }}>{partner}</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--muted)" }}>
+                  <Pill label={`계약 ${pl.mainContract ? (contractDone ? "✓" : pl.mainContract.상태) : "—"}`} color={contractDone ? STATUS_COLOR.완료 : pl.mainContract ? STATUS_COLOR[pl.mainContract.상태] : undefined} />
+                  <span>→</span>
+                  <Pill label={`거래처 ${pl.vendor ? (vendorDone ? "✓" : pl.vendor.상태) : "—"}`} color={vendorDone ? STATUS_COLOR.완료 : pl.vendor ? STATUS_COLOR[pl.vendor.상태] : undefined} />
+                  <span>→</span>
+                  <Pill label={`지출기안 ${pl.expenses.filter(e => e.상태 === "완료").length}/${pl.expenses.length}`} color={pl.expenses.length && pl.expenses.every(e => e.상태 === "완료") ? STATUS_COLOR.완료 : pl.expenses.length ? STATUS_COLOR.진행중 : undefined} />
                 </span>
-                {selected === "전체" && !item._nested && <span style={{ fontSize: 10, color: "var(--muted)", flexShrink: 0 }}>{item.스튜디오}</span>}
-                {item.계약유형 === "본계약" && (
-                  <button onClick={() => openSubForm(item)} title="부속합의서 추가"
-                    style={{ fontSize: 10, padding: "1px 6px", border: "1px dashed var(--line)", borderRadius: 3, background: "transparent", color: "var(--muted)", cursor: "pointer", flexShrink: 0 }}>
-                    + 부속
-                  </button>
-                )}
-              </span>
-              <span><Pill label={item.계약유형} color={TYPE_COLOR[item.계약유형]} /></span>
-              <span style={{ position: "relative" }}>
-                <button onClick={() => setStatusEdit(statusEdit === item.id ? null : item.id)}
-                  style={{ border: "none", background: "transparent", padding: 0, cursor: "pointer" }}>
-                  <Pill label={item.상태} color={STATUS_COLOR[item.상태]} />
+                {pl.missingDocs > 0 && <span style={{ fontSize: 10.5, fontWeight: 700, color: "#DC2626" }}>서류 누락 {pl.missingDocs}</span>}
+                <span style={{ flex: 1 }} />
+                <button onClick={() => openAdd("지출기안", partner)}
+                  style={{ fontSize: 10.5, padding: "2px 8px", border: "1px dashed var(--line)", borderRadius: 4, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>
+                  + 지출기안
                 </button>
-                {statusEdit === item.id && (
-                  <div style={{ position: "absolute", top: "110%", left: 0, zIndex: 10, background: "var(--card)", border: "1px solid var(--line)", borderRadius: 6, boxShadow: "0 4px 12px rgba(0,0,0,0.10)", padding: 4, display: "flex", flexDirection: "column", gap: 2 }}>
-                    {STATUS_ORDER.map(s => (
-                      <button key={s} onClick={() => { setStatusEdit(null); if (s !== item.상태) patch(item.id, { 상태: s }); }}
-                        style={{ border: "none", background: s === item.상태 ? "#F8F9FA" : "transparent", padding: "4px 10px", borderRadius: 4, cursor: "pointer", textAlign: "left" }}>
-                        <Pill label={s} color={STATUS_COLOR[s]} />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </span>
-              <span style={{ fontSize: 11.5, color: "var(--muted)" }}>{item.체결일 || "—"}</span>
-              <span style={{ fontSize: 11.5, color: "var(--muted)" }}>
-                {item.만료일 || "—"}{item.자동갱신 && <span title="자동갱신" style={{ marginLeft: 3 }}>🔄</span>}
-              </span>
-              <span><DdayBadge 만료일={item.만료일} 상태={item.상태} /></span>
-              <span>
-                {item.계약서링크 ? (
-                  <a href={item.계약서링크} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#0078D4", textDecoration: "none", fontWeight: 600 }}>열기 ↗</a>
-                ) : (
-                  <button onClick={() => { const url = window.prompt("계약서 링크 (드라이브 URL):"); if (url) patch(item.id, { 계약서링크: url }); }}
-                    style={{ fontSize: 10, padding: "1px 6px", border: "1px dashed var(--line)", borderRadius: 3, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>
-                    + 링크
-                  </button>
-                )}
-              </span>
-              <span>
-                {deleteConfirm === item.id ? (
-                  <button onClick={() => remove(item)} style={{ fontSize: 10, fontWeight: 700, color: "#fff", background: "#DC2626", border: "none", borderRadius: 3, padding: "2px 6px", cursor: "pointer" }}>확인</button>
-                ) : (
-                  <button onClick={() => { setDeleteConfirm(item.id); setTimeout(() => setDeleteConfirm(c => c === item.id ? null : c), 3000); }}
-                    style={{ fontSize: 12, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", opacity: 0.5 }} title="삭제">✕</button>
-                )}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* 행정 체크리스트 통합 뷰 */}
-        <div style={{ margin: "0 14px 16px" }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "12px 2px 8px", borderTop: "1px solid var(--line)" }}>
-            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", color: "var(--muted)", textTransform: "uppercase" }}>행정 체크리스트</span>
-            <span style={{ fontSize: 11, color: "var(--muted)" }}>
-              {selected === "전체" ? "전체 프로젝트" : `${selected} 프로젝트`} · {adminProjects.length}건
-            </span>
-          </div>
-          {adminError && <div style={{ fontSize: 12, color: "var(--muted)", padding: "6px 2px" }}>행정 데이터 로드 실패: {adminError}</div>}
-          {!adminError && adminProjects.length === 0 && (
-            <div style={{ fontSize: 12, color: "var(--muted)", padding: "6px 2px" }}>
-              {selected === "전체" ? "등록된 행정 프로젝트가 없습니다." : "이 스튜디오에 연결된 행정 프로젝트가 없습니다. (행정 알림 탭에서 프로젝트 생성 시 스튜디오명을 입력하면 여기 연결됩니다)"}
-            </div>
-          )}
-          {adminProjects.map(p => {
-            const isOpen = adminExpand[p.project] ?? (selected !== "전체" && p.done < p.total);
-            const complete = p.done === p.total;
-            return (
-              <div key={p.project} style={{ border: "1px solid var(--line)", borderRadius: 6, marginBottom: 8, overflow: "hidden" }}>
-                <button onClick={() => setAdminExpand(e => ({ ...e, [p.project]: !isOpen }))}
-                  style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "9px 14px", border: "none", background: "#F8F9FA", cursor: "pointer", textAlign: "left" }}>
-                  <span style={{ fontSize: 10, color: "var(--muted)", width: 10 }}>{isOpen ? "▾" : "▸"}</span>
-                  <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--text)" }}>{p.project}</span>
-                  {selected === "전체" && p.studio && <span style={{ fontSize: 10.5, color: "var(--muted)" }}>{p.studio}</span>}
-                  <span style={{ flex: 1 }} />
-                  <span style={{ width: 90, height: 4, borderRadius: 2, background: "var(--line)", overflow: "hidden" }}>
-                    <span style={{ display: "block", height: "100%", width: `${p.total ? (p.done / p.total) * 100 : 0}%`, background: complete ? "#16A34A" : "#F5B400" }} />
-                  </span>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: complete ? "#16A34A" : "var(--muted)", width: 38, textAlign: "right" }}>{p.done}/{p.total}</span>
-                </button>
-                {isOpen && p.items.map(item => (
-                  <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 14px 7px 34px", borderTop: "1px solid var(--line)", fontSize: 12.5, opacity: adminToggling[item.id] ? 0.5 : 1 }}>
-                    <input type="checkbox" checked={item.완료} onChange={() => toggleAdminStep(item)} style={{ cursor: "pointer", accentColor: "#16A34A" }} />
-                    <span style={{ flex: 1, color: item.완료 ? "var(--muted)" : "var(--text)", textDecoration: item.완료 ? "line-through" : "none" }}>{item.항목명}</span>
-                    {item.기안링크 && <a href={item.기안링크} target="_blank" rel="noreferrer" style={{ fontSize: 10.5, color: "#0078D4", textDecoration: "none", fontWeight: 600 }}>기안 ↗</a>}
-                    {item.드라이브링크 && <a href={item.드라이브링크} target="_blank" rel="noreferrer" style={{ fontSize: 10.5, color: "#0078D4", textDecoration: "none", fontWeight: 600 }}>드라이브 ↗</a>}
-                  </div>
-                ))}
               </div>
-            );
-          })}
-        </div>
+
+              {groups.map(([title, list]) => list.length > 0 && (
+                <div key={title}>
+                  <div style={{ padding: "7px 16px 3px", fontSize: 10, fontWeight: 700, letterSpacing: ".06em", color: "var(--muted)", textTransform: "uppercase" }}>{title}</div>
+                  {list.map(item => (
+                    <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px", borderTop: "1px solid var(--line)", fontSize: 12.5, opacity: busy[item.id] ? 0.5 : 1, flexWrap: "wrap" }}>
+                      <Pill label={item.구분} color={KIND_COLOR[item.구분]} />
+                      <span onClick={() => openEdit(item)} title="클릭하여 상세 수정"
+                        style={{ fontWeight: 500, cursor: "pointer", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {item.제목}
+                      </span>
+                      {item.이터레이션구분 && <span style={{ fontSize: 10.5, color: "var(--muted)" }}>{item.이터레이션구분}</span>}
+                      <Pill label={item.상태 || "요청전"} color={STATUS_COLOR[item.상태 || "요청전"]}
+                        onClick={() => cycleStatus(item)} title="클릭해서 상태 변경" />
+                      <DocChips item={item} onToggle={toggleDoc} busy={busy[item.id]} />
+                      <span style={{ flex: 1 }} />
+                      {CONTRACT_KINDS.includes(item.구분) && item.만료일 && <DdayBadge 만료일={item.만료일} />}
+                      {item.체결일 && <span style={{ fontSize: 10.5, color: "var(--muted)" }}>{item.체결일}{item.자동갱신 ? " 🔄" : ""}</span>}
+                      {item.계약서URL && <a href={item.계약서URL} target="_blank" rel="noreferrer" style={{ fontSize: 10.5, color: "#0078D4", textDecoration: "none", fontWeight: 600 }}>계약서 ↗</a>}
+                      {item.기안링크 && <a href={item.기안링크} target="_blank" rel="noreferrer" style={{ fontSize: 10.5, color: "#0078D4", textDecoration: "none", fontWeight: 600 }}>기안 ↗</a>}
+                      {deleteConfirm === item.id ? (
+                        <button onClick={() => remove(item)} style={{ fontSize: 10, fontWeight: 700, color: "#fff", background: "#DC2626", border: "none", borderRadius: 3, padding: "2px 6px", cursor: "pointer" }}>확인</button>
+                      ) : (
+                        <button onClick={() => { setDeleteConfirm(item.id); setTimeout(() => setDeleteConfirm(c => c === item.id ? null : c), 3000); }}
+                          style={{ fontSize: 12, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", opacity: 0.5 }} title="삭제">✕</button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ))}
+              {rows.length === 0 && (
+                <div style={{ padding: "14px 16px", fontSize: 12, color: "var(--muted)" }}>
+                  아직 항목이 없습니다.
+                  <button onClick={() => openAdd("파트너십계약", partner)} style={{ marginLeft: 8, fontSize: 11, padding: "2px 8px", border: "1px dashed var(--line)", borderRadius: 4, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>+ 파트너십계약</button>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* 계약 추가 모달 */}
+      {/* 추가/수정 모달 */}
       {showForm && (
         <div onClick={() => !saving && setShowForm(false)}
-          style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", overflowY: "auto", padding: "30px 0" }}>
           <div onClick={e => e.stopPropagation()}
-            style={{ width: 420, maxWidth: "92vw", background: "var(--card)", borderRadius: 10, padding: 22, boxShadow: "0 8px 30px rgba(0,0,0,0.18)" }}>
+            style={{ width: 460, maxWidth: "92vw", background: "var(--card)", borderRadius: 10, padding: 22, boxShadow: "0 8px 30px rgba(0,0,0,0.18)", maxHeight: "85vh", overflowY: "auto" }}>
             <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>
-              {editingId ? `계약 수정 — ${form.계약명}` : form.계약유형 === "부속합의서" && form.상위계약 ? `부속합의서 추가 — ${form.상위계약}` : "계약 추가"}
+              {editingId ? "항목 수정" : "항목 추가"}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div>
-                <span style={label}>계약명 *</span>
-                <input style={input} value={form.계약명} onChange={e => setForm(f => ({ ...f, 계약명: e.target.value }))} placeholder="예: MMC 파트너십 계약" autoFocus />
-              </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
-                  <span style={label}>스튜디오 *</span>
-                  <input style={input} value={form.스튜디오} onChange={e => setForm(f => ({ ...f, 스튜디오: e.target.value }))} placeholder="예: MMC" />
+                  <span style={label}>파트너사 *</span>
+                  <input style={input} list="partner-list" value={form.파트너사}
+                    onChange={e => setForm(f => ({ ...f, 파트너사: e.target.value }))} placeholder="선택 또는 신규 입력" />
+                  <datalist id="partner-list">{allPartners.map(p => <option key={p} value={p} />)}</datalist>
                 </div>
                 <div>
-                  <span style={label}>계약유형</span>
-                  <select style={input} value={form.계약유형} onChange={e => setForm(f => ({ ...f, 계약유형: e.target.value }))}>
-                    {Object.keys(TYPE_COLOR).map(t => <option key={t}>{t}</option>)}
+                  <span style={label}>구분</span>
+                  <select style={input} value={form.구분} onChange={e => setForm(f => ({ ...f, 구분: e.target.value }))}>
+                    {Object.keys(KIND_COLOR).map(t => <option key={t}>{t}</option>)}
                   </select>
                 </div>
+              </div>
+              <div>
+                <span style={label}>제목 *</span>
+                <input style={input} value={form.제목} onChange={e => setForm(f => ({ ...f, 제목: e.target.value }))} placeholder="예: [MMC] 파트너십계약" />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div>
@@ -402,33 +390,83 @@ export default function Contracts() {
                     {STATUS_ORDER.map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
-                <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8 }}>
-                  <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                {form.구분 === "지출기안" && (
+                  <div>
+                    <span style={label}>이터레이션 구분</span>
+                    <input style={input} value={form.이터레이션구분} onChange={e => setForm(f => ({ ...f, 이터레이션구분: e.target.value }))} placeholder="프로토타입 / 이터레이션1..." />
+                  </div>
+                )}
+              </div>
+
+              {isContract && (<>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  {["체결일", "만료일"].map(field => (
+                    <div key={field}>
+                      <span style={label}>
+                        {field}
+                        {form[field] && (
+                          <button onClick={() => setForm(f => ({ ...f, [field]: "" }))}
+                            style={{ marginLeft: 6, fontSize: 10, padding: "0 5px", border: "1px solid var(--line)", borderRadius: 3, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>없음</button>
+                        )}
+                      </span>
+                      <input type="date" style={input} value={form[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} />
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "end" }}>
+                  <div>
+                    <span style={label}>계약서 URL</span>
+                    <input style={input} value={form.계약서URL} onChange={e => setForm(f => ({ ...f, 계약서URL: e.target.value }))} placeholder="https:// (원드라이브)" />
+                  </div>
+                  <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", paddingBottom: 8 }}>
                     <input type="checkbox" checked={form.자동갱신} onChange={e => setForm(f => ({ ...f, 자동갱신: e.target.checked }))} />
                     자동갱신
                   </label>
                 </div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                {["체결일", "만료일"].map(field => (
-                  <div key={field}>
-                    <span style={label}>
-                      {field}
-                      {form[field] && (
-                        <button onClick={() => setForm(f => ({ ...f, [field]: "" }))}
-                          style={{ marginLeft: 6, fontSize: 10, padding: "0 5px", border: "1px solid var(--line)", borderRadius: 3, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>
-                          없음
-                        </button>
-                      )}
-                    </span>
-                    <input type="date" style={input} value={form[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} />
+              </>)}
+
+              {DOCS_BY_KIND[form.구분] && (
+                <div>
+                  <span style={label}>필요 서류</span>
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", padding: "4px 0" }}>
+                    {DOCS_BY_KIND[form.구분].map(doc => (
+                      <label key={doc} style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 5, cursor: "pointer" }}>
+                        <input type="checkbox" checked={form[doc]} onChange={e => setForm(f => ({ ...f, [doc]: e.target.checked }))} />
+                        {doc}
+                      </label>
+                    ))}
                   </div>
-                ))}
-              </div>
-              <div>
-                <span style={label}>계약서 링크</span>
-                <input style={input} value={form.계약서링크} onChange={e => setForm(f => ({ ...f, 계약서링크: e.target.value }))} placeholder="https:// (원드라이브)" />
-              </div>
+                </div>
+              )}
+
+              {form.구분 === "거래처등록" && (
+                <div>
+                  <span style={{ ...label, marginTop: 4 }}>거래처 정보</span>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    {VENDOR_FIELDS.map(([field, hint]) => (
+                      <input key={field} style={input} value={form[field]} placeholder={field + (hint ? ` (${hint})` : "")}
+                        onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {form.구분 === "지출기안" && (<>
+                <div>
+                  <span style={label}>기안 링크</span>
+                  <input style={input} value={form.기안링크} onChange={e => setForm(f => ({ ...f, 기안링크: e.target.value }))} placeholder="https:// (네이버웍스 기안)" />
+                </div>
+                <div>
+                  <span style={{ ...label, marginTop: 4 }}>해외 송금 정보</span>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    {BANK_FIELDS.map(field => (
+                      <input key={field} style={input} value={form[field]} placeholder={field}
+                        onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} />
+                    ))}
+                  </div>
+                </div>
+              </>)}
+
               <div>
                 <span style={label}>메모</span>
                 <input style={input} value={form.메모} onChange={e => setForm(f => ({ ...f, 메모: e.target.value }))} placeholder="특이사항" />
@@ -437,8 +475,8 @@ export default function Contracts() {
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 18 }}>
               <button onClick={() => setShowForm(false)} disabled={saving}
                 style={{ padding: "8px 16px", fontSize: 12.5, border: "1px solid var(--line)", borderRadius: 6, background: "var(--card)", color: "var(--text)", cursor: "pointer" }}>취소</button>
-              <button onClick={submit} disabled={saving || !form.계약명.trim() || !form.스튜디오.trim()}
-                style={{ padding: "8px 18px", fontSize: 12.5, fontWeight: 600, border: "none", borderRadius: 6, background: "#F5B400", color: "#1a1a1a", cursor: "pointer", opacity: saving || !form.계약명.trim() || !form.스튜디오.trim() ? 0.5 : 1 }}>
+              <button onClick={submit} disabled={saving || !form.제목.trim() || !form.파트너사.trim()}
+                style={{ padding: "8px 18px", fontSize: 12.5, fontWeight: 600, border: "none", borderRadius: 6, background: "#F5B400", color: "#1a1a1a", cursor: "pointer", opacity: saving || !form.제목.trim() || !form.파트너사.trim() ? 0.5 : 1 }}>
                 {saving ? "저장 중..." : "저장"}
               </button>
             </div>
