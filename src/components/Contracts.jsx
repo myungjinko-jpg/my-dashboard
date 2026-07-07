@@ -200,11 +200,15 @@ export default function Contracts() {
     { 제목: `[${partner}] 거래처등록`, 파트너사: partner, 구분: "거래처등록", 상태: "요청전" },
   ]);
 
-  // 신규 프로젝트 템플릿: 부속합의서 + 프로토타입 지출기안
-  const createProjectTemplate = (partner, proj) => createRows([
-    { 제목: `[${proj}] 부속합의서`, 파트너사: partner, 프로젝트: proj, 구분: "부속합의서", 상태: "요청전" },
-    { 제목: `[${proj}] 프로토타입 지출기안`, 파트너사: partner, 프로젝트: proj, 구분: "지출기안", 이터레이션구분: "프로토타입", 상태: "요청전" },
-  ]);
+  // 신규 프로젝트 템플릿
+  // 첫 프로젝트(본계약에 프로토타입 포함): 지출기안만 / 두 번째부터: 부속합의서 + 지출기안
+  const createProjectTemplate = (partner, proj) => {
+    const isFirst = !items.some(i => i.파트너사 === partner && PROJECT_LEVEL_KINDS.includes(i.구분));
+    return createRows([
+      ...(isFirst ? [] : [{ 제목: `[${proj}] 부속합의서`, 파트너사: partner, 프로젝트: proj, 구분: "부속합의서", 상태: "요청전" }]),
+      { 제목: `[${proj}] 프로토타입 지출기안`, 파트너사: partner, 프로젝트: proj, 구분: "지출기안", 이터레이션구분: "프로토타입", 상태: "요청전" },
+    ]);
+  };
 
   const openAdd = (구분, partner, project) => {
     setEditingId(null);
