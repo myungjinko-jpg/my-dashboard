@@ -458,7 +458,9 @@ export default function Contracts() {
                   setSelected(name);
                   setAddingPartner(false);
                   setNewPartnerName("");
-                  if (!items.some(i => i.파트너사 === name)) createPartnerTemplate(name);
+                  if (!items.some(i => i.파트너사 === name)) {
+                    createPartnerTemplate(name).then(() => setAddingProject(true));
+                  }
                 }}>
                 <input autoFocus value={newPartnerName} onChange={e => setNewPartnerName(e.target.value)}
                   onBlur={() => { if (!newPartnerName.trim()) setAddingPartner(false); }}
