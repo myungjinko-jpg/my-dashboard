@@ -359,6 +359,15 @@ export default function Contracts() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: 500, border: "1px solid var(--line)", borderRadius: 8, overflow: "hidden", background: "var(--card)" }}>
+      <style>{`
+        .slim-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+        .slim-scroll:hover { scrollbar-color: rgba(120,124,135,.35) transparent; }
+        .slim-scroll::-webkit-scrollbar { width: 5px; }
+        .slim-scroll::-webkit-scrollbar-track { background: transparent; }
+        .slim-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: 10px; }
+        .slim-scroll:hover::-webkit-scrollbar-thumb { background: rgba(120,124,135,.35); }
+        .slim-scroll::-webkit-scrollbar-thumb:hover { background: rgba(120,124,135,.55); }
+      `}</style>
 
       {/* ── Metrics strip ── */}
       <div style={{ display: "flex", alignItems: "center", padding: "12px 20px", borderBottom: "1px solid var(--line)", background: "var(--card)", flexWrap: "wrap", gap: 8 }}>
@@ -391,7 +400,7 @@ export default function Contracts() {
           데이터 로드 실패: {error} <button onClick={load} style={{ marginLeft: 8 }}>재시도</button>
         </div>
       ) : (
-        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+        <div style={{ display: "flex", flex: 1, overflow: "hidden", height: 560, maxHeight: "70vh" }}>
 
           {/* ── Left nav ── */}
           <div style={{ width: 210, flexShrink: 0, borderRight: "1px solid var(--line)", display: "flex", flexDirection: "column", background: "var(--card)" }}>
@@ -425,7 +434,7 @@ export default function Contracts() {
               </form>
             )}
 
-            <div style={{ flex: 1, overflowY: "auto" }}>
+            <div className="slim-scroll" style={{ flex: 1, overflowY: "auto" }}>
               {visiblePartnerList.length === 0 && (
                 <div style={{ padding: "24px 14px", fontSize: 12, color: "var(--muted)", textAlign: "center" }}>파트너사 없음</div>
               )}
@@ -466,7 +475,7 @@ export default function Contracts() {
                 </div>
 
                 {/* Rows */}
-                <div style={{ flex: 1, overflowY: "auto" }}>
+                <div className="slim-scroll" style={{ flex: 1, overflowY: "auto" }}>
                   {selectedRows.length === 0 && (
                     <div style={{ padding: "30px 20px", fontSize: 12.5, color: "var(--muted)", textAlign: "center" }}>
                       아직 항목이 없습니다.
