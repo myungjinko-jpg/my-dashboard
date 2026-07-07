@@ -16,7 +16,6 @@ import {
 } from "./utils";
 import LtvCalculator from "./components/LtvCalculator";
 import ProjectDashboard from "./components/ProjectDashboard";
-import AdminAlerts from "./components/AdminAlerts";
 import GddLibrary from "./components/GddLibrary";
 import Contracts from "./components/Contracts";
 
@@ -287,9 +286,6 @@ export default function App() {
         <button className={`tab-btn ${activeTab === "projects" ? "active" : ""}`} onClick={() => setActiveTab("projects")}>
           🗂 프로젝트 현황 <span style={{ fontSize: "10px", opacity: 0.6 }}>(테스트중)</span>
         </button>
-        <button className={`tab-btn ${activeTab === "admin" ? "active" : ""}`} onClick={() => setActiveTab("admin")}>
-          📋 행정 알림 <span style={{ fontSize: "10px", opacity: 0.6 }}>(테스트중)</span>
-        </button>
         <button className={`tab-btn ${activeTab === "gdd" ? "active" : ""}`} onClick={() => setActiveTab("gdd")}>
           📚 GDD 라이브러리 <span style={{ fontSize: "10px", opacity: 0.6 }}>(테스트중)</span>
         </button>
@@ -319,17 +315,6 @@ export default function App() {
             <p className="section-desc">Project Info DB 파이프라인 뷰 — Stage별 진행 현황 및 Biz Notes 요약.</p>
           </div>
           <ProjectDashboard />
-        </section>
-      )}
-
-      {activeTab === "admin" && (
-        <section className="section-block">
-          <div className="section-header">
-            <div className="section-eyebrow">Notion DB</div>
-            <h2 className="section-heading">행정 알림</h2>
-            <p className="section-desc">파트너사별 행정 처리 항목 트래킹 — 거래처 등록, 기안 제출, 인보이스 수령 등 미처리 항목 관리.</p>
-          </div>
-          <AdminAlerts />
         </section>
       )}
 
