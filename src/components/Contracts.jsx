@@ -404,7 +404,6 @@ export default function Contracts() {
         .slim-scroll:hover::-webkit-scrollbar-thumb { background: rgba(120,124,135,.35); }
         .slim-scroll::-webkit-scrollbar-thumb:hover { background: rgba(120,124,135,.55); }
         .metrics-bar { background: #2B2D3A; }
-        body.dark .metrics-bar { background: #15161C; }
         .metrics-bar .m-value { color: #fff; }
         .metrics-bar .m-label { color: rgba(255,255,255,.55); }
         .metrics-bar .m-divider { border-color: rgba(255,255,255,.12) !important; }
