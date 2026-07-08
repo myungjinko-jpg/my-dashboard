@@ -121,8 +121,9 @@ export default function Contracts() {
     return out;
   }, [items]);
 
-  const totalDone = items.filter(i => i.상태 === "완료").length;
-  const totalPending = items.length - totalDone;
+  const totalDone     = items.filter(i => i.상태 === "완료").length;
+  const totalActive   = items.filter(i => i.상태 === "진행중").length;
+  const totalWaiting  = items.filter(i => (i.상태 || "요청전") === "요청전").length;
 
   const patch = async (pageId, fields) => {
     setBusy(b => ({ ...b, [pageId]: true }));
@@ -403,31 +404,34 @@ export default function Contracts() {
         .slim-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: 10px; }
         .slim-scroll:hover::-webkit-scrollbar-thumb { background: rgba(120,124,135,.35); }
         .slim-scroll::-webkit-scrollbar-thumb:hover { background: rgba(120,124,135,.55); }
-        .metrics-bar { background: #2B2D3A; }
-        .metrics-bar .m-value { color: #fff; }
-        .metrics-bar .m-label { color: rgba(255,255,255,.55); }
-        .metrics-bar .m-divider { border-color: rgba(255,255,255,.12) !important; }
-        .metrics-bar .m-notion { color: rgba(255,255,255,.85) !important; border-color: rgba(255,255,255,.2) !important; background: rgba(255,255,255,.06) !important; }
+        .m-notion { background: #2B2D3A; color: #fff; transition: background .12s; }
+        .m-notion:hover { background: #1C1D26; }
       `}</style>
 
       {/* ── Metrics strip ── */}
-      <div className="metrics-bar" style={{ display: "flex", alignItems: "center", padding: "14px 20px", borderBottom: "2px solid " + amber, flexWrap: "wrap", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid var(--line)", background: "var(--card)", flexWrap: "wrap", gap: 10 }}>
         {[
-          { label: "파트너사", value: visiblePartnerList.length, color: null },
-          { label: "진행중 항목", value: totalPending, color: "#FBBF24" },
-          { label: "완료", value: totalDone, color: "#4ADE80" },
-        ].map(({ label: l, value, color }, i) => (
-          <div key={l} className={i < 2 ? "m-divider" : ""} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "0 20px", borderRight: i < 2 ? "1px solid" : "none" }}>
-            <span className="m-value" style={{ fontSize: 22, fontWeight: 700, ...(color ? { color } : {}), fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{value}</span>
-            <span className="m-label" style={{ fontSize: 11, letterSpacing: ".04em" }}>{l}</span>
+          { label: "파트너사", value: visiblePartnerList.length, color: "var(--text)", accent: "var(--line)" },
+          { label: "진행중", value: totalActive, color: amber, accent: amber },
+          { label: "대기", value: totalWaiting, color: "var(--muted)", accent: "var(--line)" },
+          { label: "완료", value: totalDone, color: green, accent: green },
+        ].map(({ label: l, value, color, accent }) => (
+          <div key={l} style={{
+            display: "flex", alignItems: "baseline", gap: 7, padding: "9px 16px",
+            border: "1px solid var(--line)", borderLeft: `3px solid ${accent}`, borderRadius: 7,
+            background: "var(--card)", minWidth: 92,
+          }}>
+            <span style={{ fontSize: 22, fontWeight: 700, color, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{value}</span>
+            <span style={{ fontSize: 11, color: "var(--muted)", letterSpacing: ".04em" }}>{l}</span>
           </div>
         ))}
         {alerts.length > 0 && (
-          <span style={{ fontSize: 11, color: "#FCA5A5", fontWeight: 600, marginLeft: 8 }} title={alerts.join("\n")}>⏰ 만료 임박 {alerts.length}건</span>
+          <div style={{ display: "flex", alignItems: "center", padding: "9px 14px", border: "1px solid rgba(220,38,38,.25)", borderLeft: "3px solid #DC2626", borderRadius: 7, background: "rgba(220,38,38,.04)", fontSize: 11, color: "#C2410C", fontWeight: 600 }}
+            title={alerts.join("\n")}>⏰ 만료 임박 {alerts.length}</div>
         )}
         <div style={{ marginLeft: "auto" }}>
           <a className="m-notion" href={NOTION_DB_URL} target="_blank" rel="noopener noreferrer"
-            style={{ padding: "7px 14px", borderRadius: 4, border: "1px solid", fontSize: 12, fontWeight: 600, textDecoration: "none", letterSpacing: ".02em" }}>
+            style={{ padding: "9px 16px", borderRadius: 7, fontSize: 12, fontWeight: 600, textDecoration: "none", letterSpacing: ".02em", display: "inline-block" }}>
             Notion DB ↗
           </a>
         </div>
