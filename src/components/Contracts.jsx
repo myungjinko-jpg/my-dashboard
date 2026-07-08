@@ -403,10 +403,12 @@ export default function Contracts() {
         .slim-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: 10px; }
         .slim-scroll:hover::-webkit-scrollbar-thumb { background: rgba(120,124,135,.35); }
         .slim-scroll::-webkit-scrollbar-thumb:hover { background: rgba(120,124,135,.55); }
+        .metrics-bar { background: linear-gradient(180deg, #FAFAF7 0%, #F1F2EF 100%); }
+        body.dark .metrics-bar { background: linear-gradient(180deg, #23252E 0%, #1C1D24 100%); }
       `}</style>
 
       {/* ── Metrics strip ── */}
-      <div style={{ display: "flex", alignItems: "center", padding: "12px 20px", borderBottom: "1px solid var(--line)", background: "var(--card)", flexWrap: "wrap", gap: 8 }}>
+      <div className="metrics-bar" style={{ display: "flex", alignItems: "center", padding: "14px 20px", borderBottom: "2px solid " + amber, flexWrap: "wrap", gap: 8 }}>
         {[
           { label: "파트너사", value: visiblePartnerList.length, color: "var(--text)" },
           { label: "진행중 항목", value: totalPending, color: amber },
