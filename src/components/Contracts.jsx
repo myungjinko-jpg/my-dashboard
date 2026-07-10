@@ -106,6 +106,18 @@ export default function Contracts() {
   const [newProjectName, setNewProjectName] = useState("");
   const [docsPopover, setDocsPopover] = useState(null); // 서류 인라인 체크 팝오버 (item.id)
   const [guideModal, setGuideModal] = useState(null); // 가이드 모달 (구분명)
+  const [sending, setSending] = useState(false);
+  const [sentMsg, setSentMsg] = useState("");
+
+  const sendAlert = async () => {
+    setSending(true); setSentMsg("");
+    try {
+      const r = await fetch(`${API_BASE}/api/contracts-alert`, { method: "POST" });
+      const data = await r.json();
+      setSentMsg(data.sent ? `${data.sent}건 발송됨` : (data.message || "발송 완료"));
+    } catch { setSentMsg("발송 실패"); }
+    finally { setSending(false); setTimeout(() => setSentMsg(""), 4000); }
+  };
   const [creatingTpl, setCreatingTpl] = useState(false);
   const [titleTouched, setTitleTouched] = useState(false);
 
@@ -485,7 +497,12 @@ export default function Contracts() {
           <div style={{ display: "flex", alignItems: "center", padding: "9px 14px", border: "1px solid rgba(220,38,38,.25)", borderLeft: "3px solid #DC2626", borderRadius: 7, background: "rgba(220,38,38,.04)", fontSize: 11, color: "#C2410C", fontWeight: 600 }}
             title={alerts.join("\n")}>⏰ 만료 임박 {alerts.length}</div>
         )}
-        <div style={{ marginLeft: "auto" }}>
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+          {sentMsg && <span style={{ fontSize: 11, color: green, fontWeight: 600 }}>{sentMsg}</span>}
+          <button onClick={sendAlert} disabled={sending}
+            style={{ padding: "9px 14px", borderRadius: 7, border: "1px solid var(--line)", background: "var(--card)", color: "var(--text)", fontSize: 12, fontWeight: 600, cursor: sending ? "not-allowed" : "pointer", opacity: sending ? 0.6 : 1, fontFamily: "inherit" }}>
+            {sending ? "발송 중…" : "Slack 알림"}
+          </button>
           <a className="m-notion" href={NOTION_DB_URL} target="_blank" rel="noopener noreferrer"
             style={{ padding: "9px 16px", borderRadius: 7, fontSize: 12, fontWeight: 600, textDecoration: "none", letterSpacing: ".02em", display: "inline-block" }}>
             Notion DB ↗
