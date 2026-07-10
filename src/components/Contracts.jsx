@@ -14,6 +14,9 @@ const STATUS_ORDER = ["요청전", "진행중", "완료"];
 // 순차 흐름 정렬 순서 (그룹 내에서 이 순서로 진행)
 const KIND_ORDER = { 파트너십계약: 1, NDA: 2, 거래처등록: 3, 부속합의서: 1, 지출기안: 2 };
 
+// 파트너 공통 서류 — 거래처등록에서 한 번 등록하면 지출기안 등에선 연동만 표시
+const PARTNER_DOCS = ["법인등록증", "법인통장"];
+
 const amber = "#F5B400";
 const amberFaint = "rgba(245,180,0,0.10)";
 const green = "#16A34A";
@@ -325,6 +328,17 @@ export default function Contracts() {
     color: accent ? "#B45309" : "var(--muted)",
   });
 
+  // 파트너의 거래처등록 항목 (파트너 공통 서류의 원본)
+  const partnerVendor = (partner) => items.find(i => i.파트너사 === partner && i.구분 === "거래처등록") || null;
+  // 서류 수령 여부 — 파트너 공통 서류는 거래처등록 상태를 따름
+  const docReceived = (item, doc) => {
+    if (item.구분 !== "거래처등록" && PARTNER_DOCS.includes(doc)) {
+      const v = partnerVendor(item.파트너사);
+      return v ? (!!v[doc] || !!v[`${doc}링크`]) : false;
+    }
+    return !!item[doc];
+  };
+
   // ── 선택 파트너의 순차 그룹 구성 ──
   const selectedRows = selected ? (byPartner[selected] || []) : [];
   const commonRows = orderGroup(selectedRows.filter(i => PARTNER_LEVEL_KINDS.includes(i.구분)));
@@ -472,6 +486,29 @@ export default function Contracts() {
             <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "4px 0" }}>
               {DOCS_BY_KIND[vals.구분].map(doc => {
                 const linkKey = `${doc}링크`;
+                // 파트너 공통 서류 & 거래처등록이 아닌 항목 → 거래처등록에서 연동 (읽기 전용)
+                const inherited = vals.구분 !== "거래처등록" && PARTNER_DOCS.includes(doc);
+                if (inherited) {
+                  const v = partnerVendor(vals.파트너사);
+                  const inLink = v ? (v[linkKey] || "") : "";
+                  const ok = v ? (!!v[doc] || !!inLink) : false;
+                  return (
+                    <div key={doc} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input type="checkbox" checked={ok} disabled title="거래처등록에서 연동됨"
+                        style={{ accentColor: green, flexShrink: 0 }} />
+                      <span style={{ fontSize: 12, width: 82, flexShrink: 0, color: "var(--text)" }}>{doc}</span>
+                      <span style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--muted)" }}>
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".03em", border: "1px solid var(--line)", borderRadius: 3, padding: "1px 5px", flexShrink: 0 }}>거래처등록 연동</span>
+                        {!v && "거래처등록 항목 없음"}
+                        {v && !inLink && "링크 미등록"}
+                      </span>
+                      {inLink && (
+                        <a href={inLink} target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: 10, fontWeight: 600, padding: "5px 8px", borderRadius: 4, background: blueFaint, color: blue, border: "1px solid rgba(0,120,212,.25)", textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}>열기 →</a>
+                      )}
+                    </div>
+                  );
+                }
                 const linkVal = vals[linkKey] || "";
                 return (
                   <div key={doc} style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -537,7 +574,7 @@ export default function Contracts() {
     const projCount = new Set(rows.filter(i => i.프로젝트).map(i => i.프로젝트)).size;
     const warn = rows.some(i => {
       const d = dday(i.만료일);
-      const docsMissing = (DOCS_BY_KIND[i.구분] || []).some(doc => !i[doc]) && i.상태 === "진행중";
+      const docsMissing = (DOCS_BY_KIND[i.구분] || []).some(doc => !docReceived(i, doc)) && i.상태 === "진행중";
       return docsMissing || (CONTRACT_KINDS.includes(i.구분) && !i.자동갱신 && d !== null && d >= 0 && d <= 30);
     });
     return (
@@ -575,7 +612,7 @@ export default function Contracts() {
     const isBusy = !!busy[item.id];
     const isOpen = effectiveOpen === item.id;
     const docs = DOCS_BY_KIND[item.구분] || [];
-    const docsDone = docs.filter(d => item[d]).length;
+    const docsDone = docs.filter(d => docReceived(item, d)).length;
     const d = dday(item.만료일);
     const dim = !isOpen && !done && !reached; // 대기 단계
 

@@ -8,6 +8,7 @@ const DOCS_BY_KIND = {
   거래처등록: ["법인등록증", "법인통장"],
   지출기안: ["법인등록증", "법인통장", "부속합의서", "스펙내용", "인보이스"],
 };
+const PARTNER_DOCS = ["법인등록증", "법인통장"]; // 파트너 공통 — 거래처등록 상태를 따름
 
 function dday(dateStr) {
   if (!dateStr) return null;
@@ -71,10 +72,19 @@ export default async function handler(req, res) {
       .filter(i => i.d !== null && i.d >= 0 && i.d <= 30)
       .sort((a, b) => a.d - b.d);
 
-    // 2) 서류 미비 진행중 항목
+    // 2) 서류 미비 진행중 항목 (파트너 공통 서류는 거래처등록 상태를 따름)
+    const vendorByPartner = {};
+    items.forEach(i => { if (i.구분 === "거래처등록") vendorByPartner[i.파트너사] = i; });
+    const docOk = (item, doc) => {
+      if (item.구분 !== "거래처등록" && PARTNER_DOCS.includes(doc)) {
+        const v = vendorByPartner[item.파트너사];
+        return v ? !!v[doc] : false;
+      }
+      return !!item[doc];
+    };
     const missingDocs = items
       .filter(i => i.상태 === "진행중" && DOCS_BY_KIND[i.구분])
-      .map(i => ({ 제목: i.제목, missing: DOCS_BY_KIND[i.구분].filter(doc => !i[doc]) }))
+      .map(i => ({ 제목: i.제목, missing: DOCS_BY_KIND[i.구분].filter(doc => !docOk(i, doc)) }))
       .filter(i => i.missing.length > 0);
 
     if (expiring.length === 0 && missingDocs.length === 0) {
