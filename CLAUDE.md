@@ -72,3 +72,28 @@ api/
 - **URL**: https://my-dashboard-gamma-amber.vercel.app
 - GitHub push → Vercel 자동 배포 (main 브랜치)
 - 롤백: `git revert` 사용 (git reset 금지)
+
+## 커밋 컨벤션
+
+- **형식**: `<타입>: <설명> (v<major>.<minor>.<patch>)`
+  - 예: `feat: 계약·행정 Slack 알림 — 만료 임박 + 서류 미비 진행중 항목 (v4.11.0)`
+- **타입**: `feat` / `fix` / `chore` / `style` (Conventional Commits)
+- **버전 규칙**: 커밋(=푸시)마다 버전을 올린다
+  - `feat` → **minor** 올림 (`v4.11.0` → `v4.12.0`, patch는 0으로)
+  - `fix` / `chore` / `style` 등 나머지 → **patch** 올림 (`v4.11.0` → `v4.11.1`)
+- 직전 버전은 `git log --oneline -1`로 확인 후 이어서 올릴 것
+- 커밋할 때 `src/version.js`의 `APP_VERSION`도 같은 버전으로 맞춰 올릴 것 (대시보드 하단 표기용)
+
+## 로컬 개발 실행법
+
+CPI 대시보드·LTV 계산기는 프론트만으로 동작하지만, **계약/행정/GDD 탭은 별도 백엔드(`localhost:5601`)가 필요**하다 (`Contracts.jsx` 등에서 `API_BASE = IS_DEV ? "http://localhost:5601" : ""`).
+
+```bash
+npm run dev                  # 프론트 (Vite, 5173)
+vercel dev --listen 5601     # 백엔드 (api/ 서버리스 함수, 5601)
+```
+
+- 백엔드는 **Vercel CLI(`vercel dev`)** 로 `api/` 함수를 로컬 실행한다. `vercel link`로 프로젝트 연결 필요.
+- **환경변수 주의**: `vercel dev`는 로컬 `.env` 파일이 아니라 **Vercel 클라우드의 `Development` 스코프** 환경변수만 함수에 주입한다. 계약 탭을 로컬에서 쓰려면 `NOTION_TOKEN`이 `Development` 스코프에 있어야 한다 (`vercel env add NOTION_TOKEN development`). Production/Preview 스코프만 있으면 로컬 함수는 못 읽는다.
+- `NOTION_TOKEN` 등은 Vercel에서 **Sensitive**로 설정돼 있어 `vercel env pull`로 값을 되받을 수 없다(빈 값). 원본(Notion 인테그레이션 시크릿 등)에서 다시 가져와야 한다.
+- 프론트용 `VITE_*` 변수는 Vite가 로컬 `.env.local`에서 직접 읽으므로 스코프 추가 불필요.
