@@ -74,6 +74,7 @@ const EMPTY_FORM = {
   제목: "", 파트너사: "", 프로젝트: "", 구분: "파트너십계약", 상태: "요청전", 메모: "",
   체결일: "", 만료일: "", 자동갱신: false, 계약서URL: "", 기안링크: "", 이터레이션구분: "",
   법인등록증: false, 법인통장: false, 부속합의서: false, 스펙내용: false, 인보이스: false,
+  법인등록증링크: "", 법인통장링크: "", 부속합의서링크: "", 스펙내용링크: "", 인보이스링크: "",
   거래처식별번호: "", 거래처명: "", 거래처국가: "", 거래처주소: "", 거래처대표: "", 거래처담당자: "", 거래처Email: "",
   BankName: "", BranchName: "", BankAddress: "", BeneficiaryName: "", AccountNumber: "",
 };
@@ -467,14 +468,26 @@ export default function Contracts() {
 
         {DOCS_BY_KIND[vals.구분] && (
           <div>
-            <span style={label}>필요 서류</span>
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", padding: "4px 0" }}>
-              {DOCS_BY_KIND[vals.구분].map(doc => (
-                <label key={doc} style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 5, cursor: "pointer" }}>
-                  <input type="checkbox" checked={vals[doc]} onChange={e => upd(f => ({ ...f, [doc]: e.target.checked }))} />
-                  {doc}
-                </label>
-              ))}
+            <span style={label}>필요 서류 · 구글드라이브 링크</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "4px 0" }}>
+              {DOCS_BY_KIND[vals.구분].map(doc => {
+                const linkKey = `${doc}링크`;
+                const linkVal = vals[linkKey] || "";
+                return (
+                  <div key={doc} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="checkbox" checked={vals[doc]} title="받음 표시"
+                      onChange={e => upd(f => ({ ...f, [doc]: e.target.checked }))}
+                      style={{ accentColor: green, cursor: "pointer", flexShrink: 0 }} />
+                    <span style={{ fontSize: 12, width: 82, flexShrink: 0, color: "var(--text)" }}>{doc}</span>
+                    <input style={{ ...input, flex: 1 }} value={linkVal} placeholder="구글드라이브 링크 붙여넣기"
+                      onChange={e => { const v = e.target.value; upd(f => ({ ...f, [linkKey]: v, ...(v ? { [doc]: true } : {}) })); }} />
+                    {linkVal && (
+                      <a href={linkVal} target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize: 10, fontWeight: 600, padding: "5px 8px", borderRadius: 4, background: blueFaint, color: blue, border: "1px solid rgba(0,120,212,.25)", textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}>열기 →</a>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

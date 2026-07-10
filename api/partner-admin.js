@@ -10,6 +10,7 @@ const FIELD_TYPES = {
   BankName: "text", BranchName: "text", BankAddress: "text", BeneficiaryName: "text", AccountNumber: "text",
   거래처Email: "email",
   계약서URL: "url", 기안링크: "url",
+  법인등록증링크: "url", 법인통장링크: "url", 부속합의서링크: "url", 스펙내용링크: "url", 인보이스링크: "url",
   법인등록증: "checkbox", 법인통장: "checkbox", 부속합의서: "checkbox", 스펙내용: "checkbox", 인보이스: "checkbox", 자동갱신: "checkbox",
   체결일: "date", 만료일: "date", 최종업데이트일: "date",
 };
