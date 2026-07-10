@@ -315,12 +315,26 @@ export default function Contracts() {
   const input = { width: "100%", padding: "7px 10px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", boxSizing: "border-box" };
   const label = { fontSize: 11, fontWeight: 600, color: "var(--muted)", marginBottom: 4, display: "block" };
 
+  // 공용 "추가" 버튼 스타일 — 전부 동일, accent(맥락상 유도할 하나)만 앰버 강조
+  const addBtn = (accent) => ({
+    padding: "5px 11px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+    cursor: "pointer", fontFamily: "inherit", lineHeight: 1, whiteSpace: "nowrap",
+    border: `1px solid ${accent ? amber : "var(--line)"}`,
+    background: accent ? amberFaint : "transparent",
+    color: accent ? "#B45309" : "var(--muted)",
+  });
+
   // ── 선택 파트너의 순차 그룹 구성 ──
   const selectedRows = selected ? (byPartner[selected] || []) : [];
   const commonRows = orderGroup(selectedRows.filter(i => PARTNER_LEVEL_KINDS.includes(i.구분)));
   const projectNames = [...new Set(selectedRows.filter(i => PROJECT_LEVEL_KINDS.includes(i.구분)).map(i => i.프로젝트 || "(프로젝트 미지정)"))].sort();
   const projectRows = (proj) => orderGroup(selectedRows.filter(i => PROJECT_LEVEL_KINDS.includes(i.구분) && (i.프로젝트 || "(프로젝트 미지정)") === proj));
   const doneCount = selectedRows.filter(i => i.상태 === "완료").length;
+
+  // 강조 대상 판정 (맥락상 "지금 유도할 다음 액션" 하나만 앰버)
+  const partnerIsPrimary = visiblePartnerList.length === 0;                              // 파트너 자체가 없을 때
+  const hasRealProject = projectNames.some(p => p !== "(프로젝트 미지정)");
+  const projectIsPrimary = selectedRows.length > 0 && !hasRealProject;                   // 공통 항목은 있는데 프로젝트가 아직 없을 때
 
   // 문서 순서대로 나열된 전체 스텝 (공통 → 프로젝트별)
   const orderedSteps = useMemo(() => {
@@ -724,19 +738,22 @@ export default function Contracts() {
           <div style={{ width: 210, flexShrink: 0, borderRight: "1px solid var(--line)", display: "flex", flexDirection: "column", background: "var(--card)" }}>
             <div style={{ padding: "10px 14px 8px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--muted)", flex: 1 }}>파트너사</span>
-              <button onClick={() => setAddingPartner(true)} title="파트너사 추가" style={{
-                fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 3,
-                border: `1px solid ${amber}`, color: amber, background: amberFaint, cursor: "pointer", fontFamily: "inherit",
-              }}>+</button>
               <button onClick={load} title="새로고침" style={{
                 fontSize: 11, padding: "2px 6px", borderRadius: 3,
                 border: "1px solid var(--line)", color: "var(--muted)", background: "transparent", cursor: "pointer", fontFamily: "inherit",
               }}>↻</button>
             </div>
 
-            {addingPartner && (
-              <form style={{ padding: "8px 12px", borderBottom: "1px solid var(--line)" }}
-                onSubmit={e => {
+            <div className="slim-scroll" style={{ flex: 1, overflowY: "auto" }}>
+              {visiblePartnerList.length === 0 && (
+                <div style={{ padding: "24px 14px", fontSize: 12, color: "var(--muted)", textAlign: "center" }}>파트너사 없음</div>
+              )}
+              {visiblePartnerList.map(renderSidebarPartner)}
+            </div>
+
+            <div style={{ padding: 8, borderTop: "1px solid var(--line)" }}>
+              {addingPartner ? (
+                <form onSubmit={e => {
                   e.preventDefault();
                   const name = newPartnerName.trim();
                   if (!name) return;
@@ -748,18 +765,14 @@ export default function Contracts() {
                     createPartnerTemplate(name).then(() => setAddingProject(true));
                   }
                 }}>
-                <input autoFocus value={newPartnerName} onChange={e => setNewPartnerName(e.target.value)}
-                  onBlur={() => { if (!newPartnerName.trim()) setAddingPartner(false); }}
-                  placeholder="파트너사명 입력 후 Enter"
-                  style={{ width: "100%", padding: "6px 9px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", boxSizing: "border-box" }} />
-              </form>
-            )}
-
-            <div className="slim-scroll" style={{ flex: 1, overflowY: "auto" }}>
-              {visiblePartnerList.length === 0 && (
-                <div style={{ padding: "24px 14px", fontSize: 12, color: "var(--muted)", textAlign: "center" }}>파트너사 없음</div>
+                  <input autoFocus value={newPartnerName} onChange={e => setNewPartnerName(e.target.value)}
+                    onBlur={() => { if (!newPartnerName.trim()) setAddingPartner(false); }}
+                    placeholder="파트너사명 입력 후 Enter"
+                    style={{ width: "100%", padding: "6px 9px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", boxSizing: "border-box" }} />
+                </form>
+              ) : (
+                <button onClick={() => setAddingPartner(true)} style={{ ...addBtn(partnerIsPrimary), width: "100%", textAlign: "center" }}>+ 파트너사</button>
               )}
-              {visiblePartnerList.map(renderSidebarPartner)}
             </div>
           </div>
 
@@ -794,15 +807,9 @@ export default function Contracts() {
                         style={{ padding: "4px 9px", fontSize: 11, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", width: 160 }} />
                     </form>
                   ) : (
-                    <button onClick={() => setAddingProject(true)} disabled={creatingTpl} style={{
-                      padding: "4px 11px", borderRadius: 4, border: `1px solid ${amber}`, background: amberFaint,
-                      color: amber, fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", opacity: creatingTpl ? 0.5 : 1,
-                    }}>{creatingTpl ? "생성 중…" : "+ 프로젝트"}</button>
+                    <button onClick={() => setAddingProject(true)} disabled={creatingTpl} style={{ ...addBtn(projectIsPrimary), opacity: creatingTpl ? 0.5 : 1 }}>{creatingTpl ? "생성 중…" : "+ 프로젝트"}</button>
                   )}
-                  <button onClick={() => openAdd("파트너십계약", selected)} style={{
-                    padding: "4px 11px", borderRadius: 4, border: "1px solid var(--line)", background: "transparent",
-                    color: "var(--muted)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-                  }}>+ 항목</button>
+                  <button onClick={() => openAdd("파트너십계약", selected)} style={addBtn(false)}>+ 항목</button>
                   <span style={{ fontSize: 11, color: "var(--muted)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
                     <span style={{ fontWeight: 700, color: green }}>{doneCount}</span>/{selectedRows.length} 완료
                   </span>
@@ -813,7 +820,7 @@ export default function Contracts() {
                   {selectedRows.length === 0 && (
                     <div style={{ padding: "30px 20px", fontSize: 12.5, color: "var(--muted)", textAlign: "center" }}>
                       아직 항목이 없습니다.
-                      <button onClick={() => openAdd("파트너십계약", selected)} style={{ marginLeft: 8, fontSize: 11, padding: "2px 8px", border: "1px dashed var(--line)", borderRadius: 4, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>+ 파트너십계약</button>
+                      <button onClick={() => openAdd("파트너십계약", selected)} style={{ ...addBtn(true), marginLeft: 8 }}>+ 파트너십계약</button>
                     </div>
                   )}
 
@@ -828,7 +835,7 @@ export default function Contracts() {
                     <div key={proj}>
                       {renderDivider(proj,
                         <button onClick={() => openAdd("지출기안", selected, proj === "(프로젝트 미지정)" ? "" : proj)}
-                          style={{ fontSize: 9, fontWeight: 600, padding: "1px 7px", border: "1px dashed var(--line)", borderRadius: 3, background: "transparent", color: "var(--muted)", cursor: "pointer", fontFamily: "inherit" }}>
+                          style={{ ...addBtn(false), padding: "3px 9px", fontSize: 11 }}>
                           + 지출기안
                         </button>
                       )}
