@@ -11,6 +11,9 @@ const PROJECT_LEVEL_KINDS = ["부속합의서", "지출기안"];
 const ALL_KINDS = ["파트너십계약", "NDA", "거래처등록", "부속합의서", "지출기안"];
 const STATUS_ORDER = ["요청전", "진행중", "완료"];
 
+// 순차 흐름 정렬 순서 (그룹 내에서 이 순서로 진행)
+const KIND_ORDER = { 파트너십계약: 1, NDA: 2, 거래처등록: 3, 부속합의서: 1, 지출기안: 2 };
+
 const amber = "#F5B400";
 const amberFaint = "rgba(245,180,0,0.10)";
 const green = "#16A34A";
@@ -75,11 +78,26 @@ const EMPTY_FORM = {
   BankName: "", BranchName: "", BankAddress: "", BeneficiaryName: "", AccountNumber: "",
 };
 
+// 항목 → 폼 값 객체
+function itemToForm(item) {
+  const f = { ...EMPTY_FORM };
+  Object.keys(EMPTY_FORM).forEach(k => {
+    f[k] = item[k] ?? EMPTY_FORM[k];
+    if (f[k] === null) f[k] = typeof EMPTY_FORM[k] === "boolean" ? false : "";
+  });
+  return f;
+}
+
 function dday(만료일) {
   if (!만료일) return null;
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const exp = new Date(만료일); exp.setHours(0, 0, 0, 0);
   return Math.round((exp - today) / 86400000);
+}
+
+// 그룹 내 순서 정렬 (지출기안 여러 건은 기존 순서 유지)
+function orderGroup(rows) {
+  return [...rows].sort((a, b) => (KIND_ORDER[a.구분] || 9) - (KIND_ORDER[b.구분] || 9));
 }
 
 function StatusBadge({ 상태 }) {
@@ -104,10 +122,15 @@ export default function Contracts() {
   const [newPartnerName, setNewPartnerName] = useState("");
   const [addingProject, setAddingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
-  const [docsPopover, setDocsPopover] = useState(null); // 서류 인라인 체크 팝오버 (item.id)
   const [guideModal, setGuideModal] = useState(null); // 가이드 모달 (구분명)
   const [sending, setSending] = useState(false);
   const [sentMsg, setSentMsg] = useState("");
+  const [creatingTpl, setCreatingTpl] = useState(false);
+  const [titleTouched, setTitleTouched] = useState(false);
+
+  // 아코디언 순차 흐름 상태
+  const [openId, setOpenId] = useState(null);  // null=자동(첫 미완료), ""=전체 접힘, id=해당 항목
+  const [draft, setDraft] = useState(null);    // 인라인 편집 중인 값
 
   const sendAlert = async () => {
     setSending(true); setSentMsg("");
@@ -118,8 +141,6 @@ export default function Contracts() {
     } catch { setSentMsg("발송 실패"); }
     finally { setSending(false); setTimeout(() => setSentMsg(""), 4000); }
   };
-  const [creatingTpl, setCreatingTpl] = useState(false);
-  const [titleTouched, setTitleTouched] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
@@ -267,12 +288,7 @@ export default function Contracts() {
   const openEdit = (item) => {
     setEditingId(item.id);
     setTitleTouched(true);
-    const f = { ...EMPTY_FORM };
-    Object.keys(EMPTY_FORM).forEach(k => {
-      f[k] = item[k] ?? EMPTY_FORM[k];
-      if (f[k] === null) f[k] = typeof EMPTY_FORM[k] === "boolean" ? false : "";
-    });
-    setForm(f);
+    setForm(itemToForm(item));
     setShowForm(true);
   };
 
@@ -298,8 +314,192 @@ export default function Contracts() {
 
   const input = { width: "100%", padding: "7px 10px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", boxSizing: "border-box" };
   const label = { fontSize: 11, fontWeight: 600, color: "var(--muted)", marginBottom: 4, display: "block" };
-  const isContract = CONTRACT_KINDS.includes(form.구분);
-  const isProjectLevel = PROJECT_LEVEL_KINDS.includes(form.구분);
+
+  // ── 선택 파트너의 순차 그룹 구성 ──
+  const selectedRows = selected ? (byPartner[selected] || []) : [];
+  const commonRows = orderGroup(selectedRows.filter(i => PARTNER_LEVEL_KINDS.includes(i.구분)));
+  const projectNames = [...new Set(selectedRows.filter(i => PROJECT_LEVEL_KINDS.includes(i.구분)).map(i => i.프로젝트 || "(프로젝트 미지정)"))].sort();
+  const projectRows = (proj) => orderGroup(selectedRows.filter(i => PROJECT_LEVEL_KINDS.includes(i.구분) && (i.프로젝트 || "(프로젝트 미지정)") === proj));
+  const doneCount = selectedRows.filter(i => i.상태 === "완료").length;
+
+  // 문서 순서대로 나열된 전체 스텝 (공통 → 프로젝트별)
+  const orderedSteps = useMemo(() => {
+    const list = [...commonRows];
+    projectNames.forEach(p => list.push(...projectRows(p)));
+    return list;
+  }, [selectedRows]); // eslint-disable-line
+
+  const firstIncompleteId = useMemo(() => (orderedSteps.find(i => i.상태 !== "완료") || {}).id || null, [orderedSteps]);
+  const effectiveOpen = openId === null ? firstIncompleteId : openId;
+
+  // 파트너 전환 시 아코디언 초기화 (자동 = 첫 미완료)
+  useEffect(() => { setOpenId(null); }, [selected]);
+
+  // 열린 스텝이 바뀌면 draft 로드
+  useEffect(() => {
+    if (!effectiveOpen) { setDraft(null); return; }
+    const item = items.find(i => i.id === effectiveOpen);
+    setDraft(item ? itemToForm(item) : null);
+  }, [effectiveOpen]); // eslint-disable-line
+
+  const openStep = (item) => setOpenId(item.id);
+  const collapseStep = () => setOpenId("");
+
+  // 그룹 내 다음 미완료 스텝
+  const nextIncompleteInGroup = (item) => {
+    const group = PARTNER_LEVEL_KINDS.includes(item.구분)
+      ? commonRows
+      : projectRows(item.프로젝트 || "(프로젝트 미지정)");
+    return group.find(r => r.id !== item.id && r.상태 !== "완료") || null;
+  };
+
+  // 인라인 저장 (complete=true → 완료 처리 후 다음 단계로)
+  const saveStep = async (item, complete) => {
+    if (!draft) return;
+    const fields = { ...draft, 제목: (draft.제목 || "").trim(), 파트너사: (draft.파트너사 || item.파트너사).trim(), 프로젝트: (draft.프로젝트 || "").trim() };
+    fields.상태 = complete ? "완료" : (item.상태 === "완료" ? "완료" : "진행중");
+    const next = complete ? nextIncompleteInGroup(item) : null;
+    await patch(item.id, fields);
+    if (complete) { if (next) openStep(next); else collapseStep(); }
+  };
+
+  // ── 공용 입력 필드 (모달 + 인라인 아코디언 공유) ──
+  // vals: 값 객체, upd: setState 형태 업데이터, identity: 파트너사/구분/제목 등 식별 필드 표시 여부
+  const renderFields = (vals, upd, identity) => {
+    const isContract = CONTRACT_KINDS.includes(vals.구분);
+    const isProjectLevel = PROJECT_LEVEL_KINDS.includes(vals.구분);
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {identity && (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div>
+                <span style={label}>파트너사 *</span>
+                <input style={input} list="partner-list" value={vals.파트너사}
+                  onChange={e => upd(f => ({ ...f, 파트너사: e.target.value }))} placeholder="선택 또는 신규 입력" />
+                <datalist id="partner-list">{allPartners.map(p => <option key={p} value={p} />)}</datalist>
+              </div>
+              <div>
+                <span style={label}>구분</span>
+                <select style={input} value={vals.구분} onChange={e => upd(f => ({ ...f, 구분: e.target.value }))}>
+                  {ALL_KINDS.map(t => <option key={t}>{t}</option>)}
+                </select>
+              </div>
+            </div>
+            {isProjectLevel && (
+              <div>
+                <span style={label}>프로젝트 *</span>
+                <input style={input} list="project-list" value={vals.프로젝트}
+                  onChange={e => upd(f => ({ ...f, 프로젝트: e.target.value }))} placeholder="예: Dice Battle" />
+                <datalist id="project-list">
+                  {[...new Set(items.filter(i => i.파트너사 === vals.파트너사 && i.프로젝트).map(i => i.프로젝트))].map(p => <option key={p} value={p} />)}
+                </datalist>
+              </div>
+            )}
+            <div>
+              <span style={label}>제목 *</span>
+              <input style={input} value={vals.제목} onChange={e => { setTitleTouched(true); upd(f => ({ ...f, 제목: e.target.value })); }} placeholder="파트너사·구분 선택 시 자동 완성" />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div>
+                <span style={label}>상태</span>
+                <select style={input} value={vals.상태} onChange={e => upd(f => ({ ...f, 상태: e.target.value }))}>
+                  {STATUS_ORDER.map(s => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+              {vals.구분 === "지출기안" && (
+                <div>
+                  <span style={label}>이터레이션 구분</span>
+                  <input style={input} value={vals.이터레이션구분} onChange={e => upd(f => ({ ...f, 이터레이션구분: e.target.value }))} placeholder="프로토타입 / 이터레이션1..." />
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {!identity && vals.구분 === "지출기안" && (
+          <div>
+            <span style={label}>이터레이션 구분</span>
+            <input style={input} value={vals.이터레이션구분} onChange={e => upd(f => ({ ...f, 이터레이션구분: e.target.value }))} placeholder="프로토타입 / 이터레이션1..." />
+          </div>
+        )}
+
+        {isContract && (<>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            {["체결일", "만료일"].map(field => (
+              <div key={field}>
+                <span style={label}>
+                  {field}
+                  {vals[field] && (
+                    <button onClick={() => upd(f => ({ ...f, [field]: "" }))}
+                      style={{ marginLeft: 6, fontSize: 10, padding: "0 5px", border: "1px solid var(--line)", borderRadius: 3, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>없음</button>
+                  )}
+                </span>
+                <input type="date" style={input} value={vals[field]} onChange={e => upd(f => ({ ...f, [field]: e.target.value }))} />
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "end" }}>
+            <div>
+              <span style={label}>계약서 URL</span>
+              <input style={input} value={vals.계약서URL} onChange={e => upd(f => ({ ...f, 계약서URL: e.target.value }))} placeholder="https:// (원드라이브)" />
+            </div>
+            <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", paddingBottom: 8 }} title="자동갱신 조항이 있는 계약">
+              <input type="checkbox" checked={vals.자동갱신} onChange={e => upd(f => ({ ...f, 자동갱신: e.target.checked }))} />
+              자동갱신
+            </label>
+          </div>
+        </>)}
+
+        {DOCS_BY_KIND[vals.구분] && (
+          <div>
+            <span style={label}>필요 서류</span>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", padding: "4px 0" }}>
+              {DOCS_BY_KIND[vals.구분].map(doc => (
+                <label key={doc} style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 5, cursor: "pointer" }}>
+                  <input type="checkbox" checked={vals[doc]} onChange={e => upd(f => ({ ...f, [doc]: e.target.checked }))} />
+                  {doc}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {vals.구분 === "거래처등록" && (
+          <div>
+            <span style={{ ...label, marginTop: 4 }}>거래처 정보</span>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {VENDOR_FIELDS.map(([field, hint]) => (
+                <input key={field} style={input} value={vals[field]} placeholder={field + (hint ? ` (${hint})` : "")}
+                  onChange={e => upd(f => ({ ...f, [field]: e.target.value }))} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {vals.구분 === "지출기안" && (<>
+          <div>
+            <span style={label}>기안 링크</span>
+            <input style={input} value={vals.기안링크} onChange={e => upd(f => ({ ...f, 기안링크: e.target.value }))} placeholder="https:// (네이버웍스 기안)" />
+          </div>
+          <div>
+            <span style={{ ...label, marginTop: 4 }}>해외 송금 정보</span>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {BANK_FIELDS.map(field => (
+                <input key={field} style={input} value={vals[field]} placeholder={field}
+                  onChange={e => upd(f => ({ ...f, [field]: e.target.value }))} />
+              ))}
+            </div>
+          </div>
+        </>)}
+
+        <div>
+          <span style={label}>메모</span>
+          <input style={input} value={vals.메모} onChange={e => upd(f => ({ ...f, 메모: e.target.value }))} placeholder="특이사항" />
+        </div>
+      </div>
+    );
+  };
 
   // ── 사이드바 파트너 항목 ──
   const renderSidebarPartner = (partner) => {
@@ -340,108 +540,104 @@ export default function Contracts() {
     );
   };
 
-  // ── 행 렌더러 (행정 탭 스타일) ──
-  const renderRow = (item, idx) => {
+  // ── 아코디언 스텝 렌더러 ──
+  // seq: 그룹 내 순번(1-base), reached: 이 스텝까지 순차 도달했는지(이전 단계 완료). 미도달=대기(흐림)
+  const renderStep = (item, seq, reached) => {
     const done = item.상태 === "완료";
     const inProgress = item.상태 === "진행중";
     const isBusy = !!busy[item.id];
+    const isOpen = effectiveOpen === item.id;
     const docs = DOCS_BY_KIND[item.구분] || [];
     const docsDone = docs.filter(d => item[d]).length;
-    const docsMissing = docs.filter(d => !item[d]);
     const d = dday(item.만료일);
+    const dim = !isOpen && !done && !reached; // 대기 단계
+
+    const accent = done ? green : inProgress ? amber : reached ? blue : "var(--line)";
+    const headBg = isOpen ? "var(--card)" : done ? greenFaint : "var(--card)";
 
     return (
       <div key={item.id} style={{
-        display: "grid", gridTemplateColumns: "40px 1fr 76px 66px 70px 150px 28px",
-        padding: "0 20px", height: 44, alignItems: "center", gap: 12,
-        opacity: isBusy ? 0.5 : 1, background: "var(--card)",
-        borderBottom: "1px solid var(--line)",
-      }}
-        onMouseEnter={e => { e.currentTarget.style.background = "#F8F9FA"; }}
-        onMouseLeave={e => { e.currentTarget.style.background = "var(--card)"; }}>
-        {/* 체크 서클 — 클릭 시 상태 순환 */}
-        <div onClick={() => !isBusy && cycleStatus(item)} title="클릭해서 상태 변경" style={{
-          width: 22, height: 22, borderRadius: "50%",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 10, fontWeight: 700, fontVariantNumeric: "tabular-nums",
-          cursor: isBusy ? "wait" : "pointer",
-          border: `1.5px solid ${done ? green : inProgress ? amber : "var(--line)"}`,
-          background: done ? greenFaint : inProgress ? amberFaint : "transparent",
-          color: done ? green : inProgress ? amber : "var(--muted)",
-          transition: "all .15s", flexShrink: 0,
-        }}>{done ? "✓" : idx + 1}</div>
+        border: `${isOpen ? 2 : 1}px solid ${isOpen ? blue : done ? "rgba(22,163,74,.3)" : "var(--line)"}`,
+        borderRadius: 8, marginBottom: 8, overflow: "hidden",
+        background: "var(--card)", opacity: dim ? 0.6 : (isBusy ? 0.5 : 1),
+        transition: "opacity .15s",
+      }}>
+        {/* 헤더 */}
+        <div onClick={() => (isOpen ? collapseStep() : openStep(item))}
+          style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", cursor: "pointer", background: headBg, borderBottom: isOpen ? "1px solid var(--line)" : "none" }}>
+          {/* 순번/완료 서클 — 클릭 시 상태 순환 */}
+          <div onClick={e => { e.stopPropagation(); if (!isBusy) cycleStatus(item); }} title="클릭해서 상태 변경"
+            style={{
+              width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 10, fontWeight: 700, fontVariantNumeric: "tabular-nums",
+              cursor: isBusy ? "wait" : "pointer",
+              border: `1.5px solid ${accent === "var(--line)" ? "var(--line)" : accent}`,
+              background: done ? greenFaint : inProgress ? amberFaint : "transparent",
+              color: done ? green : inProgress ? amber : "var(--muted)",
+            }}>{done ? "✓" : seq}</div>
 
-        {/* 제목 */}
-        <div style={{ minWidth: 0, overflow: "hidden" }}>
-          <span onClick={() => openEdit(item)} title="클릭하여 상세 수정" style={{
-            fontSize: 13, fontWeight: done ? 400 : 500, cursor: "pointer",
-            color: done ? "var(--muted)" : "var(--text)",
-            textDecoration: done ? "line-through" : "none",
-            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block",
-          }}>{item.제목}</span>
-          {(item.메모 || (d !== null && d >= 0 && d <= 30)) && !done && (
-            <span style={{ fontSize: 9, letterSpacing: ".03em", color: d !== null && d <= 30 && d >= 0 ? (d <= 7 ? red : "#C2410C") : "var(--muted)", fontWeight: 600, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {d !== null && d >= 0 && d <= 30 ? `만료 D-${d}${item.메모 ? " · " : ""}` : ""}{item.메모}
-            </span>
+          {/* 제목 + 구분 */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <span style={{
+                fontSize: 13, fontWeight: done ? 400 : 500,
+                color: done ? "var(--muted)" : "var(--text)",
+                textDecoration: done ? "line-through" : "none",
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              }}>{item.제목}</span>
+              {KIND_GUIDE[item.구분] && (
+                <button onClick={e => { e.stopPropagation(); setGuideModal(item.구분); }} title="처리 가이드"
+                  style={{ width: 15, height: 15, borderRadius: "50%", border: "1px solid var(--line)", background: "transparent", color: "var(--muted)", fontSize: 9, fontWeight: 700, cursor: "pointer", lineHeight: 1, padding: 0, flexShrink: 0 }}>?</button>
+              )}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
+              <span style={{ fontSize: 10.5, color: "var(--muted)" }}>{item.구분}</span>
+              {docs.length > 0 && <span style={{ fontSize: 10, color: docsDone < docs.length && inProgress ? "#C2410C" : "var(--muted)", fontWeight: docsDone < docs.length && inProgress ? 700 : 400 }}>서류 {docsDone}/{docs.length}</span>}
+              {d !== null && d >= 0 && d <= 30 && !done && <span style={{ fontSize: 10, fontWeight: 700, color: d <= 7 ? red : "#C2410C" }}>만료 D-{d}</span>}
+              {item.메모 && !done && <span style={{ fontSize: 10, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.메모}</span>}
+            </div>
+          </div>
+
+          {/* 우측 상태/링크/펼침 */}
+          {isOpen ? null : <StatusBadge 상태={item.상태 || "요청전"} />}
+          {!isOpen && item.계약서URL && <a href={item.계약서URL} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, background: blueFaint, color: blue, border: "1px solid rgba(0,120,212,.25)", textDecoration: "none", whiteSpace: "nowrap" }}>계약서 →</a>}
+          {!isOpen && item.기안링크 && <a href={item.기안링크} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, background: greenFaint, color: green, border: "1px solid rgba(22,163,74,.25)", textDecoration: "none", whiteSpace: "nowrap" }}>기안 →</a>}
+          {done && !isOpen && (
+            <button onClick={e => { e.stopPropagation(); openEdit(item); }} title="수정" style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", padding: 2 }}>✎</button>
           )}
+          <span style={{ fontSize: 12, color: "var(--muted)", flexShrink: 0, transform: isOpen ? "rotate(180deg)" : "none", transition: "transform .15s" }}>▾</span>
         </div>
 
-        {/* 구분 + 가이드 */}
-        <span style={{ display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
-          <span style={{ fontSize: 10.5, color: "var(--muted)" }}>{item.구분}</span>
-          {KIND_GUIDE[item.구분] && (
-            <button onClick={() => setGuideModal(item.구분)} title="처리 가이드"
-              style={{ width: 15, height: 15, borderRadius: "50%", border: "1px solid var(--line)", background: "transparent", color: "var(--muted)", fontSize: 9, fontWeight: 700, cursor: "pointer", lineHeight: 1, padding: 0, flexShrink: 0 }}>?</button>
-          )}
-        </span>
-
-        {/* 상태 */}
-        <StatusBadge 상태={item.상태 || "요청전"} />
-
-        {/* 서류 — 클릭 시 인라인 체크 팝오버 */}
-        {docs.length > 0 ? (
-          <span style={{ position: "relative" }}>
-            <button onClick={() => setDocsPopover(p => p === item.id ? null : item.id)}
-              title={docsMissing.length ? `미수령: ${docsMissing.join(", ")}` : "서류 완비"}
-              style={{ fontSize: 10.5, fontVariantNumeric: "tabular-nums", color: docsMissing.length && inProgress ? "#C2410C" : "var(--muted)", fontWeight: docsMissing.length && inProgress ? 700 : 400, whiteSpace: "nowrap", background: "transparent", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit", borderBottom: "1px dashed var(--line)" }}>
-              서류 {docsDone}/{docs.length}
-            </button>
-            {docsPopover === item.id && (
-              <>
-                <div onClick={() => setDocsPopover(null)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
-                <div style={{ position: "absolute", top: "150%", left: 0, zIndex: 41, background: "var(--card)", border: "1px solid var(--line)", borderRadius: 7, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", padding: 8, minWidth: 150 }}>
-                  {docs.map(doc => (
-                    <label key={doc} style={{ display: "flex", alignItems: "center", gap: 7, padding: "4px 6px", fontSize: 12, cursor: "pointer", borderRadius: 4, color: "var(--text)" }}>
-                      <input type="checkbox" checked={!!item[doc]} onChange={() => patch(item.id, { [doc]: !item[doc] })} style={{ accentColor: green, cursor: "pointer" }} />
-                      {doc}
-                    </label>
-                  ))}
-                </div>
-              </>
+        {/* 펼침 본문 — 인라인 편집 */}
+        {isOpen && draft && (
+          <div style={{ padding: "14px 16px" }}>
+            {dim && (
+              <div style={{ fontSize: 11, color: "#C2410C", background: "rgba(245,180,0,.08)", border: "1px solid rgba(245,180,0,.25)", borderRadius: 5, padding: "6px 10px", marginBottom: 12 }}>
+                이전 단계가 아직 완료되지 않았어요. 순서대로 진행을 권장하지만, 필요하면 지금 처리해도 됩니다.
+              </div>
             )}
-          </span>
-        ) : <span />}
-
-        {/* 링크 */}
-        <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
-          {item.계약서URL ? (
-            <a href={item.계약서URL} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, background: blueFaint, color: blue, border: "1px solid rgba(0,120,212,.25)", textDecoration: "none", whiteSpace: "nowrap" }}>계약서 →</a>
-          ) : CONTRACT_KINDS.includes(item.구분) ? (
-            <button onClick={() => openEdit(item)} style={{ fontSize: 10, fontWeight: 500, padding: "3px 7px", borderRadius: 3, border: "1px dashed var(--line)", background: "transparent", color: "var(--muted)", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>+ 계약서</button>
-          ) : null}
-          {item.기안링크 ? (
-            <a href={item.기안링크} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, background: greenFaint, color: green, border: "1px solid rgba(22,163,74,.25)", textDecoration: "none", whiteSpace: "nowrap" }}>기안 →</a>
-          ) : item.구분 === "지출기안" ? (
-            <button onClick={() => openEdit(item)} style={{ fontSize: 10, fontWeight: 500, padding: "3px 7px", borderRadius: 3, border: "1px dashed var(--line)", background: "transparent", color: "var(--muted)", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>+ 기안</button>
-          ) : null}
-        </div>
-
-        {/* 삭제 */}
-        {deleteConfirm === item.id ? (
-          <button onClick={() => remove(item)} style={{ fontSize: 10, fontWeight: 700, color: "#fff", background: red, border: "none", borderRadius: 3, padding: "2px 5px", cursor: "pointer" }}>확인</button>
-        ) : (
-          <button onClick={() => { setDeleteConfirm(item.id); setTimeout(() => setDeleteConfirm(c => c === item.id ? null : c), 3000); }}
-            style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", opacity: 0.35, fontFamily: "inherit" }} title="삭제">✕</button>
+            {renderFields(draft, setDraft, false)}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16 }}>
+              <button onClick={() => openEdit(item)} style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", fontFamily: "inherit", marginRight: "auto" }}>전체 편집 창 ↗</button>
+              <button onClick={collapseStep} disabled={isBusy}
+                style={{ padding: "8px 14px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 6, background: "var(--card)", color: "var(--text)", cursor: "pointer", fontFamily: "inherit" }}>접기</button>
+              {!done && (
+                <button onClick={() => saveStep(item, false)} disabled={isBusy}
+                  style={{ padding: "8px 14px", fontSize: 12, fontWeight: 600, border: `1px solid ${amber}`, borderRadius: 6, background: amberFaint, color: "#B45309", cursor: "pointer", fontFamily: "inherit" }}>저장 (진행중)</button>
+              )}
+              <button onClick={() => saveStep(item, !done)} disabled={isBusy}
+                style={{ padding: "8px 16px", fontSize: 12, fontWeight: 600, border: "none", borderRadius: 6, background: done ? green : amber, color: done ? "#fff" : "#1a1a1a", cursor: "pointer", fontFamily: "inherit" }}>
+                {done ? "저장" : "완료하고 다음 단계 →"}
+              </button>
+              {deleteConfirm === item.id ? (
+                <button onClick={() => remove(item)} style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: red, border: "none", borderRadius: 4, padding: "6px 9px", cursor: "pointer" }}>삭제 확인</button>
+              ) : (
+                <button onClick={() => { setDeleteConfirm(item.id); setTimeout(() => setDeleteConfirm(c => c === item.id ? null : c), 3000); }}
+                  style={{ fontSize: 12, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", opacity: 0.4, fontFamily: "inherit" }} title="삭제">✕</button>
+              )}
+            </div>
+          </div>
         )}
       </div>
     );
@@ -449,18 +645,22 @@ export default function Contracts() {
 
   // 그룹 디바이더 (프로젝트 헤더)
   const renderDivider = (text, right) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 20px", background: "#F8F9FA", borderTop: "1px solid var(--line)", borderBottom: "1px solid var(--line)" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 4px 6px" }}>
       <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--muted)" }}>{text}</span>
       <div style={{ flex: 1, height: 1, background: "var(--line)" }} />
       {right}
     </div>
   );
 
-  const selectedRows = selected ? (byPartner[selected] || []) : [];
-  const commonRows = selectedRows.filter(i => PARTNER_LEVEL_KINDS.includes(i.구분));
-  const projectNames = [...new Set(selectedRows.filter(i => PROJECT_LEVEL_KINDS.includes(i.구분)).map(i => i.프로젝트 || "(프로젝트 미지정)"))].sort();
-  const sortByDone = list => [...list.filter(i => i.상태 !== "완료"), ...list.filter(i => i.상태 === "완료")];
-  const doneCount = selectedRows.filter(i => i.상태 === "완료").length;
+  // 그룹을 순차 렌더 (앞 단계 완료 여부로 reached 계산)
+  const renderGroup = (rows) => {
+    let reached = true; // 첫 단계는 항상 도달
+    return rows.map((item, idx) => {
+      const el = renderStep(item, idx + 1, reached);
+      if (item.상태 !== "완료") reached = false; // 미완료 만나면 이후는 대기
+      return el;
+    });
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: 500, border: "1px solid var(--line)", borderRadius: 8, overflow: "hidden", background: "var(--card)" }}>
@@ -518,7 +718,7 @@ export default function Contracts() {
           데이터 로드 실패: {error} <button onClick={load} style={{ marginLeft: 8 }}>재시도</button>
         </div>
       ) : (
-        <div style={{ display: "flex", flex: 1, overflow: "hidden", height: 560, maxHeight: "70vh" }}>
+        <div style={{ display: "flex", flex: 1, overflow: "hidden", height: 620, maxHeight: "74vh" }}>
 
           {/* ── Left nav ── */}
           <div style={{ width: 210, flexShrink: 0, borderRight: "1px solid var(--line)", display: "flex", flexDirection: "column", background: "var(--card)" }}>
@@ -608,15 +808,8 @@ export default function Contracts() {
                   </span>
                 </div>
 
-                {/* Column headers */}
-                <div style={{ display: "grid", gridTemplateColumns: "40px 1fr 76px 66px 70px 150px 28px", padding: "0 20px", height: 32, alignItems: "center", borderBottom: "1px solid var(--line)", background: "#F8F9FA", gap: 12 }}>
-                  {["#", "항목", "구분", "상태", "서류", "링크", ""].map((h, i) => (
-                    <span key={i} style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--muted)" }}>{h}</span>
-                  ))}
-                </div>
-
-                {/* Rows */}
-                <div className="slim-scroll" style={{ flex: 1, overflowY: "auto" }}>
+                {/* 순차 아코디언 */}
+                <div className="slim-scroll" style={{ flex: 1, overflowY: "auto", padding: "8px 20px 20px" }}>
                   {selectedRows.length === 0 && (
                     <div style={{ padding: "30px 20px", fontSize: 12.5, color: "var(--muted)", textAlign: "center" }}>
                       아직 항목이 없습니다.
@@ -627,24 +820,21 @@ export default function Contracts() {
                   {commonRows.length > 0 && (
                     <>
                       {renderDivider("파트너 공통")}
-                      {sortByDone(commonRows).map((item, idx) => renderRow(item, idx))}
+                      {renderGroup(commonRows)}
                     </>
                   )}
 
-                  {projectNames.map(proj => {
-                    const list = selectedRows.filter(i => PROJECT_LEVEL_KINDS.includes(i.구분) && (i.프로젝트 || "(프로젝트 미지정)") === proj);
-                    return (
-                      <div key={proj}>
-                        {renderDivider(proj,
-                          <button onClick={() => openAdd("지출기안", selected, proj === "(프로젝트 미지정)" ? "" : proj)}
-                            style={{ fontSize: 9, fontWeight: 600, padding: "1px 7px", border: "1px dashed var(--line)", borderRadius: 3, background: "transparent", color: "var(--muted)", cursor: "pointer", fontFamily: "inherit" }}>
-                            + 지출기안
-                          </button>
-                        )}
-                        {sortByDone(list).map((item, idx) => renderRow(item, idx))}
-                      </div>
-                    );
-                  })}
+                  {projectNames.map(proj => (
+                    <div key={proj}>
+                      {renderDivider(proj,
+                        <button onClick={() => openAdd("지출기안", selected, proj === "(프로젝트 미지정)" ? "" : proj)}
+                          style={{ fontSize: 9, fontWeight: 600, padding: "1px 7px", border: "1px dashed var(--line)", borderRadius: 3, background: "transparent", color: "var(--muted)", cursor: "pointer", fontFamily: "inherit" }}>
+                          + 지출기안
+                        </button>
+                      )}
+                      {renderGroup(projectRows(proj))}
+                    </div>
+                  ))}
                 </div>
               </>
             )}
@@ -679,7 +869,7 @@ export default function Contracts() {
         </div>
       )}
 
-      {/* 추가/수정 모달 */}
+      {/* 추가/수정 모달 (신규 추가 · 완료 항목 재편집용) */}
       {showForm && (
         <div onClick={() => !saving && setShowForm(false)}
           style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", overflowY: "auto", padding: "30px 0" }}>
@@ -688,129 +878,12 @@ export default function Contracts() {
             <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>
               {editingId ? "항목 수정" : "항목 추가"}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div>
-                  <span style={label}>파트너사 *</span>
-                  <input style={input} list="partner-list" value={form.파트너사}
-                    onChange={e => setForm(f => ({ ...f, 파트너사: e.target.value }))} placeholder="선택 또는 신규 입력" />
-                  <datalist id="partner-list">{allPartners.map(p => <option key={p} value={p} />)}</datalist>
-                </div>
-                <div>
-                  <span style={label}>구분</span>
-                  <select style={input} value={form.구분} onChange={e => setForm(f => ({ ...f, 구분: e.target.value }))}>
-                    {ALL_KINDS.map(t => <option key={t}>{t}</option>)}
-                  </select>
-                </div>
-              </div>
-              {isProjectLevel && (
-                <div>
-                  <span style={label}>프로젝트 *</span>
-                  <input style={input} list="project-list" value={form.프로젝트}
-                    onChange={e => setForm(f => ({ ...f, 프로젝트: e.target.value }))} placeholder="예: Dice Battle" />
-                  <datalist id="project-list">
-                    {[...new Set(items.filter(i => i.파트너사 === form.파트너사 && i.프로젝트).map(i => i.프로젝트))].map(p => <option key={p} value={p} />)}
-                  </datalist>
-                </div>
-              )}
-              <div>
-                <span style={label}>제목 *</span>
-                <input style={input} value={form.제목} onChange={e => { setTitleTouched(true); setForm(f => ({ ...f, 제목: e.target.value })); }} placeholder="파트너사·구분 선택 시 자동 완성" />
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div>
-                  <span style={label}>상태</span>
-                  <select style={input} value={form.상태} onChange={e => setForm(f => ({ ...f, 상태: e.target.value }))}>
-                    {STATUS_ORDER.map(s => <option key={s}>{s}</option>)}
-                  </select>
-                </div>
-                {form.구분 === "지출기안" && (
-                  <div>
-                    <span style={label}>이터레이션 구분</span>
-                    <input style={input} value={form.이터레이션구분} onChange={e => setForm(f => ({ ...f, 이터레이션구분: e.target.value }))} placeholder="프로토타입 / 이터레이션1..." />
-                  </div>
-                )}
-              </div>
-
-              {isContract && (<>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  {["체결일", "만료일"].map(field => (
-                    <div key={field}>
-                      <span style={label}>
-                        {field}
-                        {form[field] && (
-                          <button onClick={() => setForm(f => ({ ...f, [field]: "" }))}
-                            style={{ marginLeft: 6, fontSize: 10, padding: "0 5px", border: "1px solid var(--line)", borderRadius: 3, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>없음</button>
-                        )}
-                      </span>
-                      <input type="date" style={input} value={form[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} />
-                    </div>
-                  ))}
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "end" }}>
-                  <div>
-                    <span style={label}>계약서 URL</span>
-                    <input style={input} value={form.계약서URL} onChange={e => setForm(f => ({ ...f, 계약서URL: e.target.value }))} placeholder="https:// (원드라이브)" />
-                  </div>
-                  <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", paddingBottom: 8 }} title="자동갱신 조항이 있는 계약">
-                    <input type="checkbox" checked={form.자동갱신} onChange={e => setForm(f => ({ ...f, 자동갱신: e.target.checked }))} />
-                    자동갱신
-                  </label>
-                </div>
-              </>)}
-
-              {DOCS_BY_KIND[form.구분] && (
-                <div>
-                  <span style={label}>필요 서류</span>
-                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap", padding: "4px 0" }}>
-                    {DOCS_BY_KIND[form.구분].map(doc => (
-                      <label key={doc} style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 5, cursor: "pointer" }}>
-                        <input type="checkbox" checked={form[doc]} onChange={e => setForm(f => ({ ...f, [doc]: e.target.checked }))} />
-                        {doc}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {form.구분 === "거래처등록" && (
-                <div>
-                  <span style={{ ...label, marginTop: 4 }}>거래처 정보</span>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                    {VENDOR_FIELDS.map(([field, hint]) => (
-                      <input key={field} style={input} value={form[field]} placeholder={field + (hint ? ` (${hint})` : "")}
-                        onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {form.구분 === "지출기안" && (<>
-                <div>
-                  <span style={label}>기안 링크</span>
-                  <input style={input} value={form.기안링크} onChange={e => setForm(f => ({ ...f, 기안링크: e.target.value }))} placeholder="https:// (네이버웍스 기안)" />
-                </div>
-                <div>
-                  <span style={{ ...label, marginTop: 4 }}>해외 송금 정보</span>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                    {BANK_FIELDS.map(field => (
-                      <input key={field} style={input} value={form[field]} placeholder={field}
-                        onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} />
-                    ))}
-                  </div>
-                </div>
-              </>)}
-
-              <div>
-                <span style={label}>메모</span>
-                <input style={input} value={form.메모} onChange={e => setForm(f => ({ ...f, 메모: e.target.value }))} placeholder="특이사항" />
-              </div>
-            </div>
+            {renderFields(form, setForm, true)}
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 18 }}>
               <button onClick={() => setShowForm(false)} disabled={saving}
                 style={{ padding: "8px 16px", fontSize: 12.5, border: "1px solid var(--line)", borderRadius: 6, background: "var(--card)", color: "var(--text)", cursor: "pointer" }}>취소</button>
-              <button onClick={submit} disabled={saving || !form.제목.trim() || !form.파트너사.trim() || (isProjectLevel && !form.프로젝트.trim())}
-                style={{ padding: "8px 18px", fontSize: 12.5, fontWeight: 600, border: "none", borderRadius: 6, background: amber, color: "#1a1a1a", cursor: "pointer", opacity: saving || !form.제목.trim() || !form.파트너사.trim() || (isProjectLevel && !form.프로젝트.trim()) ? 0.5 : 1 }}>
+              <button onClick={submit} disabled={saving || !form.제목.trim() || !form.파트너사.trim() || (PROJECT_LEVEL_KINDS.includes(form.구분) && !form.프로젝트.trim())}
+                style={{ padding: "8px 18px", fontSize: 12.5, fontWeight: 600, border: "none", borderRadius: 6, background: amber, color: "#1a1a1a", cursor: "pointer", opacity: saving || !form.제목.trim() || !form.파트너사.trim() || (PROJECT_LEVEL_KINDS.includes(form.구분) && !form.프로젝트.trim()) ? 0.5 : 1 }}>
                 {saving ? "저장 중..." : "저장"}
               </button>
             </div>
