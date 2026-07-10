@@ -24,6 +24,38 @@ const DOCS_BY_KIND = {
   지출기안: ["법인등록증", "법인통장", "부속합의서", "스펙내용", "인보이스"],
 };
 
+// 항목별 가이드 (무엇을 어떻게)
+const KIND_GUIDE = {
+  파트너십계약: {
+    desc: "BD에게 파트너십 계약 진행을 요청하고, 체결까지 상태를 추적합니다.",
+    steps: ["BD에게 파트너십 계약 요청", "법무/경영지원 검토 및 서명", "계약서 최종본을 원드라이브에 업로드 후 계약서 URL 등록"],
+  },
+  NDA: {
+    desc: "비밀유지계약(NDA)을 체결합니다.",
+    steps: ["NDA 초안 확보 및 검토", "양사 서명", "계약서 URL 등록"],
+  },
+  거래처등록: {
+    desc: "경영지원팀에 거래처(파트너사) 등록을 요청합니다.",
+    steps: [
+      "필요 문서 확보: 법인등록증 · 법인통장(법인명=예금주명 동일)",
+      "필요 정보 확보: 거래처 식별번호·거래처명(법인등록증 기재) / 국가 / 주소·도시·우편번호 / 대표·담당자·Email",
+      "파트너십 계약 URL과 함께 경영지원팀에 등록 요청",
+    ],
+  },
+  부속합의서: {
+    desc: "기존 파트너십 계약에 프로젝트별 부속합의서를 추가합니다.",
+    steps: ["기존 계약 조건 기반 부속합의서 초안 작성", "법무/경영지원 검토", "최종본 원드라이브 업로드 후 계약서 URL 등록"],
+  },
+  지출기안: {
+    desc: "네이버웍스에서 프로토타입/이터레이션 비용 지급 기안을 상신합니다.",
+    steps: [
+      "필요 문서 확보: 법인등록증 · 법인통장 · 프로젝트 부속합의서 · 스펙 내용 · 인보이스",
+      "해외 송금 정보 확보: Bank Name / Branch Name / Bank Address / Beneficiary Name / Account Number",
+      "기안 상신 후 결재 완료 시 기안 링크 등록",
+    ],
+  },
+};
+
 const VENDOR_FIELDS = [
   ["거래처식별번호", "법인등록증 내 기재"],
   ["거래처명", "법인등록증 내 기재"],
@@ -72,6 +104,8 @@ export default function Contracts() {
   const [newPartnerName, setNewPartnerName] = useState("");
   const [addingProject, setAddingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
+  const [docsPopover, setDocsPopover] = useState(null); // 서류 인라인 체크 팝오버 (item.id)
+  const [guideModal, setGuideModal] = useState(null); // 가이드 모달 (구분명)
   const [creatingTpl, setCreatingTpl] = useState(false);
   const [titleTouched, setTitleTouched] = useState(false);
 
@@ -340,17 +374,39 @@ export default function Contracts() {
           )}
         </div>
 
-        {/* 구분 */}
-        <span style={{ fontSize: 10.5, color: "var(--muted)", whiteSpace: "nowrap" }}>{item.구분}</span>
+        {/* 구분 + 가이드 */}
+        <span style={{ display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
+          <span style={{ fontSize: 10.5, color: "var(--muted)" }}>{item.구분}</span>
+          {KIND_GUIDE[item.구분] && (
+            <button onClick={() => setGuideModal(item.구분)} title="처리 가이드"
+              style={{ width: 15, height: 15, borderRadius: "50%", border: "1px solid var(--line)", background: "transparent", color: "var(--muted)", fontSize: 9, fontWeight: 700, cursor: "pointer", lineHeight: 1, padding: 0, flexShrink: 0 }}>?</button>
+          )}
+        </span>
 
         {/* 상태 */}
         <StatusBadge 상태={item.상태 || "요청전"} />
 
-        {/* 서류 */}
+        {/* 서류 — 클릭 시 인라인 체크 팝오버 */}
         {docs.length > 0 ? (
-          <span title={docsMissing.length ? `미수령: ${docsMissing.join(", ")}` : "서류 완비"}
-            style={{ fontSize: 10.5, fontVariantNumeric: "tabular-nums", color: docsMissing.length && inProgress ? "#C2410C" : "var(--muted)", fontWeight: docsMissing.length && inProgress ? 700 : 400, whiteSpace: "nowrap" }}>
-            서류 {docsDone}/{docs.length}
+          <span style={{ position: "relative" }}>
+            <button onClick={() => setDocsPopover(p => p === item.id ? null : item.id)}
+              title={docsMissing.length ? `미수령: ${docsMissing.join(", ")}` : "서류 완비"}
+              style={{ fontSize: 10.5, fontVariantNumeric: "tabular-nums", color: docsMissing.length && inProgress ? "#C2410C" : "var(--muted)", fontWeight: docsMissing.length && inProgress ? 700 : 400, whiteSpace: "nowrap", background: "transparent", border: "none", cursor: "pointer", padding: 0, fontFamily: "inherit", borderBottom: "1px dashed var(--line)" }}>
+              서류 {docsDone}/{docs.length}
+            </button>
+            {docsPopover === item.id && (
+              <>
+                <div onClick={() => setDocsPopover(null)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
+                <div style={{ position: "absolute", top: "150%", left: 0, zIndex: 41, background: "var(--card)", border: "1px solid var(--line)", borderRadius: 7, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", padding: 8, minWidth: 150 }}>
+                  {docs.map(doc => (
+                    <label key={doc} style={{ display: "flex", alignItems: "center", gap: 7, padding: "4px 6px", fontSize: 12, cursor: "pointer", borderRadius: 4, color: "var(--text)" }}>
+                      <input type="checkbox" checked={!!item[doc]} onChange={() => patch(item.id, { [doc]: !item[doc] })} style={{ accentColor: green, cursor: "pointer" }} />
+                      {doc}
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
           </span>
         ) : <span />}
 
@@ -575,6 +631,33 @@ export default function Contracts() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 가이드 모달 */}
+      {guideModal && KIND_GUIDE[guideModal] && (
+        <div onClick={() => setGuideModal(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 110, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ width: 400, maxWidth: "92vw", background: "var(--card)", borderRadius: 10, padding: 22, boxShadow: "0 8px 30px rgba(0,0,0,0.18)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 15, fontWeight: 700 }}>{guideModal}</span>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".05em", color: amber, textTransform: "uppercase" }}>처리 가이드</span>
+            </div>
+            <p style={{ fontSize: 12.5, color: "var(--muted)", margin: "0 0 16px", lineHeight: 1.5 }}>{KIND_GUIDE[guideModal].desc}</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {KIND_GUIDE[guideModal].steps.map((step, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                  <span style={{ flexShrink: 0, width: 20, height: 20, borderRadius: "50%", background: amberFaint, color: "#B45309", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{i + 1}</span>
+                  <span style={{ fontSize: 12.5, color: "var(--text)", lineHeight: 1.5, paddingTop: 1 }}>{step}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 18 }}>
+              <button onClick={() => setGuideModal(null)}
+                style={{ padding: "7px 16px", fontSize: 12.5, fontWeight: 600, border: "1px solid var(--line)", borderRadius: 6, background: "var(--card)", color: "var(--text)", cursor: "pointer" }}>닫기</button>
+            </div>
           </div>
         </div>
       )}
