@@ -15,8 +15,8 @@ import {
   deltaText,
 } from "./utils";
 import LtvCalculator from "./components/LtvCalculator";
-import ProjectDashboard from "./components/ProjectDashboard";
-import GddLibrary from "./components/GddLibrary";
+// import ProjectDashboard from "./components/ProjectDashboard"; // 임시 비활성화
+// import GddLibrary from "./components/GddLibrary"; // 임시 비활성화
 import Contracts from "./components/Contracts";
 
 const SHEET_ID = "1pBJWVce2CgrPBlFMGbS2yCp6tBQnNn4gkEHz7jG3LZk";
@@ -283,12 +283,14 @@ export default function App() {
         <button className={`tab-btn ${activeTab === "ltv" ? "active" : ""}`} onClick={() => setActiveTab("ltv")}>
           💡 LTV Calculator
         </button>
+        {/* 임시 비활성화
         <button className={`tab-btn ${activeTab === "projects" ? "active" : ""}`} onClick={() => setActiveTab("projects")}>
           🗂 프로젝트 현황 <span style={{ fontSize: "10px", opacity: 0.6 }}>(테스트중)</span>
         </button>
         <button className={`tab-btn ${activeTab === "gdd" ? "active" : ""}`} onClick={() => setActiveTab("gdd")}>
           📚 GDD 라이브러리 <span style={{ fontSize: "10px", opacity: 0.6 }}>(테스트중)</span>
         </button>
+        */}
         <button className={`tab-btn ${activeTab === "contracts" ? "active" : ""}`} onClick={() => setActiveTab("contracts")}>
           📝 계약 관리 <span style={{ fontSize: "10px", opacity: 0.6 }}>(테스트중)</span>
         </button>
@@ -307,6 +309,7 @@ export default function App() {
         </section>
       )}
 
+      {/* 임시 비활성화 — 프로젝트 현황 / GDD 라이브러리
       {activeTab === "projects" && (
         <section className="section-block">
           <div className="section-header">
@@ -328,6 +331,7 @@ export default function App() {
           <GddLibrary />
         </section>
       )}
+      */}
 
       {activeTab === "contracts" && (
         <section className="section-block">
