@@ -183,7 +183,7 @@ export default function Contracts() {
     const out = [];
     items.forEach(i => {
       const d = dday(i.만료일);
-      if (CONTRACT_KINDS.includes(i.구분) && d !== null && d >= 0 && d <= 30) out.push(`${i.제목} 만료 D-${d}`);
+      if (CONTRACT_KINDS.includes(i.구분) && !i.자동갱신 && d !== null && d >= 0 && d <= 30) out.push(`${i.제목} 만료 D-${d}`);
     });
     return out;
   }, [items]);
@@ -525,7 +525,7 @@ export default function Contracts() {
     const warn = rows.some(i => {
       const d = dday(i.만료일);
       const docsMissing = (DOCS_BY_KIND[i.구분] || []).some(doc => !i[doc]) && i.상태 === "진행중";
-      return docsMissing || (CONTRACT_KINDS.includes(i.구분) && d !== null && d >= 0 && d <= 30);
+      return docsMissing || (CONTRACT_KINDS.includes(i.구분) && !i.자동갱신 && d !== null && d >= 0 && d <= 30);
     });
     return (
       <div key={partner} style={{ borderBottom: "1px solid var(--line)" }}>
@@ -608,7 +608,11 @@ export default function Contracts() {
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
               <span style={{ fontSize: 10.5, color: "var(--muted)" }}>{item.구분}</span>
               {docs.length > 0 && <span style={{ fontSize: 10, color: docsDone < docs.length && inProgress ? "#C2410C" : "var(--muted)", fontWeight: docsDone < docs.length && inProgress ? 700 : 400 }}>서류 {docsDone}/{docs.length}</span>}
-              {d !== null && d >= 0 && d <= 30 && !done && <span style={{ fontSize: 10, fontWeight: 700, color: d <= 7 ? red : "#C2410C" }}>만료 D-{d}</span>}
+              {d !== null && d >= 0 && d <= 30 && !done && (
+                item.자동갱신
+                  ? <span style={{ fontSize: 10, fontWeight: 600, color: "var(--muted)" }} title="자동갱신 조항 — 통지 없으면 자동 연장">↻ D-{d} 자동갱신</span>
+                  : <span style={{ fontSize: 10, fontWeight: 700, color: d <= 7 ? red : "#C2410C" }}>만료 D-{d}</span>
+              )}
               {item.메모 && !done && <span style={{ fontSize: 10, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.메모}</span>}
             </div>
           </div>

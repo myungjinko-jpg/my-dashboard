@@ -55,6 +55,7 @@ export default async function handler(req, res) {
         상태: p["상태"]?.select?.name || "요청전",
         파트너사: p["파트너사"]?.select?.name || txt("파트너사"),
         만료일: p["만료일"]?.date?.start || null,
+        자동갱신: p["자동갱신"]?.checkbox || false,
         법인등록증: p["법인등록증"]?.checkbox || false,
         법인통장: p["법인통장"]?.checkbox || false,
         부속합의서: p["부속합의서"]?.checkbox || false,
@@ -65,7 +66,7 @@ export default async function handler(req, res) {
 
     // 1) 만료 임박 (D-30 이내, 지난 것 제외)
     const expiring = items
-      .filter(i => CONTRACT_KINDS.includes(i.구분))
+      .filter(i => CONTRACT_KINDS.includes(i.구분) && !i.자동갱신)
       .map(i => ({ ...i, d: dday(i.만료일) }))
       .filter(i => i.d !== null && i.d >= 0 && i.d <= 30)
       .sort((a, b) => a.d - b.d);
