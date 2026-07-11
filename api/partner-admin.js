@@ -57,6 +57,37 @@ function buildProperties(fields) {
   return properties;
 }
 
+// 특정 파트너의 모든 페이지 조회
+async function queryPartnerPages(headers, partner) {
+  const out = [];
+  let cursor;
+  do {
+    const r = await fetch(`https://api.notion.com/v1/databases/${DB_ID}/query`, {
+      method: "POST", headers,
+      body: JSON.stringify({ page_size: 100, filter: { property: "파트너사", select: { equals: partner } }, ...(cursor ? { start_cursor: cursor } : {}) }),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const data = await r.json();
+    out.push(...data.results);
+    cursor = data.has_more ? data.next_cursor : null;
+  } while (cursor);
+  return out;
+}
+
+// 파트너사 select 옵션 수정 (삭제/추가) — 파트너 삭제·이름변경 시 유령 옵션 정리
+async function updatePartnerOptions(headers, { remove, add }) {
+  const dbRes = await fetch(`https://api.notion.com/v1/databases/${DB_ID}`, { headers });
+  const db = await dbRes.json();
+  let options = (db.properties?.["파트너사"]?.select?.options || []).map(o => ({ id: o.id, name: o.name, color: o.color }));
+  if (remove) options = options.filter(o => o.name !== remove);
+  if (add && !options.some(o => o.name === add)) options.push({ name: add });
+  const r = await fetch(`https://api.notion.com/v1/databases/${DB_ID}`, {
+    method: "PATCH", headers,
+    body: JSON.stringify({ properties: { 파트너사: { select: { options } } } }),
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
@@ -90,9 +121,34 @@ export default async function handler(req, res) {
     return res.status(200).json({ item: fromNotionPage(page) });
   }
 
-  // PATCH: 필드 업데이트
+  // PATCH: 필드 업데이트 (또는 파트너 이름 일괄 변경)
   if (req.method === "PATCH") {
-    const { pageId, ...fields } = req.body || {};
+    const { pageId, renameFrom, renameTo, ...fields } = req.body || {};
+
+    // 파트너 이름 변경: 모든 항목의 파트너사·제목 갱신 + 기존 select 옵션 제거
+    if (renameFrom && renameTo) {
+      try {
+        const pages = await queryPartnerPages(headers, renameFrom);
+        const today = new Date().toISOString().slice(0, 10);
+        for (const pg of pages) {
+          const title = pg.properties?.["제목"]?.title?.[0]?.plain_text || "";
+          const properties = {
+            파트너사: { select: { name: renameTo } },
+            최종업데이트일: { date: { start: today } },
+          };
+          if (title.includes(`[${renameFrom}]`)) {
+            properties["제목"] = { title: [{ text: { content: title.split(`[${renameFrom}]`).join(`[${renameTo}]`) } }] };
+          }
+          const r = await fetch(`https://api.notion.com/v1/pages/${pg.id}`, { method: "PATCH", headers, body: JSON.stringify({ properties }) });
+          if (!r.ok) throw new Error(await r.text());
+        }
+        await updatePartnerOptions(headers, { remove: renameFrom, add: renameTo });
+        return res.status(200).json({ renamed: true, count: pages.length });
+      } catch (e) {
+        return res.status(500).json({ error: String(e.message || e) });
+      }
+    }
+
     if (!pageId) return res.status(400).json({ error: "pageId 필수" });
     fields.최종업데이트일 = new Date().toISOString().slice(0, 10);
     const r = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
@@ -105,9 +161,25 @@ export default async function handler(req, res) {
     return res.status(200).json({ item: fromNotionPage(page) });
   }
 
-  // DELETE: 아카이브
+  // DELETE: 아카이브 (항목 단건 또는 파트너 전체)
   if (req.method === "DELETE") {
-    const { pageId } = req.body || {};
+    const { pageId, partner } = req.body || {};
+
+    // 파트너 전체 삭제: 모든 항목 아카이브 + select 옵션 제거 (유령 파트너 정리 포함)
+    if (partner) {
+      try {
+        const pages = await queryPartnerPages(headers, partner);
+        for (const pg of pages) {
+          const r = await fetch(`https://api.notion.com/v1/pages/${pg.id}`, { method: "PATCH", headers, body: JSON.stringify({ archived: true }) });
+          if (!r.ok) throw new Error(await r.text());
+        }
+        await updatePartnerOptions(headers, { remove: partner });
+        return res.status(200).json({ deleted: true, count: pages.length });
+      } catch (e) {
+        return res.status(500).json({ error: String(e.message || e) });
+      }
+    }
+
     if (!pageId) return res.status(400).json({ error: "pageId 필수" });
     const r = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
       method: "PATCH",

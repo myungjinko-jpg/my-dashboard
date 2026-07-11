@@ -174,6 +174,9 @@ export default function Contracts() {
   const [newPartnerName, setNewPartnerName] = useState("");
   const [newPartnerProject, setNewPartnerProject] = useState("");
   const [newPartnerCountry, setNewPartnerCountry] = useState("");
+  const [renamingPartner, setRenamingPartner] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const [partnerBusy, setPartnerBusy] = useState(false);
   const [addingProject, setAddingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [guideModal, setGuideModal] = useState(null); // 가이드 모달 (구분명)
@@ -456,6 +459,47 @@ export default function Contracts() {
     createRows([a.firstProject
       ? { 제목: `[${a.proj}] 부속합의서`, 파트너사: a.partner, ...projField, 구분: "부속합의서", 상태: "완료", 파트너십계약포함: true }
       : { 제목: `[${a.proj}] 부속합의서`, 파트너사: a.partner, ...projField, 구분: "부속합의서", 상태: "요청전" }]);
+  };
+
+  // 파트너 삭제 — 항목 전체 아카이브 + 노션 select 옵션 제거 (빈/유령 파트너도 정리 가능)
+  const deletePartner = async () => {
+    const n = (byPartner[selected] || []).length;
+    if (!window.confirm(`파트너사 "${selected}"${n ? `와 항목 ${n}건이` : "가"} 모두 삭제됩니다. 계속할까요?`)) return;
+    setPartnerBusy(true);
+    try {
+      const r = await fetch(`${API_BASE}/api/partner-admin`, {
+        method: "DELETE", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ partner: selected }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const gone = selected;
+      setItems(prev => prev.filter(i => i.파트너사 !== gone));
+      setPartners(prev => prev.filter(p => p !== gone));
+      setSelected(null);
+    } catch (e) { alert(`삭제 실패: ${e.message}`); }
+    finally { setPartnerBusy(false); }
+  };
+
+  // 파트너 이름 변경 — 모든 항목의 파트너사·제목 갱신
+  const renamePartner = async (to) => {
+    const name = to.trim();
+    if (!name || name === selected) { setRenamingPartner(false); return; }
+    setPartnerBusy(true);
+    try {
+      const r = await fetch(`${API_BASE}/api/partner-admin`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ renameFrom: selected, renameTo: name }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const from = selected;
+      setItems(prev => prev.map(i => i.파트너사 === from
+        ? { ...i, 파트너사: name, 제목: (i.제목 || "").split(`[${from}]`).join(`[${name}]`) }
+        : i));
+      setPartners(prev => prev.map(p => p === from ? name : p));
+      setSelected(name);
+      setRenamingPartner(false);
+    } catch (e) { alert(`이름 변경 실패: ${e.message}`); }
+    finally { setPartnerBusy(false); }
   };
 
   const actOn = (a) => {
@@ -1083,16 +1127,34 @@ export default function Contracts() {
               <>
                 {/* Detail header */}
                 <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", background: "var(--card)" }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{selected}</span>
-                    {partnerCountry(selected) && (
-                      <span style={{ fontSize: 10, fontWeight: 600, color: "var(--muted)", border: "1px solid var(--line)", borderRadius: 3, padding: "1px 6px", marginLeft: 8, whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                        <Flag country={partnerCountry(selected)} size={13} />
-                        {partnerCountry(selected)}
-                      </span>
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                    {renamingPartner ? (
+                      <form onSubmit={e => { e.preventDefault(); renamePartner(renameValue); }}>
+                        <input autoFocus value={renameValue} onChange={e => setRenameValue(e.target.value)}
+                          onBlur={() => setRenamingPartner(false)}
+                          onKeyDown={e => { if (e.key === "Escape") setRenamingPartner(false); }}
+                          placeholder="새 파트너사명 입력 후 Enter"
+                          style={{ padding: "4px 9px", fontSize: 13, fontWeight: 700, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", width: 180 }} />
+                      </form>
+                    ) : (
+                      <>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{selected}</span>
+                        {partnerCountry(selected) && (
+                          <span style={{ fontSize: 10, fontWeight: 600, color: "var(--muted)", border: "1px solid var(--line)", borderRadius: 3, padding: "1px 6px", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            <Flag country={partnerCountry(selected)} size={13} />
+                            {partnerCountry(selected)}
+                          </span>
+                        )}
+                        <button onMouseDown={e => e.preventDefault()} onClick={() => { setRenameValue(selected); setRenamingPartner(true); }} disabled={partnerBusy}
+                          title="파트너사명 변경" style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", padding: 2, opacity: 0.6, fontFamily: "inherit" }}>✎</button>
+                        <button onClick={deletePartner} disabled={partnerBusy}
+                          title="파트너사 삭제 (항목 전체)" style={{ fontSize: 11, border: "none", background: "transparent", color: red, cursor: "pointer", padding: 2, opacity: 0.5, fontFamily: "inherit" }}>
+                          {partnerBusy ? "…" : "🗑"}
+                        </button>
+                      </>
                     )}
                     {projectNames.filter(p => p !== "(프로젝트 미지정)").length > 0 && (
-                      <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: 8 }}>
+                      <span style={{ fontSize: 11, color: "var(--muted)" }}>
                         프로젝트 {projectNames.filter(p => p !== "(프로젝트 미지정)").length}개
                       </span>
                     )}
