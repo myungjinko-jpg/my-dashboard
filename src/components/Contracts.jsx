@@ -101,7 +101,7 @@ const VENDOR_FIELDS = [
 const BANK_FIELDS = ["BankName", "BranchName", "BankAddress", "BeneficiaryName", "AccountNumber"];
 
 const EMPTY_FORM = {
-  제목: "", 파트너사: "", 프로젝트: "", 구분: "파트너십계약", 상태: "요청전", 메모: "",
+  제목: "", 파트너사: "", 프로젝트: "", 구분: "파트너십계약", 상태: "요청전", 메모: "", 담당자: "",
   체결일: "", 만료일: "", 자동갱신: false, 계약서URL: "", 기안링크: "", 이터레이션구분: "", 파트너십계약포함: false,
   법인등록증: false, 법인통장: false, 부속합의서: false, 스펙내용: false, 인보이스: false,
   법인등록증링크: "", 법인통장링크: "", 부속합의서링크: "", 스펙내용링크: "", 인보이스링크: "",
@@ -174,6 +174,10 @@ export default function Contracts() {
   const [newPartnerName, setNewPartnerName] = useState("");
   const [newPartnerProject, setNewPartnerProject] = useState("");
   const [newPartnerCountry, setNewPartnerCountry] = useState("");
+  const [newPartnerOwner, setNewPartnerOwner] = useState("");
+  const [ownerFilter, setOwnerFilter] = useState(null);   // 담당자 필터 (null=전체)
+  const [queueFilter, setQueueFilter] = useState(null);   // 큐 종류 필터 (null=전체)
+  const [queueOpen, setQueueOpen] = useState(true);       // 큐 패널 접기
   const [renamingPartner, setRenamingPartner] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [partnerBusy, setPartnerBusy] = useState(false);
@@ -219,12 +223,26 @@ export default function Contracts() {
     return [...set].sort();
   }, [items, partners]);
 
-  // 항목 있는 파트너 먼저, 빈 파트너(DB select 등록만 된 곳)는 아래에
+  // 등록된 담당자 목록 (필터 칩용)
+  const owners = useMemo(() => {
+    const set = new Set();
+    items.forEach(i => { if (i.담당자) set.add(i.담당자); });
+    return [...set].sort();
+  }, [items]);
+
+  // 항목 있는 파트너 먼저, 빈 파트너(DB select 등록만 된 곳)는 아래에. 담당자 필터 적용
   const visiblePartnerList = useMemo(() => {
-    const has = allPartners.filter(p => items.some(i => i.파트너사 === p));
-    const empty = allPartners.filter(p => !items.some(i => i.파트너사 === p));
+    const ownerOf = (p) => {
+      const v = items.find(i => i.파트너사 === p && i.구분 === "거래처등록" && i.담당자);
+      if (v) return v.담당자;
+      const any = items.find(i => i.파트너사 === p && i.담당자);
+      return any ? any.담당자 : "";
+    };
+    let list = ownerFilter ? allPartners.filter(p => ownerOf(p) === ownerFilter) : allPartners;
+    const has = list.filter(p => items.some(i => i.파트너사 === p));
+    const empty = list.filter(p => !items.some(i => i.파트너사 === p));
     return [...has, ...empty];
-  }, [allPartners, items]);
+  }, [allPartners, items, ownerFilter]);
 
   useEffect(() => {
     if (!selected && visiblePartnerList.length > 0) setSelected(visiblePartnerList[0]);
@@ -235,15 +253,6 @@ export default function Contracts() {
     allPartners.forEach(p => { map[p] = items.filter(i => i.파트너사 === p); });
     return map;
   }, [items, allPartners]);
-
-  const alerts = useMemo(() => {
-    const out = [];
-    items.forEach(i => {
-      const d = dday(i.만료일);
-      if (CONTRACT_KINDS.includes(i.구분) && !i.자동갱신 && d !== null && d >= 0 && d <= 30) out.push(`${i.제목} 만료 D-${d}`);
-    });
-    return out;
-  }, [items]);
 
   const totalDone     = items.filter(i => i.상태 === "완료").length;
   const totalActive   = items.filter(i => i.상태 === "진행중").length;
@@ -319,10 +328,10 @@ export default function Contracts() {
     } finally { setCreatingTpl(false); }
   };
 
-  // 신규 파트너 템플릿: 파트너십계약 + 거래처등록 (국가는 거래처등록에 저장)
-  const createPartnerTemplate = (partner, country) => createRows([
-    { 제목: `[${partner}] 파트너십계약`, 파트너사: partner, 구분: "파트너십계약", 상태: "요청전" },
-    { 제목: `[${partner}] 거래처등록`, 파트너사: partner, 구분: "거래처등록", 상태: "요청전", ...(country ? { 거래처국가: country } : {}) },
+  // 신규 파트너 템플릿: 파트너십계약 + 거래처등록 (국가·담당자는 거래처등록에 저장)
+  const createPartnerTemplate = (partner, country, owner) => createRows([
+    { 제목: `[${partner}] 파트너십계약`, 파트너사: partner, 구분: "파트너십계약", 상태: "요청전", ...(owner ? { 담당자: owner } : {}) },
+    { 제목: `[${partner}] 거래처등록`, 파트너사: partner, 구분: "거래처등록", 상태: "요청전", ...(country ? { 거래처국가: country } : {}), ...(owner ? { 담당자: owner } : {}) },
   ]);
 
   // 신규 프로젝트 템플릿 — 부속합의서 → 프로토타입 지출기안 순서
@@ -397,6 +406,13 @@ export default function Contracts() {
     const v = partnerVendor(partner);
     return v ? (v.거래처국가 || "").trim() : "";
   };
+  // 파트너 담당자 — 어느 항목이든 담당자가 있으면 사용 (거래처등록 우선)
+  const partnerOwner = (partner) => {
+    const v = partnerVendor(partner);
+    if (v && v.담당자) return v.담당자;
+    const any = items.find(i => i.파트너사 === partner && i.담당자);
+    return any ? any.담당자 : "";
+  };
   // 서류 수령 여부 — 파트너 공통 서류는 거래처등록 상태를 따름
   const docReceived = (item, doc) => {
     if (item.구분 !== "거래처등록" && PARTNER_DOCS.includes(doc)) {
@@ -449,9 +465,32 @@ export default function Contracts() {
         const w = doneWarning(i);
         if (w) out.push({ key: `warn-${i.id}`, kind: "warn", partner: p, item: i, label: i.제목, reason: `완료인데 ${w}`, prio: 3 });
       });
+      // 만료 임박 (자동갱신 제외)
+      rows.forEach(i => {
+        const d = dday(i.만료일);
+        if (CONTRACT_KINDS.includes(i.구분) && !i.자동갱신 && d !== null && d >= 0 && d <= 30) {
+          out.push({ key: `exp-${i.id}`, kind: "expire", partner: p, item: i, label: i.제목, reason: d === 0 ? "오늘 만료" : `D-${d} 만료`, prio: 0 });
+        }
+      });
     });
     return out.sort((a, b) => (a.prio - b.prio) || ((b.stale || 0) - (a.stale || 0)));
   }, [items, allPartners]); // eslint-disable-line
+
+  // 알림 종류별 카운트 (상단 칩)
+  const alertCounts = useMemo(() => ({
+    expire: todoQueue.filter(a => a.kind === "expire").length,
+    warn: todoQueue.filter(a => a.kind === "warn").length,
+    stale: todoQueue.filter(a => a.stale).length,
+    heal: todoQueue.filter(a => a.kind === "heal").length,
+  }), [todoQueue]);
+
+  // 담당자·종류 필터 적용된 큐
+  const filteredQueue = useMemo(() => todoQueue.filter(a => {
+    if (ownerFilter && partnerOwner(a.partner) !== ownerFilter) return false;
+    if (queueFilter === "stale") return !!a.stale;
+    if (queueFilter) return a.kind === queueFilter;
+    return true;
+  }), [todoQueue, ownerFilter, queueFilter]); // eslint-disable-line
 
   // 누락된 부속합의서 단계 생성 — 유일 프로젝트면 첫 프로젝트로 보고 파트너십계약 포함(완료) 처리
   const healProject = (a) => {
@@ -609,6 +648,11 @@ export default function Contracts() {
                   <input style={input} value={vals.이터레이션구분} onChange={e => upd(f => ({ ...f, 이터레이션구분: e.target.value }))} placeholder="프로토타입 / 이터레이션1..." />
                 </div>
               )}
+            </div>
+            <div>
+              <span style={label}>담당자</span>
+              <input style={input} list="owner-list-form" value={vals.담당자} onChange={e => upd(f => ({ ...f, 담당자: e.target.value }))} placeholder="파트너 담당자" />
+              <datalist id="owner-list-form">{owners.map(o => <option key={o} value={o} />)}</datalist>
             </div>
           </>
         )}
@@ -944,68 +988,97 @@ export default function Contracts() {
         .m-notion:hover { background: #1C1D26; }
       `}</style>
 
-      {/* ── Metrics strip ── */}
-      <div style={{ display: "flex", alignItems: "center", padding: "14px 20px", borderBottom: "1px solid var(--line)", background: "var(--card)", flexWrap: "wrap", gap: 10 }}>
-        {[
-          { label: "파트너사", value: visiblePartnerList.length, color: "var(--text)", accent: "var(--line)" },
-          { label: "진행중", value: totalActive, color: amber, accent: amber },
-          { label: "대기", value: totalWaiting, color: "var(--muted)", accent: "var(--line)" },
-          { label: "완료", value: totalDone, color: green, accent: green },
-        ].map(({ label: l, value, color, accent }) => (
-          <div key={l} style={{
-            display: "flex", alignItems: "baseline", gap: 7, padding: "9px 16px",
-            border: "1px solid var(--line)", borderLeft: `3px solid ${accent}`, borderRadius: 7,
-            background: "var(--card)", minWidth: 92,
-          }}>
-            <span style={{ fontSize: 22, fontWeight: 700, color, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{value}</span>
-            <span style={{ fontSize: 11, color: "var(--muted)", letterSpacing: ".04em" }}>{l}</span>
+      {/* ── Top bar: 담당자 필터 · 상태 카운트 · 알림 칩 · 액션 ── */}
+      <div style={{ display: "flex", alignItems: "center", padding: "12px 20px", borderBottom: "1px solid var(--line)", background: "var(--card)", flexWrap: "wrap", gap: "8px 12px" }}>
+        {owners.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 700, letterSpacing: ".05em" }}>담당자</span>
+            {["전체", ...owners].map(o => {
+              const active = (o === "전체" && !ownerFilter) || ownerFilter === o;
+              return (
+                <button key={o} onClick={() => setOwnerFilter(o === "전체" ? null : o)}
+                  style={{ fontSize: 11, padding: "4px 10px", borderRadius: 99, border: `1px solid ${active ? amber : "var(--line)"}`, background: active ? amberFaint : "transparent", color: active ? "#B45309" : "var(--muted)", cursor: "pointer", fontFamily: "inherit", fontWeight: active ? 700 : 400 }}>{o}</button>
+              );
+            })}
+            <span style={{ width: 1, height: 16, background: "var(--line)", margin: "0 2px" }} />
           </div>
-        ))}
-        {alerts.length > 0 && (
-          <div style={{ display: "flex", alignItems: "center", padding: "9px 14px", border: "1px solid rgba(220,38,38,.25)", borderLeft: "3px solid #DC2626", borderRadius: 7, background: "rgba(220,38,38,.04)", fontSize: 11, color: "#C2410C", fontWeight: 600 }}
-            title={alerts.join("\n")}>⏰ 만료 임박 {alerts.length}</div>
         )}
+
+        <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11, color: "var(--muted)" }}>
+          <span><b style={{ color: amber, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{totalActive}</b> 진행중</span>
+          <span><b style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "var(--text)" }}>{totalWaiting}</b> 대기</span>
+          <span><b style={{ color: green, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{totalDone}</b> 완료</span>
+        </div>
+
+        {[
+          { k: "expire", t: "만료", n: alertCounts.expire, c: "#DC2626", bg: "rgba(220,38,38,.08)" },
+          { k: "warn", t: "경고", n: alertCounts.warn, c: "#C2410C", bg: "rgba(194,65,29,.10)" },
+          { k: "stale", t: "정체", n: alertCounts.stale, c: blue, bg: blueFaint },
+          { k: "heal", t: "누락", n: alertCounts.heal, c: "#B45309", bg: amberFaint },
+        ].filter(a => a.n > 0).map(a => {
+          const active = queueFilter === a.k;
+          return (
+            <button key={a.k} onClick={() => { setQueueFilter(active ? null : a.k); setQueueOpen(true); }}
+              title="클릭 시 큐 필터" style={{ fontSize: 11, fontWeight: 700, padding: "4px 11px", borderRadius: 99, border: `1px solid ${active ? a.c : "transparent"}`, background: a.bg, color: a.c, cursor: "pointer", fontFamily: "inherit" }}>
+              {a.t} {a.n}
+            </button>
+          );
+        })}
+
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
           {sentMsg && <span style={{ fontSize: 11, color: green, fontWeight: 600 }}>{sentMsg}</span>}
           <button onClick={sendAlert} disabled={sending}
-            style={{ padding: "9px 14px", borderRadius: 7, border: "1px solid var(--line)", background: "var(--card)", color: "var(--text)", fontSize: 12, fontWeight: 600, cursor: sending ? "not-allowed" : "pointer", opacity: sending ? 0.6 : 1, fontFamily: "inherit" }}>
+            style={{ padding: "8px 13px", borderRadius: 7, border: "1px solid var(--line)", background: "var(--card)", color: "var(--text)", fontSize: 12, fontWeight: 600, cursor: sending ? "not-allowed" : "pointer", opacity: sending ? 0.6 : 1, fontFamily: "inherit" }}>
             {sending ? "발송 중…" : "Slack 알림"}
           </button>
           <a className="m-notion" href={NOTION_DB_URL} target="_blank" rel="noopener noreferrer"
-            style={{ padding: "9px 16px", borderRadius: 7, fontSize: 12, fontWeight: 600, textDecoration: "none", letterSpacing: ".02em", display: "inline-block" }}>
+            style={{ padding: "8px 15px", borderRadius: 7, fontSize: 12, fontWeight: 600, textDecoration: "none", letterSpacing: ".02em", display: "inline-block" }}>
             Notion DB ↗
           </a>
         </div>
       </div>
 
-      {/* ── 지금 할 일 큐 ── */}
+      {/* ── 지금 할 일 큐 (접이식) ── */}
       {!loading && !error && todoQueue.length > 0 && (
-        <div style={{ borderBottom: "1px solid var(--line)", background: "var(--card)", padding: "10px 20px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+        <div style={{ borderBottom: "1px solid var(--line)", background: "var(--card)", padding: "8px 20px" }}>
+          <div onClick={() => setQueueOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: queueOpen ? 6 : 0, cursor: "pointer" }}>
+            <span style={{ fontSize: 12, color: "var(--muted)", transform: queueOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}>▾</span>
             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--muted)" }}>지금 할 일</span>
-            <span style={{ fontSize: 10, color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>{todoQueue.length}건</span>
+            <span style={{ fontSize: 10, color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>
+              {filteredQueue.length}{filteredQueue.length !== todoQueue.length ? `/${todoQueue.length}` : ""}건
+            </span>
+            {(queueFilter || ownerFilter) && (
+              <button onClick={e => { e.stopPropagation(); setQueueFilter(null); setOwnerFilter(null); }}
+                style={{ fontSize: 10, color: blue, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit" }}>필터 해제</button>
+            )}
           </div>
-          <div className="slim-scroll" style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 126, overflowY: "auto" }}>
-            {todoQueue.map(a => {
-              const chip = a.kind === "warn" ? { t: "경고", c: red, bg: "rgba(220,38,38,.07)" }
-                : a.kind === "heal" ? { t: "누락", c: "#B45309", bg: amberFaint }
-                : a.kind === "iter" ? { t: "정산", c: "var(--muted)", bg: "transparent" }
-                : { t: "다음", c: blue, bg: blueFaint };
-              return (
-                <button key={a.key} onClick={() => actOn(a)}
-                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", borderRadius: 5, border: "1px solid var(--line)", background: "transparent", cursor: "pointer", fontFamily: "inherit", textAlign: "left", minWidth: 0 }}
-                  onMouseEnter={e => { e.currentTarget.style.background = "#F8F9FA"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
-                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".04em", color: chip.c, background: chip.bg, border: `1px solid ${chip.c === "var(--muted)" ? "var(--line)" : "transparent"}`, borderRadius: 3, padding: "1px 6px", flexShrink: 0 }}>{chip.t}</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", flexShrink: 0 }}>{a.partner}</span>
-                  <span style={{ fontSize: 12, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.label}</span>
-                  <span style={{ marginLeft: "auto", fontSize: 10.5, color: a.stale ? "#C2410C" : "var(--muted)", flexShrink: 0, fontWeight: a.stale ? 700 : 400 }}>
-                    {a.stale ? `${a.stale}일 정체 · ` : ""}{a.reason}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          {queueOpen && (
+            <div className="slim-scroll" style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 132, overflowY: "auto" }}>
+              {filteredQueue.length === 0 ? (
+                <div style={{ fontSize: 11, color: "var(--muted)", padding: "6px 2px" }}>해당 항목 없음</div>
+              ) : filteredQueue.map(a => {
+                const chip = a.kind === "expire" ? { t: "만료", c: "#DC2626", bg: "rgba(220,38,38,.08)" }
+                  : a.kind === "warn" ? { t: "경고", c: "#C2410C", bg: "rgba(194,65,29,.10)" }
+                  : a.kind === "heal" ? { t: "누락", c: "#B45309", bg: amberFaint }
+                  : a.kind === "iter" ? { t: "정산", c: "var(--muted)", bg: "transparent" }
+                  : { t: "다음", c: blue, bg: blueFaint };
+                return (
+                  <button key={a.key} onClick={() => actOn(a)}
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", borderRadius: 5, border: "1px solid var(--line)", background: "transparent", cursor: "pointer", fontFamily: "inherit", textAlign: "left", minWidth: 0 }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "#F8F9FA"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".04em", color: chip.c, background: chip.bg, border: `1px solid ${chip.c === "var(--muted)" ? "var(--line)" : "transparent"}`, borderRadius: 3, padding: "1px 6px", flexShrink: 0 }}>{chip.t}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", flexShrink: 0 }}>{a.partner}</span>
+                    {partnerOwner(a.partner) && <span style={{ fontSize: 10, color: "var(--muted)", flexShrink: 0 }}>· {partnerOwner(a.partner)}</span>}
+                    <span style={{ fontSize: 12, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.label}</span>
+                    <span style={{ marginLeft: "auto", fontSize: 10.5, color: a.stale ? "#C2410C" : "var(--muted)", flexShrink: 0, fontWeight: a.stale ? 700 : 400 }}>
+                      {a.stale ? `${a.stale}일 정체 · ` : ""}{a.reason}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -1069,6 +1142,7 @@ export default function Contracts() {
                     const name = newPartnerName.trim();
                     const proj = newPartnerProject.trim();
                     const country = newPartnerCountry.trim();
+                    const owner = newPartnerOwner.trim();
                     if (!name) return;
                     setPartners(prev => prev.includes(name) ? prev : [...prev, name]);
                     setSelected(name);
@@ -1076,17 +1150,19 @@ export default function Contracts() {
                     setNewPartnerName("");
                     setNewPartnerProject("");
                     setNewPartnerCountry("");
+                    setNewPartnerOwner("");
                     if (!items.some(i => i.파트너사 === name)) {
+                      const ownerF = owner ? { 담당자: owner } : {};
                       if (proj) {
                         // 파트너십계약 → 거래처등록 → 부속합의서(파트너십계약 포함) → 프로토타입 지출기안 한 번에 생성
                         createRows([
-                          { 제목: `[${name}] 파트너십계약`, 파트너사: name, 구분: "파트너십계약", 상태: "요청전" },
-                          { 제목: `[${name}] 거래처등록`, 파트너사: name, 구분: "거래처등록", 상태: "요청전", ...(country ? { 거래처국가: country } : {}) },
-                          { 제목: `[${proj}] 부속합의서`, 파트너사: name, 프로젝트: proj, 구분: "부속합의서", 상태: "완료", 파트너십계약포함: true },
-                          { 제목: `[${proj}] 프로토타입 지출기안`, 파트너사: name, 프로젝트: proj, 구분: "지출기안", 이터레이션구분: "프로토타입", 상태: "요청전" },
+                          { 제목: `[${name}] 파트너십계약`, 파트너사: name, 구분: "파트너십계약", 상태: "요청전", ...ownerF },
+                          { 제목: `[${name}] 거래처등록`, 파트너사: name, 구분: "거래처등록", 상태: "요청전", ...(country ? { 거래처국가: country } : {}), ...ownerF },
+                          { 제목: `[${proj}] 부속합의서`, 파트너사: name, 프로젝트: proj, 구분: "부속합의서", 상태: "완료", 파트너십계약포함: true, ...ownerF },
+                          { 제목: `[${proj}] 프로토타입 지출기안`, 파트너사: name, 프로젝트: proj, 구분: "지출기안", 이터레이션구분: "프로토타입", 상태: "요청전", ...ownerF },
                         ]);
                       } else {
-                        createPartnerTemplate(name, country).then(() => setAddingProject(true));
+                        createPartnerTemplate(name, country, owner).then(() => setAddingProject(true));
                       }
                     }
                   }}>
@@ -1104,6 +1180,10 @@ export default function Contracts() {
                       {[...KNOWN_COUNTRIES, ...[...new Set(items.map(i => (i.거래처국가 || "").trim()).filter(Boolean))].filter(c => !KNOWN_COUNTRIES.includes(c))].map(c => <option key={c} value={c} />)}
                     </datalist>
                   </div>
+                  <input value={newPartnerOwner} onChange={e => setNewPartnerOwner(e.target.value)} list="owner-list"
+                    placeholder="담당자 (선택)"
+                    style={{ width: "100%", padding: "6px 9px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", boxSizing: "border-box" }} />
+                  <datalist id="owner-list">{owners.map(o => <option key={o} value={o} />)}</datalist>
                   <div style={{ display: "flex", gap: 6 }}>
                     <button type="button" onClick={() => { setAddingPartner(false); setNewPartnerName(""); setNewPartnerProject(""); }}
                       style={{ ...addBtn(false), flex: 1, textAlign: "center" }}>취소</button>
@@ -1143,6 +1223,11 @@ export default function Contracts() {
                           <span style={{ fontSize: 10, fontWeight: 600, color: "var(--muted)", border: "1px solid var(--line)", borderRadius: 3, padding: "1px 6px", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 4 }}>
                             <Flag country={partnerCountry(selected)} size={13} />
                             {partnerCountry(selected)}
+                          </span>
+                        )}
+                        {partnerOwner(selected) && (
+                          <span style={{ fontSize: 10, fontWeight: 600, color: "var(--muted)", border: "1px solid var(--line)", borderRadius: 3, padding: "1px 6px", whiteSpace: "nowrap" }}>
+                            담당 {partnerOwner(selected)}
                           </span>
                         )}
                         <button onMouseDown={e => e.preventDefault()} onClick={() => { setRenameValue(selected); setRenamingPartner(true); }} disabled={partnerBusy}

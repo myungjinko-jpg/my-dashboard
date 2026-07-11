@@ -3,7 +3,7 @@ const NOTION_VERSION = "2022-06-28";
 
 const FIELD_TYPES = {
   제목: "title",
-  구분: "select", 상태: "select", 파트너사: "select",
+  구분: "select", 상태: "select", 파트너사: "select", 담당자: "select",
   이터레이션구분: "text", 메모: "text", 프로젝트: "text",
   거래처식별번호: "text", 거래처명: "text", 거래처국가: "text", 거래처주소: "text",
   거래처대표: "text", 거래처담당자: "text",
