@@ -181,6 +181,8 @@ export default function Contracts() {
   const [renamingPartner, setRenamingPartner] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [partnerBusy, setPartnerBusy] = useState(false);
+  const [editingHeaderField, setEditingHeaderField] = useState(null); // "거래처국가" | "담당자"
+  const [headerFieldValue, setHeaderFieldValue] = useState("");
   const [addingProject, setAddingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [guideModal, setGuideModal] = useState(null); // 가이드 모달 (구분명)
@@ -539,6 +541,17 @@ export default function Contracts() {
       setRenamingPartner(false);
     } catch (e) { alert(`이름 변경 실패: ${e.message}`); }
     finally { setPartnerBusy(false); }
+  };
+
+  // 파트너 국가·담당자를 거래처등록(원본)에 직접 저장 — 상세 헤더 인라인 편집용
+  const saveHeaderField = async (partner, field, raw) => {
+    const value = (raw || "").trim();
+    setEditingHeaderField(null);
+    const anchor = partnerVendor(partner) || items.find(i => i.파트너사 === partner);
+    if (!anchor) return;
+    const cur = (anchor[field] || "");
+    if (value === cur) return;
+    await patch(anchor.id, { [field]: value || null });
   };
 
   const actOn = (a) => {
@@ -988,6 +1001,12 @@ export default function Contracts() {
         .m-notion:hover { background: #1C1D26; }
       `}</style>
 
+      {/* 전역 자동완성 목록 (국가·담당자) */}
+      <datalist id="country-list">
+        {[...KNOWN_COUNTRIES, ...[...new Set(items.map(i => (i.거래처국가 || "").trim()).filter(Boolean))].filter(c => !KNOWN_COUNTRIES.includes(c))].map(c => <option key={c} value={c} />)}
+      </datalist>
+      <datalist id="owner-list">{owners.map(o => <option key={o} value={o} />)}</datalist>
+
       {/* ── Top bar: 담당자 필터 · 상태 카운트 · 알림 칩 · 액션 ── */}
       <div style={{ display: "flex", alignItems: "center", padding: "12px 20px", borderBottom: "1px solid var(--line)", background: "var(--card)", flexWrap: "wrap", gap: "8px 12px" }}>
         {owners.length > 0 && (
@@ -1176,14 +1195,10 @@ export default function Contracts() {
                     <input value={newPartnerCountry} onChange={e => setNewPartnerCountry(e.target.value)} list="country-list"
                       placeholder="국가"
                       style={{ flex: 0.8, padding: "6px 9px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", boxSizing: "border-box", minWidth: 0 }} />
-                    <datalist id="country-list">
-                      {[...KNOWN_COUNTRIES, ...[...new Set(items.map(i => (i.거래처국가 || "").trim()).filter(Boolean))].filter(c => !KNOWN_COUNTRIES.includes(c))].map(c => <option key={c} value={c} />)}
-                    </datalist>
                   </div>
                   <input value={newPartnerOwner} onChange={e => setNewPartnerOwner(e.target.value)} list="owner-list"
                     placeholder="담당자 (선택)"
                     style={{ width: "100%", padding: "6px 9px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", boxSizing: "border-box" }} />
-                  <datalist id="owner-list">{owners.map(o => <option key={o} value={o} />)}</datalist>
                   <div style={{ display: "flex", gap: 6 }}>
                     <button type="button" onClick={() => { setAddingPartner(false); setNewPartnerName(""); setNewPartnerProject(""); }}
                       style={{ ...addBtn(false), flex: 1, textAlign: "center" }}>취소</button>
@@ -1219,16 +1234,37 @@ export default function Contracts() {
                     ) : (
                       <>
                         <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{selected}</span>
-                        {partnerCountry(selected) && (
-                          <span style={{ fontSize: 10, fontWeight: 600, color: "var(--muted)", border: "1px solid var(--line)", borderRadius: 3, padding: "1px 6px", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                            <Flag country={partnerCountry(selected)} size={13} />
-                            {partnerCountry(selected)}
-                          </span>
+
+                        {/* 국가 — 클릭해서 인라인 편집 */}
+                        {editingHeaderField === "거래처국가" ? (
+                          <input autoFocus list="country-list" value={headerFieldValue}
+                            onChange={e => setHeaderFieldValue(e.target.value)}
+                            onBlur={() => saveHeaderField(selected, "거래처국가", headerFieldValue)}
+                            onKeyDown={e => { if (e.key === "Enter") saveHeaderField(selected, "거래처국가", headerFieldValue); if (e.key === "Escape") setEditingHeaderField(null); }}
+                            placeholder="국가 (예: Korea (KST+0))"
+                            style={{ fontSize: 11, padding: "2px 7px", border: "1px solid var(--line)", borderRadius: 3, background: "var(--card)", color: "var(--text)", width: 150 }} />
+                        ) : (
+                          <button onClick={() => { setHeaderFieldValue(partnerCountry(selected)); setEditingHeaderField("거래처국가"); }}
+                            title="국가 지정/변경"
+                            style={{ fontSize: 10, fontWeight: 600, color: partnerCountry(selected) ? "var(--muted)" : blue, border: `1px ${partnerCountry(selected) ? "solid" : "dashed"} var(--line)`, borderRadius: 3, padding: "1px 6px", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 4, background: "transparent", cursor: "pointer", fontFamily: "inherit" }}>
+                            {partnerCountry(selected) ? <><Flag country={partnerCountry(selected)} size={13} />{partnerCountry(selected)}</> : "+ 국가"}
+                          </button>
                         )}
-                        {partnerOwner(selected) && (
-                          <span style={{ fontSize: 10, fontWeight: 600, color: "var(--muted)", border: "1px solid var(--line)", borderRadius: 3, padding: "1px 6px", whiteSpace: "nowrap" }}>
-                            담당 {partnerOwner(selected)}
-                          </span>
+
+                        {/* 담당자 — 클릭해서 인라인 편집 */}
+                        {editingHeaderField === "담당자" ? (
+                          <input autoFocus list="owner-list" value={headerFieldValue}
+                            onChange={e => setHeaderFieldValue(e.target.value)}
+                            onBlur={() => saveHeaderField(selected, "담당자", headerFieldValue)}
+                            onKeyDown={e => { if (e.key === "Enter") saveHeaderField(selected, "담당자", headerFieldValue); if (e.key === "Escape") setEditingHeaderField(null); }}
+                            placeholder="담당자"
+                            style={{ fontSize: 11, padding: "2px 7px", border: "1px solid var(--line)", borderRadius: 3, background: "var(--card)", color: "var(--text)", width: 110 }} />
+                        ) : (
+                          <button onClick={() => { setHeaderFieldValue(partnerOwner(selected)); setEditingHeaderField("담당자"); }}
+                            title="담당자 지정/변경"
+                            style={{ fontSize: 10, fontWeight: 600, color: partnerOwner(selected) ? "var(--muted)" : blue, border: `1px ${partnerOwner(selected) ? "solid" : "dashed"} var(--line)`, borderRadius: 3, padding: "1px 6px", whiteSpace: "nowrap", background: "transparent", cursor: "pointer", fontFamily: "inherit" }}>
+                            {partnerOwner(selected) ? `담당 ${partnerOwner(selected)}` : "+ 담당자"}
+                          </button>
                         )}
                         <button onMouseDown={e => e.preventDefault()} onClick={() => { setRenameValue(selected); setRenamingPartner(true); }} disabled={partnerBusy}
                           title="파트너사명 변경" style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", padding: 2, opacity: 0.6, fontFamily: "inherit" }}>✎</button>
