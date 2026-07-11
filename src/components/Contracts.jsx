@@ -406,6 +406,8 @@ export default function Contracts() {
   const renderFields = (vals, upd, identity) => {
     const isContract = CONTRACT_KINDS.includes(vals.구분);
     const isProjectLevel = PROJECT_LEVEL_KINDS.includes(vals.구분);
+    const coveredForm = vals.구분 === "부속합의서" && vals.파트너십계약포함;  // 파트너십계약 포함 부속합의서
+    const masterUrlForm = coveredForm ? partnerMasterUrl(vals.파트너사) : "";
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {identity && (
@@ -486,12 +488,25 @@ export default function Contracts() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "end" }}>
             <div>
               <span style={label}>계약서 URL</span>
-              <input style={input} value={vals.계약서URL} onChange={e => upd(f => ({ ...f, 계약서URL: e.target.value }))} placeholder="https:// (원드라이브)" />
+              {coveredForm ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 33 }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".03em", color: "#B45309", background: amberFaint, border: "1px solid rgba(245,180,0,.3)", borderRadius: 3, padding: "1px 6px", flexShrink: 0 }}>파트너십계약 연동</span>
+                  {masterUrlForm ? (
+                    <a href={masterUrlForm} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: blue, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{masterUrlForm} ↗</a>
+                  ) : (
+                    <span style={{ fontSize: 11, color: "var(--muted)" }}>파트너십계약서 링크 미등록</span>
+                  )}
+                </div>
+              ) : (
+                <input style={input} value={vals.계약서URL} onChange={e => upd(f => ({ ...f, 계약서URL: e.target.value }))} placeholder="https:// (원드라이브)" />
+              )}
             </div>
-            <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", paddingBottom: 8 }} title="자동갱신 조항이 있는 계약">
-              <input type="checkbox" checked={vals.자동갱신} onChange={e => upd(f => ({ ...f, 자동갱신: e.target.checked }))} />
-              자동갱신
-            </label>
+            {!coveredForm && (
+              <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", paddingBottom: 8 }} title="자동갱신 조항이 있는 계약">
+                <input type="checkbox" checked={vals.자동갱신} onChange={e => upd(f => ({ ...f, 자동갱신: e.target.checked }))} />
+                자동갱신
+              </label>
+            )}
           </div>
         </>)}
 
