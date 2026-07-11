@@ -1007,8 +1007,12 @@ export default function Contracts() {
       </datalist>
       <datalist id="owner-list">{owners.map(o => <option key={o} value={o} />)}</datalist>
 
-      {/* ── Top bar: 담당자 필터 · 상태 카운트 · 알림 칩 · 액션 ── */}
-      <div style={{ display: "flex", alignItems: "center", padding: "12px 20px", borderBottom: "1px solid var(--line)", background: "var(--card)", flexWrap: "wrap", gap: "8px 12px" }}>
+      {/* ── ① 확인 존: 담당자 필터 · 상태 카운트 · 알림 칩 · 액션 ── */}
+      <div style={{ padding: "9px 20px 11px", borderBottom: "1px solid var(--line)", background: "var(--bg)" }}>
+      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+        <span>확인</span><span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>오늘 주의할 것</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px 12px" }}>
         {owners.length > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 700, letterSpacing: ".05em" }}>담당자</span>
@@ -1056,16 +1060,18 @@ export default function Contracts() {
           </a>
         </div>
       </div>
+      </div>
 
-      {/* ── 지금 할 일 큐 (접이식) ── */}
+      {/* ── ② 지금 할 일 존 (접이식) ── */}
       {!loading && !error && todoQueue.length > 0 && (
-        <div style={{ borderBottom: "1px solid var(--line)", background: "var(--card)", padding: "8px 20px" }}>
+        <div style={{ borderBottom: "1px solid var(--line)", background: "var(--bg)", borderLeft: `3px solid ${amber}`, padding: "8px 20px" }}>
           <div onClick={() => setQueueOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: queueOpen ? 6 : 0, cursor: "pointer" }}>
             <span style={{ fontSize: 12, color: "var(--muted)", transform: queueOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}>▾</span>
-            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--muted)" }}>지금 할 일</span>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "#B45309" }}>지금 할 일</span>
             <span style={{ fontSize: 10, color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>
               {filteredQueue.length}{filteredQueue.length !== todoQueue.length ? `/${todoQueue.length}` : ""}건
             </span>
+            {queueOpen && !queueFilter && !ownerFilter && <span style={{ fontSize: 10, color: "var(--muted)" }}>· 여기서 시작</span>}
             {(queueFilter || ownerFilter) && (
               <button onClick={e => { e.stopPropagation(); setQueueFilter(null); setOwnerFilter(null); }}
                 style={{ fontSize: 10, color: blue, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit" }}>필터 해제</button>
@@ -1083,9 +1089,9 @@ export default function Contracts() {
                   : { t: "다음", c: blue, bg: blueFaint };
                 return (
                   <button key={a.key} onClick={() => actOn(a)}
-                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", borderRadius: 5, border: "1px solid var(--line)", background: "transparent", cursor: "pointer", fontFamily: "inherit", textAlign: "left", minWidth: 0 }}
-                    onMouseEnter={e => { e.currentTarget.style.background = "#F8F9FA"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", borderRadius: 5, border: "1px solid var(--line)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", minWidth: 0 }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(120,124,135,.10)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "var(--card)"; }}>
                     <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".04em", color: chip.c, background: chip.bg, border: `1px solid ${chip.c === "var(--muted)" ? "var(--line)" : "transparent"}`, borderRadius: 3, padding: "1px 6px", flexShrink: 0 }}>{chip.t}</span>
                     <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", flexShrink: 0 }}>{a.partner}</span>
                     {partnerOwner(a.partner) && <span style={{ fontSize: 10, color: "var(--muted)", flexShrink: 0 }}>· {partnerOwner(a.partner)}</span>}
@@ -1111,10 +1117,10 @@ export default function Contracts() {
       ) : (
         <div style={{ display: "flex", flex: 1, overflow: "hidden", height: 620, maxHeight: "74vh" }}>
 
-          {/* ── Left nav ── */}
-          <div style={{ width: 210, flexShrink: 0, borderRight: "1px solid var(--line)", display: "flex", flexDirection: "column", background: "var(--card)" }}>
+          {/* ── 작업 존 · 왼쪽 nav (파트너사) ── */}
+          <div style={{ width: 210, flexShrink: 0, borderRight: "1px solid var(--line)", display: "flex", flexDirection: "column", background: "var(--bg)" }}>
             <div style={{ padding: "10px 14px 8px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--muted)", flex: 1 }}>파트너사</span>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--muted)", flex: 1 }}>파트너사 · 선택</span>
               <button onClick={load} title="새로고침" style={{
                 fontSize: 11, padding: "2px 6px", borderRadius: 3,
                 border: "1px solid var(--line)", color: "var(--muted)", background: "transparent", cursor: "pointer", fontFamily: "inherit",
