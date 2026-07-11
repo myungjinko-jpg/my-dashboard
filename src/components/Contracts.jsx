@@ -75,7 +75,7 @@ const BANK_FIELDS = ["BankName", "BranchName", "BankAddress", "BeneficiaryName",
 
 const EMPTY_FORM = {
   제목: "", 파트너사: "", 프로젝트: "", 구분: "파트너십계약", 상태: "요청전", 메모: "",
-  체결일: "", 만료일: "", 자동갱신: false, 계약서URL: "", 기안링크: "", 이터레이션구분: "",
+  체결일: "", 만료일: "", 자동갱신: false, 계약서URL: "", 기안링크: "", 이터레이션구분: "", 파트너십계약포함: false,
   법인등록증: false, 법인통장: false, 부속합의서: false, 스펙내용: false, 인보이스: false,
   법인등록증링크: "", 법인통장링크: "", 부속합의서링크: "", 스펙내용링크: "", 인보이스링크: "",
   거래처식별번호: "", 거래처명: "", 거래처국가: "", 거래처주소: "", 거래처대표: "", 거래처담당자: "", 거래처Email: "",
@@ -272,12 +272,16 @@ export default function Contracts() {
     { 제목: `[${partner}] 거래처등록`, 파트너사: partner, 구분: "거래처등록", 상태: "요청전" },
   ]);
 
-  // 신규 프로젝트 템플릿
-  // 첫 프로젝트(본계약에 프로토타입 포함): 지출기안만 / 두 번째부터: 부속합의서 + 지출기안
+  // 신규 프로젝트 템플릿 — 부속합의서 → 프로토타입 지출기안 순서
+  // 첫 프로젝트: 부속합의서가 파트너십계약에 포함 → 완료 상태 + '파트너십계약 포함' 표시
+  // 두 번째부터: 부속합의서는 별도 체결(요청전)
   const createProjectTemplate = (partner, proj) => {
     const isFirst = !items.some(i => i.파트너사 === partner && PROJECT_LEVEL_KINDS.includes(i.구분));
+    const 부속 = isFirst
+      ? { 제목: `[${proj}] 부속합의서`, 파트너사: partner, 프로젝트: proj, 구분: "부속합의서", 상태: "완료", 파트너십계약포함: true }
+      : { 제목: `[${proj}] 부속합의서`, 파트너사: partner, 프로젝트: proj, 구분: "부속합의서", 상태: "요청전" };
     return createRows([
-      ...(isFirst ? [] : [{ 제목: `[${proj}] 부속합의서`, 파트너사: partner, 프로젝트: proj, 구분: "부속합의서", 상태: "요청전" }]),
+      부속,
       { 제목: `[${proj}] 프로토타입 지출기안`, 파트너사: partner, 프로젝트: proj, 구분: "지출기안", 이터레이션구분: "프로토타입", 상태: "요청전" },
     ]);
   };
@@ -330,6 +334,11 @@ export default function Contracts() {
 
   // 파트너의 거래처등록 항목 (파트너 공통 서류의 원본)
   const partnerVendor = (partner) => items.find(i => i.파트너사 === partner && i.구분 === "거래처등록") || null;
+  // 파트너의 파트너십계약 계약서 URL (첫 프로젝트 부속합의서가 여기 포함됨)
+  const partnerMasterUrl = (partner) => {
+    const m = items.find(i => i.파트너사 === partner && i.구분 === "파트너십계약");
+    return m ? (m.계약서URL || "") : "";
+  };
   // 서류 수령 여부 — 파트너 공통 서류는 거래처등록 상태를 따름
   const docReceived = (item, doc) => {
     if (item.구분 !== "거래처등록" && PARTNER_DOCS.includes(doc)) {
@@ -450,6 +459,12 @@ export default function Contracts() {
           <div>
             <span style={label}>이터레이션 구분</span>
             <input style={input} value={vals.이터레이션구분} onChange={e => upd(f => ({ ...f, 이터레이션구분: e.target.value }))} placeholder="프로토타입 / 이터레이션1..." />
+          </div>
+        )}
+
+        {vals.구분 === "부속합의서" && vals.파트너십계약포함 && (
+          <div style={{ fontSize: 11, color: "#B45309", background: amberFaint, border: "1px solid rgba(245,180,0,.3)", borderRadius: 5, padding: "6px 10px" }}>
+            이 부속합의서는 파트너십계약(본계약)에 포함됩니다. 별도 체결 없이 파트너십계약서로 갈음합니다.
           </div>
         )}
 
@@ -614,6 +629,8 @@ export default function Contracts() {
     const docs = DOCS_BY_KIND[item.구분] || [];
     const docsDone = docs.filter(d => docReceived(item, d)).length;
     const d = dday(item.만료일);
+    const covered = item.구분 === "부속합의서" && item.파트너십계약포함;  // 파트너십계약에 포함된 첫 프로젝트 부속합의서
+    const masterUrl = covered ? partnerMasterUrl(item.파트너사) : "";
     const dim = !isOpen && !done && !reached; // 대기 단계
 
     const accent = done ? green : inProgress ? amber : reached ? blue : "var(--line)";
@@ -657,6 +674,7 @@ export default function Contracts() {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
               <span style={{ fontSize: 10.5, color: "var(--muted)" }}>{item.구분}</span>
+              {covered && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".03em", color: "#B45309", background: amberFaint, border: "1px solid rgba(245,180,0,.3)", borderRadius: 3, padding: "1px 6px" }}>파트너십계약 포함</span>}
               {docs.length > 0 && <span style={{ fontSize: 10, color: docsDone < docs.length && inProgress ? "#C2410C" : "var(--muted)", fontWeight: docsDone < docs.length && inProgress ? 700 : 400 }}>서류 {docsDone}/{docs.length}</span>}
               {d !== null && d >= 0 && d <= 30 && !done && (
                 item.자동갱신
@@ -670,6 +688,7 @@ export default function Contracts() {
           {/* 우측 상태/링크/펼침 */}
           {isOpen ? null : <StatusBadge 상태={item.상태 || "요청전"} />}
           {!isOpen && item.계약서URL && <a href={item.계약서URL} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, background: blueFaint, color: blue, border: "1px solid rgba(0,120,212,.25)", textDecoration: "none", whiteSpace: "nowrap" }}>계약서 →</a>}
+          {!isOpen && covered && !item.계약서URL && masterUrl && <a href={masterUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, background: blueFaint, color: blue, border: "1px solid rgba(0,120,212,.25)", textDecoration: "none", whiteSpace: "nowrap" }}>파트너십계약서 →</a>}
           {!isOpen && item.기안링크 && <a href={item.기안링크} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, background: greenFaint, color: green, border: "1px solid rgba(22,163,74,.25)", textDecoration: "none", whiteSpace: "nowrap" }}>기안 →</a>}
           {done && !isOpen && (
             <button onClick={e => { e.stopPropagation(); openEdit(item); }} title="수정" style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", padding: 2 }}>✎</button>
