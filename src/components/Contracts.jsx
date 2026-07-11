@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const IS_DEV = import.meta.env.DEV;
 const API_BASE = IS_DEV ? "http://localhost:5601" : "";
@@ -105,6 +105,27 @@ function dday(만료일) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const exp = new Date(만료일); exp.setHours(0, 0, 0, 0);
   return Math.round((exp - today) / 86400000);
+}
+
+// 정체 감지 — 최종업데이트일 기준 경과 일수 (PROCESS.md 알림 규칙)
+const STALE_DAYS = 7;
+function staleDaysOf(item) {
+  if (!item.최종업데이트일) return null;
+  const d = dday(item.최종업데이트일);
+  return d === null ? null : -d;
+}
+
+// 완료 조건 검사 — 완료인데 필수 데이터 없으면 경고 문구 반환 (PROCESS.md 단계별 완료 조건)
+function doneWarning(i) {
+  if (i.상태 !== "완료") return null;
+  if ((i.구분 === "파트너십계약" || i.구분 === "NDA") && !i.계약서URL) return "계약서 URL 미등록";
+  if (i.구분 === "부속합의서" && !i.파트너십계약포함 && !i.계약서URL) return "계약서 URL 미등록";
+  if (i.구분 === "지출기안" && !i.기안링크) return "기안 링크 미등록";
+  if (i.구분 === "거래처등록") {
+    const docsMissing = (DOCS_BY_KIND.거래처등록 || []).some(doc => !i[doc] && !i[`${doc}링크`]);
+    if (docsMissing || !i.거래처식별번호 || !i.거래처명) return "서류/거래처 정보 미비";
+  }
+  return null;
 }
 
 // 그룹 내 순서 정렬 (지출기안 여러 건은 기존 순서 유지)
@@ -370,6 +391,62 @@ export default function Contracts() {
   const projectRows = (proj) => orderGroup(selectedRows.filter(i => PROJECT_LEVEL_KINDS.includes(i.구분) && (i.프로젝트 || "(프로젝트 미지정)") === proj));
   const doneCount = selectedRows.filter(i => i.상태 === "완료").length;
 
+  // ── 지금 할 일 큐 (PROCESS.md 백로그 1~5: 다음 단계·완료 경고·정체·이터레이션·헬스체크) ──
+  const todoQueue = useMemo(() => {
+    const out = [];
+    allPartners.forEach(p => {
+      const rows = items.filter(i => i.파트너사 === p);
+      if (rows.length === 0) return;
+      const pushNext = (item) => {
+        const s = staleDaysOf(item);
+        const docs = DOCS_BY_KIND[item.구분] || [];
+        const missing = docs.filter(doc => !docReceived(item, doc));
+        out.push({
+          key: `next-${item.id}`, kind: "next", partner: p, item, label: item.제목,
+          reason: item.상태 === "진행중" ? (missing.length ? `서류 미비: ${missing.join("·")}` : "진행중 — 마무리") : "다음 단계 시작",
+          stale: s !== null && s >= STALE_DAYS ? s : null,
+          prio: item.상태 === "진행중" ? 1 : 2,
+        });
+      };
+      const common = orderGroup(rows.filter(i => PARTNER_LEVEL_KINDS.includes(i.구분)));
+      const nc = common.find(i => i.상태 !== "완료");
+      if (nc) pushNext(nc);
+      const projs = [...new Set(rows.filter(i => PROJECT_LEVEL_KINDS.includes(i.구분)).map(i => i.프로젝트 || "(프로젝트 미지정)"))];
+      projs.forEach(proj => {
+        const plist = orderGroup(rows.filter(i => PROJECT_LEVEL_KINDS.includes(i.구분) && (i.프로젝트 || "(프로젝트 미지정)") === proj));
+        const np = plist.find(i => i.상태 !== "완료");
+        if (np) pushNext(np);
+        else out.push({ key: `iter-${p}-${proj}`, kind: "iter", partner: p, proj, label: `[${proj}] 다음 이터레이션 지출기안`, reason: "전 단계 완료 — 다음 정산 확정 시 생성", prio: 5 });
+        // 헬스체크: 프로젝트에 부속합의서 단계 자체가 없음 (구버전 템플릿)
+        if (!plist.some(i => i.구분 === "부속합의서")) {
+          out.push({ key: `heal-${p}-${proj}`, kind: "heal", partner: p, proj, label: `[${proj}] 부속합의서 단계 누락`, reason: "클릭해서 단계 생성", prio: 4, firstProject: projs.length === 1 });
+        }
+      });
+      // 완료 조건 경고
+      rows.forEach(i => {
+        const w = doneWarning(i);
+        if (w) out.push({ key: `warn-${i.id}`, kind: "warn", partner: p, item: i, label: i.제목, reason: `완료인데 ${w}`, prio: 3 });
+      });
+    });
+    return out.sort((a, b) => (a.prio - b.prio) || ((b.stale || 0) - (a.stale || 0)));
+  }, [items, allPartners]); // eslint-disable-line
+
+  // 누락된 부속합의서 단계 생성 — 유일 프로젝트면 첫 프로젝트로 보고 파트너십계약 포함(완료) 처리
+  const healProject = (a) => {
+    const projField = a.proj === "(프로젝트 미지정)" ? {} : { 프로젝트: a.proj };
+    createRows([a.firstProject
+      ? { 제목: `[${a.proj}] 부속합의서`, 파트너사: a.partner, ...projField, 구분: "부속합의서", 상태: "완료", 파트너십계약포함: true }
+      : { 제목: `[${a.proj}] 부속합의서`, 파트너사: a.partner, ...projField, 구분: "부속합의서", 상태: "요청전" }]);
+  };
+
+  const actOn = (a) => {
+    if (a.kind === "heal") { setSelected(a.partner); healProject(a); return; }
+    if (a.kind === "iter") { setSelected(a.partner); openAdd("지출기안", a.partner, a.proj === "(프로젝트 미지정)" ? "" : a.proj); return; }
+    pendingOpen.current = a.item.id;
+    setSelected(a.partner);
+    setOpenId(a.item.id);
+  };
+
   // 강조 대상 판정 (맥락상 "지금 유도할 다음 액션" 하나만 앰버)
   const partnerIsPrimary = visiblePartnerList.length === 0;                              // 파트너 자체가 없을 때
   const hasRealProject = projectNames.some(p => p !== "(프로젝트 미지정)");
@@ -385,8 +462,9 @@ export default function Contracts() {
   const firstIncompleteId = useMemo(() => (orderedSteps.find(i => i.상태 !== "완료") || {}).id || null, [orderedSteps]);
   const effectiveOpen = openId === null ? firstIncompleteId : openId;
 
-  // 파트너 전환 시 아코디언 초기화 (자동 = 첫 미완료)
-  useEffect(() => { setOpenId(null); }, [selected]);
+  // 파트너 전환 시 아코디언 초기화 (자동 = 첫 미완료). 큐 클릭으로 넘어온 경우엔 지정 항목을 연다
+  const pendingOpen = useRef(null);
+  useEffect(() => { setOpenId(pendingOpen.current); pendingOpen.current = null; }, [selected]);
 
   // 열린 스텝이 바뀌면 draft 로드
   useEffect(() => {
@@ -479,9 +557,17 @@ export default function Contracts() {
           </div>
         )}
 
-        {vals.구분 === "부속합의서" && vals.파트너십계약포함 && (
-          <div style={{ fontSize: 11, color: "#B45309", background: amberFaint, border: "1px solid rgba(245,180,0,.3)", borderRadius: 5, padding: "6px 10px" }}>
-            이 부속합의서는 파트너십계약(본계약)에 포함됩니다. 별도 체결 없이 파트너십계약서로 갈음합니다.
+        {vals.구분 === "부속합의서" && (
+          <div>
+            <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+              <input type="checkbox" checked={!!vals.파트너십계약포함} onChange={e => upd(f => ({ ...f, 파트너십계약포함: e.target.checked }))} />
+              파트너십계약 포함 (첫 프로젝트 — 본계약에 종속)
+            </label>
+            {vals.파트너십계약포함 && (
+              <div style={{ fontSize: 11, color: "#B45309", background: amberFaint, border: "1px solid rgba(245,180,0,.3)", borderRadius: 5, padding: "6px 10px", marginTop: 6 }}>
+                이 부속합의서는 파트너십계약(본계약)에 포함됩니다. 별도 체결 없이 파트너십계약서로 갈음합니다.
+              </div>
+            )}
           </div>
         )}
 
@@ -661,6 +747,7 @@ export default function Contracts() {
     const d = dday(item.만료일);
     const covered = item.구분 === "부속합의서" && item.파트너십계약포함;  // 파트너십계약에 포함된 첫 프로젝트 부속합의서
     const masterUrl = covered ? partnerMasterUrl(item.파트너사) : "";
+    const warn = doneWarning(item); // 완료인데 필수 데이터 없음
     const dim = !isOpen && !done && !reached; // 대기 단계
 
     const accent = done ? green : inProgress ? amber : reached ? blue : "var(--line)";
@@ -705,6 +792,7 @@ export default function Contracts() {
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3 }}>
               <span style={{ fontSize: 10.5, color: "var(--muted)" }}>{item.구분}</span>
               {covered && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".03em", color: "#B45309", background: amberFaint, border: "1px solid rgba(245,180,0,.3)", borderRadius: 3, padding: "1px 6px" }}>파트너십계약 포함</span>}
+              {warn && <span style={{ fontSize: 10, fontWeight: 700, color: red }}>⚠ {warn}</span>}
               {docs.length > 0 && <span style={{ fontSize: 10, color: docsDone < docs.length && inProgress ? "#C2410C" : "var(--muted)", fontWeight: docsDone < docs.length && inProgress ? 700 : 400 }}>서류 {docsDone}/{docs.length}</span>}
               {d !== null && d >= 0 && d <= 30 && !done && (
                 item.자동갱신
@@ -826,6 +914,37 @@ export default function Contracts() {
           </a>
         </div>
       </div>
+
+      {/* ── 지금 할 일 큐 ── */}
+      {!loading && !error && todoQueue.length > 0 && (
+        <div style={{ borderBottom: "1px solid var(--line)", background: "var(--card)", padding: "10px 20px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--muted)" }}>지금 할 일</span>
+            <span style={{ fontSize: 10, color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>{todoQueue.length}건</span>
+          </div>
+          <div className="slim-scroll" style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 126, overflowY: "auto" }}>
+            {todoQueue.map(a => {
+              const chip = a.kind === "warn" ? { t: "경고", c: red, bg: "rgba(220,38,38,.07)" }
+                : a.kind === "heal" ? { t: "누락", c: "#B45309", bg: amberFaint }
+                : a.kind === "iter" ? { t: "정산", c: "var(--muted)", bg: "transparent" }
+                : { t: "다음", c: blue, bg: blueFaint };
+              return (
+                <button key={a.key} onClick={() => actOn(a)}
+                  style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", borderRadius: 5, border: "1px solid var(--line)", background: "transparent", cursor: "pointer", fontFamily: "inherit", textAlign: "left", minWidth: 0 }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "#F8F9FA"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".04em", color: chip.c, background: chip.bg, border: `1px solid ${chip.c === "var(--muted)" ? "var(--line)" : "transparent"}`, borderRadius: 3, padding: "1px 6px", flexShrink: 0 }}>{chip.t}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", flexShrink: 0 }}>{a.partner}</span>
+                  <span style={{ fontSize: 12, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.label}</span>
+                  <span style={{ marginLeft: "auto", fontSize: 10.5, color: a.stale ? "#C2410C" : "var(--muted)", flexShrink: 0, fontWeight: a.stale ? 700 : 400 }}>
+                    {a.stale ? `${a.stale}일 정체 · ` : ""}{a.reason}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Body ── */}
       {loading ? (

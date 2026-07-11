@@ -57,6 +57,7 @@ export default async function handler(req, res) {
         파트너사: p["파트너사"]?.select?.name || txt("파트너사"),
         만료일: p["만료일"]?.date?.start || null,
         자동갱신: p["자동갱신"]?.checkbox || false,
+        최종업데이트일: p["최종업데이트일"]?.date?.start || null,
         법인등록증: p["법인등록증"]?.checkbox || false,
         법인통장: p["법인통장"]?.checkbox || false,
         부속합의서: p["부속합의서"]?.checkbox || false,
@@ -87,8 +88,16 @@ export default async function handler(req, res) {
       .map(i => ({ 제목: i.제목, missing: DOCS_BY_KIND[i.구분].filter(doc => !docOk(i, doc)) }))
       .filter(i => i.missing.length > 0);
 
-    if (expiring.length === 0 && missingDocs.length === 0) {
-      return res.json({ message: "알림 대상 없음 (만료 임박·서류 미비 없음)", sent: 0 });
+    // 3) 정체 감지 — 최종업데이트일 기준 7일+ 무변화인 미완료 항목
+    const STALE_DAYS = 7;
+    const stale = items
+      .filter(i => i.상태 !== "완료" && i.최종업데이트일)
+      .map(i => ({ 제목: i.제목, sd: -dday(i.최종업데이트일) }))
+      .filter(i => i.sd >= STALE_DAYS)
+      .sort((a, b) => b.sd - a.sd);
+
+    if (expiring.length === 0 && missingDocs.length === 0 && stale.length === 0) {
+      return res.json({ message: "알림 대상 없음 (만료 임박·서류 미비·정체 없음)", sent: 0 });
     }
 
     const lines = [`*📝 계약·행정 현황 알림* <!subteam^${BIZ_GROUP_ID}|biz>`];
@@ -101,6 +110,11 @@ export default async function handler(req, res) {
       lines.push("", "*📄 서류 미비 (진행중)*");
       missingDocs.forEach(i => lines.push(`• ${i.제목} — ${i.missing.join(", ")}`));
     }
+    if (stale.length > 0) {
+      lines.push("", `*🕒 ${STALE_DAYS}일+ 정체 항목*`);
+      stale.slice(0, 10).forEach(i => lines.push(`• ${i.제목} — ${i.sd}일째 업데이트 없음`));
+      if (stale.length > 10) lines.push(`• 외 ${stale.length - 10}건`);
+    }
 
     lines.push("", "계약 관리 대시보드", `• ${DASHBOARD_URL}`);
 
@@ -110,7 +124,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({ text: lines.join("\n") }),
     });
 
-    return res.json({ success: true, sent: expiring.length + missingDocs.length, expiring: expiring.length, missingDocs: missingDocs.length });
+    return res.json({ success: true, sent: expiring.length + missingDocs.length + stale.length, expiring: expiring.length, missingDocs: missingDocs.length, stale: stale.length });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: error.message });
