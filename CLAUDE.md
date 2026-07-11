@@ -2,6 +2,8 @@
 
 내부용 CPI Test Dashboard + LTV Calculator. React + Vite, Vercel 배포.
 
+**계약 관리 탭 작업 시 [PROCESS.md](PROCESS.md) 먼저 읽을 것** — 탭의 역할 정의·프로세스 규칙·완료 조건·백로그가 정리돼 있다. 기능 결정은 그 문서 기준으로.
+
 ## 프로젝트 구조
 
 ```
