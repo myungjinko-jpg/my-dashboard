@@ -124,6 +124,7 @@ export default function Contracts() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [addingPartner, setAddingPartner] = useState(false);
   const [newPartnerName, setNewPartnerName] = useState("");
+  const [newPartnerProject, setNewPartnerProject] = useState("");
   const [addingProject, setAddingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [guideModal, setGuideModal] = useState(null); // 가이드 모달 (구분명)
@@ -841,22 +842,45 @@ export default function Contracts() {
 
             <div style={{ padding: 8, borderTop: "1px solid var(--line)" }}>
               {addingPartner ? (
-                <form onSubmit={e => {
-                  e.preventDefault();
-                  const name = newPartnerName.trim();
-                  if (!name) return;
-                  setPartners(prev => prev.includes(name) ? prev : [...prev, name]);
-                  setSelected(name);
-                  setAddingPartner(false);
-                  setNewPartnerName("");
-                  if (!items.some(i => i.파트너사 === name)) {
-                    createPartnerTemplate(name).then(() => setAddingProject(true));
-                  }
-                }}>
+                <form style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                  onSubmit={e => {
+                    e.preventDefault();
+                    const name = newPartnerName.trim();
+                    const proj = newPartnerProject.trim();
+                    if (!name) return;
+                    setPartners(prev => prev.includes(name) ? prev : [...prev, name]);
+                    setSelected(name);
+                    setAddingPartner(false);
+                    setNewPartnerName("");
+                    setNewPartnerProject("");
+                    if (!items.some(i => i.파트너사 === name)) {
+                      if (proj) {
+                        // 파트너십계약 → 거래처등록 → 부속합의서(파트너십계약 포함) → 프로토타입 지출기안 한 번에 생성
+                        createRows([
+                          { 제목: `[${name}] 파트너십계약`, 파트너사: name, 구분: "파트너십계약", 상태: "요청전" },
+                          { 제목: `[${name}] 거래처등록`, 파트너사: name, 구분: "거래처등록", 상태: "요청전" },
+                          { 제목: `[${proj}] 부속합의서`, 파트너사: name, 프로젝트: proj, 구분: "부속합의서", 상태: "완료", 파트너십계약포함: true },
+                          { 제목: `[${proj}] 프로토타입 지출기안`, 파트너사: name, 프로젝트: proj, 구분: "지출기안", 이터레이션구분: "프로토타입", 상태: "요청전" },
+                        ]);
+                      } else {
+                        createPartnerTemplate(name).then(() => setAddingProject(true));
+                      }
+                    }
+                  }}>
                   <input autoFocus value={newPartnerName} onChange={e => setNewPartnerName(e.target.value)}
-                    onBlur={() => { if (!newPartnerName.trim()) setAddingPartner(false); }}
-                    placeholder="파트너사명 입력 후 Enter"
+                    placeholder="파트너사명"
                     style={{ width: "100%", padding: "6px 9px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", boxSizing: "border-box" }} />
+                  <input value={newPartnerProject} onChange={e => setNewPartnerProject(e.target.value)}
+                    placeholder="첫 프로젝트명 (선택)"
+                    style={{ width: "100%", padding: "6px 9px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", boxSizing: "border-box" }} />
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button type="button" onClick={() => { setAddingPartner(false); setNewPartnerName(""); setNewPartnerProject(""); }}
+                      style={{ ...addBtn(false), flex: 1, textAlign: "center" }}>취소</button>
+                    <button type="submit" disabled={!newPartnerName.trim() || creatingTpl}
+                      style={{ ...addBtn(true), flex: 2, textAlign: "center", opacity: !newPartnerName.trim() || creatingTpl ? 0.5 : 1 }}>
+                      {creatingTpl ? "생성 중…" : "생성 (Enter)"}
+                    </button>
+                  </div>
                 </form>
               ) : (
                 <button onClick={() => setAddingPartner(true)} style={{ ...addBtn(partnerIsPrimary), width: "100%", textAlign: "center" }}>+ 파트너사</button>
