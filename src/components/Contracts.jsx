@@ -988,7 +988,7 @@ export default function Contracts() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: 500, border: "1px solid var(--line)", borderRadius: 8, overflow: "hidden", background: "var(--card)" }}>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: 500, background: "var(--zone)", borderRadius: 10, padding: 12, gap: 10 }}>
       <style>{`
         .slim-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; }
         .slim-scroll:hover { scrollbar-color: rgba(120,124,135,.35) transparent; }
@@ -1008,7 +1008,7 @@ export default function Contracts() {
       <datalist id="owner-list">{owners.map(o => <option key={o} value={o} />)}</datalist>
 
       {/* ── ① 확인 존: 담당자 필터 · 상태 카운트 · 알림 칩 · 액션 ── */}
-      <div style={{ padding: "9px 20px 11px", borderBottom: "1px solid var(--line)", background: "var(--zone)" }}>
+      <div style={{ padding: "10px 18px 12px", background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
       <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
         <span>확인</span><span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>오늘 주의할 것</span>
       </div>
@@ -1064,7 +1064,7 @@ export default function Contracts() {
 
       {/* ── ② 지금 할 일 존 (접이식) ── */}
       {!loading && !error && todoQueue.length > 0 && (
-        <div style={{ borderBottom: "1px solid var(--line)", background: "var(--zone)", borderLeft: `3px solid ${amber}`, padding: "8px 20px" }}>
+        <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderLeft: `3px solid ${amber}`, borderRadius: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", padding: "8px 18px" }}>
           <div onClick={() => setQueueOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: queueOpen ? 6 : 0, cursor: "pointer" }}>
             <span style={{ fontSize: 12, color: "var(--muted)", transform: queueOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}>▾</span>
             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "#B45309" }}>지금 할 일</span>
@@ -1115,7 +1115,7 @@ export default function Contracts() {
           데이터 로드 실패: {error} <button onClick={load} style={{ marginLeft: 8 }}>재시도</button>
         </div>
       ) : (
-        <div style={{ display: "flex", flex: 1, overflow: "hidden", height: 620, maxHeight: "74vh" }}>
+        <div style={{ display: "flex", flex: 1, overflow: "hidden", height: 620, maxHeight: "74vh", background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
 
           {/* ── 작업 존 · 왼쪽 nav (파트너사) ── */}
           <div style={{ width: 210, flexShrink: 0, borderRight: "1px solid var(--line)", display: "flex", flexDirection: "column", background: "var(--zone)" }}>
