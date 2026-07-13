@@ -25,7 +25,7 @@ function titleColor(name) {
 
 export default function OverviewTable({ rawData, selectedProject, onSelect }) {
   const [q, setQ] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("TESTING");
 
   const rows = useMemo(() => {
     const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -45,10 +45,14 @@ export default function OverviewTable({ rawData, selectedProject, onSelect }) {
       const iterRows = allRows.filter((r) => r.Iteration === latestIteration);
       const metricRows = iterRows.filter(hasAnyMetricData);
 
-      // 최신 데이터일
+      // 최신 데이터일 (라이브 판단·정렬용)
       const latestTs = Math.max(...allRows.map((r) => parseDateValue(r.Date) || 0));
       const latestDate = new Date(latestTs); latestDate.setHours(0, 0, 0, 0);
       const isLive = latestTs > 0 && latestDate >= twoDaysAgo;
+
+      // 시작 날짜 = 최신 이터레이션의 가장 이른 날짜 (표기용)
+      const iterTs = iterRows.map((r) => parseDateValue(r.Date)).filter(Boolean);
+      const startTs = iterTs.length ? Math.min(...iterTs) : null;
 
       const hasMetric = metricRows.length > 0;
       const status = !hasMetric ? "REGISTERING" : (isLive ? "TESTING" : "COMPLETED");
@@ -56,7 +60,8 @@ export default function OverviewTable({ rawData, selectedProject, onSelect }) {
       return {
         project,
         iteration: latestIteration || "",
-        date: latestTs > 0 ? latestTs : null,
+        date: startTs,
+        sortTs: latestTs,
         status,
         isLive,
         cpi: hasMetric ? getWeightedCpi(metricRows) : null,
@@ -64,8 +69,8 @@ export default function OverviewTable({ rawData, selectedProject, onSelect }) {
         d0pt: hasMetric ? getWeightedD0Playtime(metricRows) : null,
       };
     })
-    // 라이브 우선 → 최신 데이터일 내림차순
-    .sort((a, b) => (b.isLive - a.isLive) || ((b.date || 0) - (a.date || 0)));
+    // 라이브 우선 → 최신 활동일 내림차순
+    .sort((a, b) => (b.isLive - a.isLive) || ((b.sortTs || 0) - (a.sortTs || 0)));
   }, [rawData]);
 
   const filtered = useMemo(() => {
@@ -77,17 +82,19 @@ export default function OverviewTable({ rawData, selectedProject, onSelect }) {
     });
   }, [rows, q, statusFilter]);
 
-  const th = { fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--muted)", padding: "0 14px", textAlign: "left" };
-  const td = { fontSize: 13, padding: "0 14px", color: "var(--text)" };
+  // 타이틀은 넓게, 나머지 6개 데이터 컬럼은 균등 간격
+  const GRID = "minmax(200px, 2.2fr) repeat(6, minmax(78px, 1fr))";
+  const th = { fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--muted)", padding: "0 16px", textAlign: "left" };
+  const td = { fontSize: 13, padding: "0 16px", color: "var(--text)" };
 
   return (
     <div style={{ border: "1px solid var(--card-border)", borderRadius: 12, overflow: "hidden", background: "var(--card)" }}>
       {/* 필터 바 */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderBottom: "1px solid var(--line)", flexWrap: "wrap" }}>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="게임 타이틀 검색…"
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search game title…"
           style={{ flex: 1, minWidth: 180, padding: "7px 12px", fontSize: 13, border: "1px solid var(--card-border)", borderRadius: 8, background: "var(--bg)", color: "var(--text)" }} />
         <div style={{ display: "flex", gap: 4 }}>
-          {[["all", "전체"], ["TESTING", "진행중"], ["COMPLETED", "완료"], ["REGISTERING", "등록중"]].map(([k, label]) => {
+          {[["all", "All"], ["TESTING", "Testing"], ["COMPLETED", "Completed"], ["REGISTERING", "Registering"]].map(([k, label]) => {
             const active = statusFilter === k;
             return (
               <button key={k} onClick={() => setStatusFilter(k)}
@@ -100,11 +107,11 @@ export default function OverviewTable({ rawData, selectedProject, onSelect }) {
       </div>
 
       {/* 헤더 */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.6fr 96px 96px 110px 72px 72px 96px", alignItems: "center", height: 38, borderBottom: "1px solid var(--line)", background: "var(--card-bg-subtle)" }}>
-        <span style={th}>게임 타이틀</span>
-        <span style={th}>날짜</span>
-        <span style={th}>상태</span>
-        <span style={th}>테스트</span>
+      <div style={{ display: "grid", gridTemplateColumns: GRID, alignItems: "center", height: 38, borderBottom: "1px solid var(--line)", background: "var(--card-bg-subtle)" }}>
+        <span style={th}>GAME TITLE</span>
+        <span style={th}>START DATE</span>
+        <span style={th}>STATUS</span>
+        <span style={th}>TYPE</span>
         <span style={{ ...th, textAlign: "right" }}>CPI</span>
         <span style={{ ...th, textAlign: "right" }}>D1 RET</span>
         <span style={{ ...th, textAlign: "right" }}>D0 PLAYTIME</span>
@@ -121,7 +128,7 @@ export default function OverviewTable({ rawData, selectedProject, onSelect }) {
           return (
             <div key={r.project} onClick={() => onSelect(r.project)}
               style={{
-                display: "grid", gridTemplateColumns: "1.6fr 96px 96px 110px 72px 72px 96px", alignItems: "center",
+                display: "grid", gridTemplateColumns: GRID, alignItems: "center",
                 height: 52, borderBottom: "1px solid var(--line)", cursor: "pointer",
                 background: sel ? "var(--primary-light)" : "var(--card)",
                 borderLeft: `3px solid ${sel ? "var(--primary)" : "transparent"}`,
