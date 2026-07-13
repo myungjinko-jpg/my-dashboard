@@ -385,8 +385,8 @@ export default function App() {
       <section className="section-block">
         <div className="section-header">
           <div className="section-eyebrow">Test Status</div>
-          <h2 className="section-heading">전체 테스트 현황</h2>
-          <p className="section-desc">전 타이틀의 최신 테스트 결과 요약 — 행 클릭 시 아래 상세로 이동. 진행중(라이브)이 상단.</p>
+          <h2 className="section-heading">All Test Status</h2>
+          <p className="section-desc">Latest test result per title. Live tests on top — click a row to jump to its detail below.</p>
         </div>
         <OverviewTable rawData={rawData} selectedProject={project} onSelect={(p) => {
           setProject(p);

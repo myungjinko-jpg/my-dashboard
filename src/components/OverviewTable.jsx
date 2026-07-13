@@ -82,10 +82,11 @@ export default function OverviewTable({ rawData, selectedProject, onSelect }) {
     });
   }, [rows, q, statusFilter]);
 
-  // 타이틀은 넓게, 나머지 6개 데이터 컬럼은 균등 간격
-  const GRID = "minmax(200px, 2.2fr) repeat(6, minmax(78px, 1fr))";
-  const th = { fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--muted)", padding: "0 16px", textAlign: "left" };
-  const td = { fontSize: 13, padding: "0 16px", color: "var(--text)" };
+  // 타이틀 4 : 나머지 6 (데이터 6컬럼 균등)
+  const GRID = "minmax(220px, 4fr) repeat(6, 1fr)";
+  const th = { fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--muted)", padding: "0 12px", textAlign: "left" };
+  const thC = { ...th, textAlign: "center" };
+  const td = { fontSize: 13, padding: "0 12px", color: "var(--text)", textAlign: "center" };
 
   return (
     <div style={{ border: "1px solid var(--card-border)", borderRadius: 12, overflow: "hidden", background: "var(--card)" }}>
@@ -109,18 +110,18 @@ export default function OverviewTable({ rawData, selectedProject, onSelect }) {
       {/* 헤더 */}
       <div style={{ display: "grid", gridTemplateColumns: GRID, alignItems: "center", height: 38, borderBottom: "1px solid var(--line)", background: "var(--card-bg-subtle)" }}>
         <span style={th}>GAME TITLE</span>
-        <span style={th}>START DATE</span>
-        <span style={th}>STATUS</span>
-        <span style={th}>TYPE</span>
-        <span style={{ ...th, textAlign: "right" }}>CPI</span>
-        <span style={{ ...th, textAlign: "right" }}>D1 RET</span>
-        <span style={{ ...th, textAlign: "right" }}>D0 PLAYTIME</span>
+        <span style={thC}>START DATE</span>
+        <span style={thC}>STATUS</span>
+        <span style={thC}>TYPE</span>
+        <span style={thC}>CPI</span>
+        <span style={thC}>D1 RET</span>
+        <span style={thC}>D0 PLAYTIME</span>
       </div>
 
       {/* 행 */}
       <div style={{ maxHeight: 420, overflowY: "auto" }}>
         {filtered.length === 0 && (
-          <div style={{ padding: 30, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>표시할 프로젝트가 없습니다.</div>
+          <div style={{ padding: 30, textAlign: "center", color: "var(--muted)", fontSize: 13 }}>No projects to show.</div>
         )}
         {filtered.map((r) => {
           const sel = r.project === selectedProject;
@@ -143,13 +144,13 @@ export default function OverviewTable({ rawData, selectedProject, onSelect }) {
                 {r.status === "TESTING" && <span title="테스트 진행중" style={{ width: 7, height: 7, borderRadius: "50%", background: "#DC2626", flexShrink: 0 }} />}
               </span>
               <span style={{ ...td, fontSize: 12, color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>{fmtDate(r.date)}</span>
-              <span style={td}>
+              <span style={{ ...td, display: "flex", justifyContent: "center" }}>
                 <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".03em", padding: "3px 8px", borderRadius: 4, background: ss.bg, color: ss.fg }}>{r.status}</span>
               </span>
               <span style={{ ...td, fontSize: 12, color: "var(--muted)" }}>{r.iteration || "-"}</span>
-              <span style={{ ...td, textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{r.cpi ? formatCurrency(r.cpi) : "-"}</span>
-              <span style={{ ...td, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{r.d1 != null && r.d1 >= 0 ? formatPercent(r.d1) : "-"}</span>
-              <span style={{ ...td, textAlign: "right", fontVariantNumeric: "tabular-nums", color: "var(--muted)" }}>{r.d0pt ? `${formatNumber(Math.round(r.d0pt))}s` : "-"}</span>
+              <span style={{ ...td, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{r.cpi ? formatCurrency(r.cpi) : "-"}</span>
+              <span style={{ ...td, fontVariantNumeric: "tabular-nums" }}>{r.d1 != null && r.d1 >= 0 ? formatPercent(r.d1) : "-"}</span>
+              <span style={{ ...td, fontVariantNumeric: "tabular-nums", color: "var(--muted)" }}>{r.d0pt ? `${formatNumber(Math.round(r.d0pt))}s` : "-"}</span>
             </div>
           );
         })}
