@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   hasAnyMetricData, parseDateValue, formatCurrency, formatPercent,
-  formatNumber, getIterationOrder, getWeightedCpi, getWeightedRetention, getWeightedD0Playtime,
+  formatNumber, getWeightedCpi, getWeightedRetention, getWeightedD0Playtime,
 } from "../utils";
 
 function fmtDate(ts) {
@@ -39,18 +39,17 @@ export default function OverviewTable({ rawData, selectedProject, onSelect }) {
     });
 
     return Object.entries(byProject).map(([project, allRows]) => {
-      // 최신 이터레이션
-      const iterations = [...new Set(allRows.map((r) => r.Iteration).filter(Boolean))];
-      const latestIteration = iterations.sort((a, b) => getIterationOrder(b) - getIterationOrder(a))[0];
-      const iterRows = allRows.filter((r) => r.Iteration === latestIteration);
+      // 이번 테스트 = 가장 최근 데이터가 속한 이터레이션 (번호 순서가 아니라 실제 날짜 기준)
+      const latestTs = Math.max(...allRows.map((r) => parseDateValue(r.Date) || 0));
+      const latestRow = allRows.find((r) => (parseDateValue(r.Date) || 0) === latestTs);
+      const currentIteration = latestRow?.Iteration || "";
+      const iterRows = allRows.filter((r) => r.Iteration === currentIteration);
       const metricRows = iterRows.filter(hasAnyMetricData);
 
-      // 최신 데이터일 (라이브 판단·정렬용)
-      const latestTs = Math.max(...allRows.map((r) => parseDateValue(r.Date) || 0));
       const latestDate = new Date(latestTs); latestDate.setHours(0, 0, 0, 0);
       const isLive = latestTs > 0 && latestDate >= twoDaysAgo;
 
-      // 시작 날짜 = 최신 이터레이션의 가장 이른 날짜 (표기용)
+      // 시작 날짜 = 이번 테스트(현재 이터레이션)의 첫 데이터 날짜
       const iterTs = iterRows.map((r) => parseDateValue(r.Date)).filter(Boolean);
       const startTs = iterTs.length ? Math.min(...iterTs) : null;
 
@@ -59,7 +58,7 @@ export default function OverviewTable({ rawData, selectedProject, onSelect }) {
 
       return {
         project,
-        iteration: latestIteration || "",
+        iteration: currentIteration || "",
         date: startTs,
         sortTs: latestTs,
         status,
