@@ -18,6 +18,7 @@ import LtvCalculator from "./components/LtvCalculator";
 // import ProjectDashboard from "./components/ProjectDashboard"; // 임시 비활성화
 // import GddLibrary from "./components/GddLibrary"; // 임시 비활성화
 import Contracts from "./components/Contracts";
+import OverviewTable from "./components/OverviewTable";
 
 const SHEET_ID = "1pBJWVce2CgrPBlFMGbS2yCp6tBQnNn4gkEHz7jG3LZk";
 const SHEET_NAME = "Test_Raw%20Data";
@@ -37,6 +38,7 @@ export default function App() {
   const [sharingConfirm, setSharingConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState("cpi");
   const reportRef = useRef(null);
+  const detailRef = useRef(null);
 
   useEffect(() => {
     document.body.classList.toggle("dark", theme === "dark");
@@ -381,6 +383,18 @@ export default function App() {
       </section>
 
       <section className="section-block">
+        <div className="section-header">
+          <div className="section-eyebrow">Test Status</div>
+          <h2 className="section-heading">전체 테스트 현황</h2>
+          <p className="section-desc">전 타이틀의 최신 테스트 결과 요약 — 행 클릭 시 아래 상세로 이동. 진행중(라이브)이 상단.</p>
+        </div>
+        <OverviewTable rawData={rawData} selectedProject={project} onSelect={(p) => {
+          setProject(p);
+          setTimeout(() => detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+        }} />
+      </section>
+
+      <section className="section-block" ref={detailRef}>
         <div className="section-header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
           <div>
             <div className="section-eyebrow">Project Detail</div>
