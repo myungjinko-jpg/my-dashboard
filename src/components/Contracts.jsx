@@ -203,6 +203,7 @@ export default function Contracts() {
 
   // 아코디언 순차 흐름 상태
   const [openId, setOpenId] = useState(null);  // null=자동(첫 미완료), ""=전체 접힘, id=해당 항목
+  const [editingStep, setEditingStep] = useState(null);  // 완료 항목 편집 잠금 해제된 id
   const [draft, setDraft] = useState(null);    // 인라인 편집 중인 값
 
   const sendAlert = async () => {
@@ -598,8 +599,8 @@ export default function Contracts() {
     setDraft(item ? itemToForm(item) : null);
   }, [effectiveOpen]); // eslint-disable-line
 
-  const openStep = (item) => setOpenId(item.id);
-  const collapseStep = () => setOpenId("");
+  const openStep = (item) => { setOpenId(item.id); setEditingStep(null); };
+  const collapseStep = () => { setOpenId(""); setEditingStep(null); };
 
   // 그룹 내 다음 미완료 스텝
   const nextIncompleteInGroup = (item) => {
@@ -616,6 +617,7 @@ export default function Contracts() {
     fields.상태 = complete ? "완료" : (item.상태 === "완료" ? "완료" : "진행중");
     const next = complete ? nextIncompleteInGroup(item) : null;
     await patch(item.id, fields);
+    setEditingStep(null);
     if (complete) { if (next) openStep(next); else collapseStep(); }
   };
 
@@ -888,6 +890,7 @@ export default function Contracts() {
     const masterUrl = covered ? partnerMasterUrl(item.파트너사) : "";
     const warn = doneWarning(item); // 완료인데 필수 데이터 없음
     const dim = !isOpen && !done && !reached; // 대기 단계
+    const locked = done && editingStep !== item.id; // 완료 항목은 '수정' 전까지 읽기 전용
 
     const accent = done ? green : inProgress ? amber : reached ? blue : "var(--line)";
     const headBg = isOpen ? "var(--card)" : done ? greenFaint : "var(--card)";
@@ -902,13 +905,14 @@ export default function Contracts() {
         {/* 헤더 */}
         <div onClick={() => (isOpen ? collapseStep() : openStep(item))}
           style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", cursor: "pointer", background: headBg, borderBottom: isOpen ? "1px solid var(--line)" : "none" }}>
-          {/* 순번/완료 서클 — 클릭 시 상태 순환 */}
-          <div onClick={e => { e.stopPropagation(); if (!isBusy) cycleStatus(item); }} title="클릭해서 상태 변경"
+          {/* 순번/완료 서클 — 클릭 시 상태 순환 (완료 항목은 수정 모드에서만) */}
+          <div onClick={e => { e.stopPropagation(); if (!isBusy && !locked) cycleStatus(item); }}
+            title={locked ? "완료 항목 — '수정'을 눌러야 변경 가능" : "클릭해서 상태 변경"}
             style={{
               width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 10, fontWeight: 700, fontVariantNumeric: "tabular-nums",
-              cursor: isBusy ? "wait" : "pointer",
+              cursor: isBusy ? "wait" : locked ? "default" : "pointer",
               border: `1.5px solid ${accent === "var(--line)" ? "var(--line)" : accent}`,
               background: done ? greenFaint : inProgress ? amberFaint : "transparent",
               color: done ? green : inProgress ? amber : "var(--muted)",
@@ -961,19 +965,31 @@ export default function Contracts() {
                 이전 단계가 아직 완료되지 않았어요. 순서대로 진행을 권장하지만, 필요하면 지금 처리해도 됩니다.
               </div>
             )}
-            {renderFields(draft, setDraft, false)}
+            {locked && (
+              <div style={{ fontSize: 11, color: "var(--muted)", background: greenFaint, border: "1px solid rgba(22,163,74,.25)", borderRadius: 5, padding: "6px 10px", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ color: green, fontWeight: 700 }}>✓ 완료된 항목</span> — 읽기 전용입니다. 내용을 바꾸려면 "수정"을 누르세요.
+              </div>
+            )}
+            <fieldset disabled={locked} style={{ border: "none", margin: 0, padding: 0, minWidth: 0 }}>
+              {renderFields(draft, setDraft, false)}
+            </fieldset>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16 }}>
               <button onClick={() => openEdit(item)} style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", fontFamily: "inherit", marginRight: "auto" }}>전체 편집 창 ↗</button>
               <button onClick={collapseStep} disabled={isBusy}
                 style={{ padding: "8px 14px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 6, background: "var(--card)", color: "var(--text)", cursor: "pointer", fontFamily: "inherit" }}>접기</button>
-              {!done && (
-                <button onClick={() => saveStep(item, false)} disabled={isBusy}
-                  style={{ padding: "8px 14px", fontSize: 12, fontWeight: 600, border: `1px solid ${amber}`, borderRadius: 6, background: amberFaint, color: "#B45309", cursor: "pointer", fontFamily: "inherit" }}>저장 (진행중)</button>
-              )}
-              <button onClick={() => saveStep(item, !done)} disabled={isBusy}
-                style={{ padding: "8px 16px", fontSize: 12, fontWeight: 600, border: "none", borderRadius: 6, background: done ? green : amber, color: done ? "#fff" : "#1a1a1a", cursor: "pointer", fontFamily: "inherit" }}>
-                {done ? "저장" : "완료하고 다음 단계 →"}
-              </button>
+              {locked ? (
+                <button onClick={() => setEditingStep(item.id)} disabled={isBusy}
+                  style={{ padding: "8px 16px", fontSize: 12, fontWeight: 600, border: `1px solid ${green}`, borderRadius: 6, background: greenFaint, color: green, cursor: "pointer", fontFamily: "inherit" }}>✎ 수정</button>
+              ) : (<>
+                {!done && (
+                  <button onClick={() => saveStep(item, false)} disabled={isBusy}
+                    style={{ padding: "8px 14px", fontSize: 12, fontWeight: 600, border: `1px solid ${amber}`, borderRadius: 6, background: amberFaint, color: "#B45309", cursor: "pointer", fontFamily: "inherit" }}>저장 (진행중)</button>
+                )}
+                <button onClick={() => saveStep(item, !done)} disabled={isBusy}
+                  style={{ padding: "8px 16px", fontSize: 12, fontWeight: 600, border: "none", borderRadius: 6, background: done ? green : amber, color: done ? "#fff" : "#1a1a1a", cursor: "pointer", fontFamily: "inherit" }}>
+                  {done ? "저장" : "완료하고 다음 단계 →"}
+                </button>
+              </>)}
               {deleteConfirm === item.id ? (
                 <button onClick={() => remove(item)} style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: red, border: "none", borderRadius: 4, padding: "6px 9px", cursor: "pointer" }}>삭제 확인</button>
               ) : (
