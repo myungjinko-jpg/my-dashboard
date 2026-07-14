@@ -816,7 +816,7 @@ export default function Contracts() {
           </div>
         )}
 
-        {vals.구분 === "거래처등록" && (
+        {vals.구분 === "거래처등록" && (<>
           <div>
             <span style={{ ...label, marginTop: 4 }}>거래처 정보</span>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -826,7 +826,16 @@ export default function Contracts() {
               ))}
             </div>
           </div>
-        )}
+          <div>
+            <span style={{ ...label, marginTop: 4 }}>해외 송금 정보 <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 지출기안에 연동됨</span></span>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {BANK_FIELDS.map(field => (
+                <input key={field} style={input} value={vals[field]} placeholder={field}
+                  onChange={e => upd(f => ({ ...f, [field]: e.target.value }))} />
+              ))}
+            </div>
+          </div>
+        </>)}
 
         {vals.구분 === "지출기안" && (<>
           <div>
@@ -837,13 +846,24 @@ export default function Contracts() {
             </div>
           </div>
           <div>
-            <span style={{ ...label, marginTop: 4 }}>해외 송금 정보</span>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              {BANK_FIELDS.map(field => (
-                <input key={field} style={input} value={vals[field]} placeholder={field}
-                  onChange={e => upd(f => ({ ...f, [field]: e.target.value }))} />
-              ))}
-            </div>
+            <span style={{ ...label, marginTop: 4 }}>해외 송금 정보 <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 거래처등록 연동 (읽기 전용)</span></span>
+            {(() => {
+              const v = partnerVendor(vals.파트너사);
+              const filled = v && BANK_FIELDS.some(f => (v[f] || "").trim());
+              if (!filled) {
+                return <div style={{ fontSize: 11.5, color: "var(--muted)", padding: "6px 0" }}>거래처등록에서 해외 송금 정보를 먼저 입력하세요.</div>;
+              }
+              return (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  {BANK_FIELDS.map(field => (
+                    <div key={field} style={{ ...input, background: "var(--card-bg-subtle)", display: "flex", flexDirection: "column", gap: 1, minHeight: 34, justifyContent: "center" }}>
+                      <span style={{ fontSize: 9, color: "var(--muted)" }}>{field}</span>
+                      <span style={{ fontSize: 12, color: (v[field] || "").trim() ? "var(--text)" : "var(--muted)" }}>{(v[field] || "").trim() || "—"}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         </>)}
 
