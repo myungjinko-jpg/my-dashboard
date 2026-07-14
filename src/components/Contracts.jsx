@@ -707,9 +707,17 @@ export default function Contracts() {
               </div>
             ))}
           </div>
+          {/* 계약서 기안 URL — 네이버웍스 */}
+          {!coveredForm && (
+            <div>
+              <span style={label}>계약서 기안 URL <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 네이버웍스</span></span>
+              <input style={input} value={vals.기안링크} onChange={e => upd(f => ({ ...f, 기안링크: e.target.value }))} placeholder="https:// (네이버웍스 기안)" />
+            </div>
+          )}
+          {/* 계약서 파일 URL — 원드라이브 최종 서명본 */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "end" }}>
             <div>
-              <span style={label}>계약서 URL</span>
+              <span style={label}>계약서 파일 URL <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 원드라이브 서명본</span></span>
               {coveredForm ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 33 }}>
                   <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".03em", color: "#B45309", background: amberFaint, border: "1px solid rgba(245,180,0,.3)", borderRadius: 3, padding: "1px 6px", flexShrink: 0 }}>파트너십계약 연동</span>
@@ -720,7 +728,7 @@ export default function Contracts() {
                   )}
                 </div>
               ) : (
-                <input style={input} value={vals.계약서URL} onChange={e => upd(f => ({ ...f, 계약서URL: e.target.value }))} placeholder="https:// (원드라이브)" />
+                <input style={input} value={vals.계약서URL} onChange={e => upd(f => ({ ...f, 계약서URL: e.target.value }))} placeholder="https:// (원드라이브 최종 전자서명본)" />
               )}
             </div>
             {!coveredForm && (
@@ -811,7 +819,7 @@ export default function Contracts() {
 
         <div>
           <span style={label}>메모</span>
-          <input style={input} value={vals.메모} onChange={e => upd(f => ({ ...f, 메모: e.target.value }))} placeholder="특이사항" />
+          <textarea rows={4} style={{ ...input, resize: "vertical", minHeight: 72, lineHeight: 1.5, fontFamily: "inherit" }} value={vals.메모} onChange={e => upd(f => ({ ...f, 메모: e.target.value }))} placeholder="특이사항 (여러 줄 입력 가능)" />
         </div>
       </div>
     );
