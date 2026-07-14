@@ -97,6 +97,7 @@ const VENDOR_FIELDS = [
   ["거래처대표", ""],
   ["거래처담당자", ""],
   ["거래처Email", ""],
+  ["거래처계좌번호", "법인통장 기재"],
 ];
 const BANK_FIELDS = ["BankName", "BranchName", "BankAddress", "BeneficiaryName", "AccountNumber"];
 
@@ -105,7 +106,7 @@ const EMPTY_FORM = {
   체결일: "", 만료일: "", 자동갱신: false, 계약서URL: "", 기안링크: "", 이터레이션구분: "", 파트너십계약포함: false,
   법인등록증: false, 법인통장: false, 부속합의서: false, 스펙내용: false, 인보이스: false,
   법인등록증링크: "", 법인통장링크: "", 부속합의서링크: "", 스펙내용링크: "", 인보이스링크: "",
-  거래처식별번호: "", 거래처명: "", 거래처국가: "", 거래처주소: "", 거래처대표: "", 거래처담당자: "", 거래처Email: "",
+  거래처식별번호: "", 거래처명: "", 거래처국가: "", 거래처주소: "", 거래처대표: "", 거래처담당자: "", 거래처Email: "", 거래처계좌번호: "",
   BankName: "", BranchName: "", BankAddress: "", BeneficiaryName: "", AccountNumber: "",
 };
 
