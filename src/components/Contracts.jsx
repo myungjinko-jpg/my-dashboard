@@ -410,10 +410,8 @@ export default function Contracts() {
   // 파트너의 거래처등록 항목 (파트너 공통 서류의 원본)
   const partnerVendor = (partner) => items.find(i => i.파트너사 === partner && i.구분 === "거래처등록") || null;
   // 파트너의 파트너십계약 계약서 URL (첫 프로젝트 부속합의서가 여기 포함됨)
-  const partnerMasterUrl = (partner) => {
-    const m = items.find(i => i.파트너사 === partner && i.구분 === "파트너십계약");
-    return m ? (m.계약서URL || "") : "";
-  };
+  const partnerMaster = (partner) => items.find(i => i.파트너사 === partner && i.구분 === "파트너십계약") || null;
+  const partnerMasterUrl = (partner) => { const m = partnerMaster(partner); return m ? (m.계약서URL || "") : ""; };
   // 파트너 국가 — 거래처등록의 거래처국가 필드가 원본 (PROCESS.md 참고)
   const partnerCountry = (partner) => {
     const v = partnerVendor(partner);
@@ -705,7 +703,21 @@ export default function Contracts() {
 
         {isContract && (<>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {["체결일", "만료일"].map(field => (
+            {["체결일", "만료일"].map(field => {
+              const master = coveredForm ? partnerMaster(vals.파트너사) : null;
+              const linkedVal = master ? (master[field] || "") : "";
+              if (coveredForm) {
+                return (
+                  <div key={field}>
+                    <span style={label}>{field} <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 파트너십계약 연동</span></span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 33 }}>
+                      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".03em", color: "#B45309", background: amberFaint, border: "1px solid rgba(245,180,0,.3)", borderRadius: 3, padding: "1px 6px", flexShrink: 0 }}>본계약</span>
+                      <span style={{ fontSize: 12, color: linkedVal ? "var(--text)" : "var(--muted)" }}>{linkedVal || "본계약에 날짜 미등록"}</span>
+                    </div>
+                  </div>
+                );
+              }
+              return (
               <div key={field}>
                 <span style={label}>
                   {field}
@@ -716,7 +728,7 @@ export default function Contracts() {
                 </span>
                 <input type="date" style={input} value={vals[field]} onChange={e => upd(f => ({ ...f, [field]: e.target.value }))} />
               </div>
-            ))}
+            );})}
           </div>
           {/* 계약서 기안 URL — 네이버웍스 */}
           {!coveredForm && (
