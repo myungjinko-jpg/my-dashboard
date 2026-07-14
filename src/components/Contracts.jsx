@@ -92,7 +92,7 @@ const KIND_GUIDE = {
 const VENDOR_FIELDS = [
   ["거래처식별번호", "법인등록증 내 기재"],
   ["거래처명", "법인등록증 내 기재"],
-  ["거래처국가", ""],
+  ["거래처국가", "법인 등록국"],
   ["거래처주소", "주소 / 도시 / 우편번호"],
   ["거래처대표", ""],
   ["거래처Email", ""],
@@ -102,7 +102,7 @@ const VENDOR_FIELDS = [
 const BANK_FIELDS = ["BankName", "BranchName", "BankAddress", "BeneficiaryName", "AccountNumber"];
 
 const EMPTY_FORM = {
-  제목: "", 파트너사: "", 프로젝트: "", 구분: "파트너십계약", 상태: "요청전", 메모: "", 담당자: "",
+  제목: "", 파트너사: "", 프로젝트: "", 구분: "파트너십계약", 상태: "요청전", 메모: "", 담당자: "", 개발소재지: "",
   체결일: "", 만료일: "", 자동갱신: false, 계약서URL: "", 기안링크: "", 이터레이션구분: "", 파트너십계약포함: false,
   법인등록증: false, 법인통장: false, 부속합의서: false, 스펙내용: false, 인보이스: false,
   법인등록증링크: "", 법인통장링크: "", 부속합의서링크: "", 스펙내용링크: "", 인보이스링크: "",
@@ -344,7 +344,7 @@ export default function Contracts() {
   // 신규 파트너 템플릿: 파트너십계약 + 거래처등록 (국가·담당자는 거래처등록에 저장)
   const createPartnerTemplate = (partner, country, owner) => createRows([
     { 제목: `[${partner}] 파트너십계약`, 파트너사: partner, 구분: "파트너십계약", 상태: "요청전", ...(owner ? { 담당자: owner } : {}) },
-    { 제목: `[${partner}] 거래처등록`, 파트너사: partner, 구분: "거래처등록", 상태: "요청전", ...(country ? { 거래처국가: country } : {}), ...(owner ? { 담당자: owner } : {}) },
+    { 제목: `[${partner}] 거래처등록`, 파트너사: partner, 구분: "거래처등록", 상태: "요청전", ...(country ? { 개발소재지: country } : {}), ...(owner ? { 담당자: owner } : {}) },
   ]);
 
   // 신규 프로젝트 템플릿 — 부속합의서 → 프로토타입 지출기안 순서
@@ -412,10 +412,16 @@ export default function Contracts() {
   // 파트너의 파트너십계약 계약서 URL (첫 프로젝트 부속합의서가 여기 포함됨)
   const partnerMaster = (partner) => items.find(i => i.파트너사 === partner && i.구분 === "파트너십계약") || null;
   const partnerMasterUrl = (partner) => { const m = partnerMaster(partner); return m ? (m.계약서URL || "") : ""; };
-  // 파트너 국가 — 거래처등록의 거래처국가 필드가 원본 (PROCESS.md 참고)
+  // 거래처국가 = 법인 등록국(법인등록증 기준). 거래처 정보/지급용.
   const partnerCountry = (partner) => {
     const v = partnerVendor(partner);
     return v ? (v.거래처국가 || "").trim() : "";
+  };
+  // 개발소재지 = 우리가 인지하는 개발 스튜디오 위치. 사이드바 그룹·국기·KST 기준. 없으면 법인 등록국으로 폴백(레거시).
+  const partnerDevLocation = (partner) => {
+    const v = partnerVendor(partner);
+    const dev = v ? (v.개발소재지 || "").trim() : "";
+    return dev || partnerCountry(partner);
   };
   // 파트너 담당자 — 어느 항목이든 담당자가 있으면 사용 (거래처등록 우선)
   const partnerOwner = (partner) => {
@@ -1050,7 +1056,7 @@ export default function Contracts() {
 
       {/* 전역 자동완성 목록 (국가·담당자) */}
       <datalist id="country-list">
-        {[...KNOWN_COUNTRIES, ...[...new Set(items.map(i => (i.거래처국가 || "").trim()).filter(Boolean))].filter(c => !KNOWN_COUNTRIES.includes(c))].map(c => <option key={c} value={c} />)}
+        {[...KNOWN_COUNTRIES, ...[...new Set(items.flatMap(i => [(i.거래처국가 || "").trim(), (i.개발소재지 || "").trim()]).filter(Boolean))].filter(c => !KNOWN_COUNTRIES.includes(c))].map(c => <option key={c} value={c} />)}
       </datalist>
       <datalist id="owner-list">{owners.map(o => <option key={o} value={o} />)}</datalist>
 
@@ -1179,10 +1185,10 @@ export default function Contracts() {
                 <div style={{ padding: "24px 14px", fontSize: 12, color: "var(--muted)", textAlign: "center" }}>파트너사 없음</div>
               )}
               {(() => {
-                // 국가별 그룹 (국가 없는 파트너는 '미지정'으로 맨 아래)
+                // 개발소재지별 그룹 (없는 파트너는 '미지정'으로 맨 아래)
                 const groups = new Map();
                 visiblePartnerList.forEach(p => {
-                  const c = partnerCountry(p) || "미지정";
+                  const c = partnerDevLocation(p) || "미지정";
                   if (!groups.has(c)) groups.set(c, []);
                   groups.get(c).push(p);
                 });
@@ -1229,7 +1235,7 @@ export default function Contracts() {
                         // 파트너십계약 → 거래처등록 → 부속합의서(파트너십계약 포함) → 프로토타입 지출기안 한 번에 생성
                         createRows([
                           { 제목: `[${name}] 파트너십계약`, 파트너사: name, 구분: "파트너십계약", 상태: "요청전", ...ownerF },
-                          { 제목: `[${name}] 거래처등록`, 파트너사: name, 구분: "거래처등록", 상태: "요청전", ...(country ? { 거래처국가: country } : {}), ...ownerF },
+                          { 제목: `[${name}] 거래처등록`, 파트너사: name, 구분: "거래처등록", 상태: "요청전", ...(country ? { 개발소재지: country } : {}), ...ownerF },
                           { 제목: `[${proj}] 부속합의서`, 파트너사: name, 프로젝트: proj, 구분: "부속합의서", 상태: "완료", 파트너십계약포함: true, ...ownerF },
                           { 제목: `[${proj}] 프로토타입 지출기안`, 파트너사: name, 프로젝트: proj, 구분: "지출기안", 이터레이션구분: "프로토타입", 상태: "요청전", ...ownerF },
                         ]);
@@ -1246,7 +1252,7 @@ export default function Contracts() {
                       placeholder="첫 프로젝트명 (선택)"
                       style={{ flex: 1.2, padding: "6px 9px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", boxSizing: "border-box", minWidth: 0 }} />
                     <input value={newPartnerCountry} onChange={e => setNewPartnerCountry(e.target.value)} list="country-list"
-                      placeholder="국가"
+                      placeholder="개발 소재지 (예: Vietnam)"
                       style={{ flex: 0.8, padding: "6px 9px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", boxSizing: "border-box", minWidth: 0 }} />
                   </div>
                   <input value={newPartnerOwner} onChange={e => setNewPartnerOwner(e.target.value)} list="owner-list"
@@ -1288,19 +1294,35 @@ export default function Contracts() {
                       <>
                         <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{selected}</span>
 
-                        {/* 국가 — 클릭해서 인라인 편집 */}
+                        {/* 개발 소재지 — 사이드바·국기·KST 기준 (클릭 인라인 편집) */}
+                        {editingHeaderField === "개발소재지" ? (
+                          <input autoFocus list="country-list" value={headerFieldValue}
+                            onChange={e => setHeaderFieldValue(e.target.value)}
+                            onBlur={() => saveHeaderField(selected, "개발소재지", headerFieldValue)}
+                            onKeyDown={e => { if (e.key === "Enter") saveHeaderField(selected, "개발소재지", headerFieldValue); if (e.key === "Escape") setEditingHeaderField(null); }}
+                            placeholder="개발 소재지 (예: Vietnam (KST-2))"
+                            style={{ fontSize: 11, padding: "2px 7px", border: "1px solid var(--line)", borderRadius: 3, background: "var(--card)", color: "var(--text)", width: 170 }} />
+                        ) : (
+                          <button onClick={() => { setHeaderFieldValue(partnerDevLocation(selected)); setEditingHeaderField("개발소재지"); }}
+                            title="개발 소재지 지정/변경 — 사이드바·시차 기준"
+                            style={{ fontSize: 10, fontWeight: 600, color: partnerDevLocation(selected) ? "var(--muted)" : blue, border: `1px ${partnerDevLocation(selected) ? "solid" : "dashed"} var(--line)`, borderRadius: 3, padding: "1px 6px", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 4, background: "transparent", cursor: "pointer", fontFamily: "inherit" }}>
+                            {partnerDevLocation(selected) ? <><Flag country={partnerDevLocation(selected)} size={13} />{partnerDevLocation(selected)}</> : "+ 개발 소재지"}
+                          </button>
+                        )}
+
+                        {/* 법인 등록국 — 거래처 정보/지급 기준 (개발소재지와 다를 때 특히 중요) */}
                         {editingHeaderField === "거래처국가" ? (
                           <input autoFocus list="country-list" value={headerFieldValue}
                             onChange={e => setHeaderFieldValue(e.target.value)}
                             onBlur={() => saveHeaderField(selected, "거래처국가", headerFieldValue)}
                             onKeyDown={e => { if (e.key === "Enter") saveHeaderField(selected, "거래처국가", headerFieldValue); if (e.key === "Escape") setEditingHeaderField(null); }}
-                            placeholder="국가 (예: Korea (KST+0))"
-                            style={{ fontSize: 11, padding: "2px 7px", border: "1px solid var(--line)", borderRadius: 3, background: "var(--card)", color: "var(--text)", width: 150 }} />
+                            placeholder="법인 등록국 (예: Hong Kong (KST-1))"
+                            style={{ fontSize: 11, padding: "2px 7px", border: "1px solid var(--line)", borderRadius: 3, background: "var(--card)", color: "var(--text)", width: 170 }} />
                         ) : (
                           <button onClick={() => { setHeaderFieldValue(partnerCountry(selected)); setEditingHeaderField("거래처국가"); }}
-                            title="국가 지정/변경"
+                            title="법인 등록국 지정/변경 — 거래처 정보·지급 기준"
                             style={{ fontSize: 10, fontWeight: 600, color: partnerCountry(selected) ? "var(--muted)" : blue, border: `1px ${partnerCountry(selected) ? "solid" : "dashed"} var(--line)`, borderRadius: 3, padding: "1px 6px", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 4, background: "transparent", cursor: "pointer", fontFamily: "inherit" }}>
-                            {partnerCountry(selected) ? <><Flag country={partnerCountry(selected)} size={13} />{partnerCountry(selected)}</> : "+ 국가"}
+                            {partnerCountry(selected) ? <>🏛 {partnerCountry(selected)}</> : "+ 법인 등록국"}
                           </button>
                         )}
 
