@@ -136,16 +136,20 @@ function staleDaysOf(item) {
 }
 
 // 완료 조건 검사 — 완료인데 필수 데이터 없으면 경고 문구 반환 (PROCESS.md 단계별 완료 조건)
-function doneWarning(i) {
-  if (i.상태 !== "완료") return null;
-  if ((i.구분 === "파트너십계약" || i.구분 === "NDA") && !i.계약서URL) return "계약서 URL 미등록";
-  if (i.구분 === "부속합의서" && !i.파트너십계약포함 && !i.계약서URL) return "계약서 URL 미등록";
+// 완료 조건 미충족 시 사유 반환(상태 무관). 완료 저장 차단·완료 항목 경고 공용.
+function missingForComplete(i) {
+  if ((i.구분 === "파트너십계약" || i.구분 === "NDA") && !i.계약서URL) return "계약서 파일 URL(서명본) 미등록";
+  if (i.구분 === "부속합의서" && !i.파트너십계약포함 && !i.계약서URL) return "계약서 파일 URL 미등록";
   if (i.구분 === "지출기안" && !i.기안링크) return "기안 링크 미등록";
   if (i.구분 === "거래처등록") {
     const docsMissing = (DOCS_BY_KIND.거래처등록 || []).some(doc => !i[doc] && !i[`${doc}링크`]);
     if (docsMissing || !i.거래처식별번호 || !i.거래처명) return "서류/거래처 정보 미비";
   }
   return null;
+}
+function doneWarning(i) {
+  if (i.상태 !== "완료") return null;
+  return missingForComplete(i);
 }
 
 // 그룹 내 순서 정렬 (지출기안 여러 건은 기존 순서 유지)
@@ -291,6 +295,10 @@ export default function Contracts() {
   const cycleStatus = (item) => {
     if (item.상태 === "완료" && !window.confirm(`"${item.제목}" 완료를 취소하시겠습니까?`)) return;
     const next = STATUS_ORDER[(STATUS_ORDER.indexOf(item.상태 || "요청전") + 1) % STATUS_ORDER.length];
+    if (next === "완료") {
+      const reason = missingForComplete(item);
+      if (reason) { alert(`완료할 수 없습니다 — ${reason}.\n항목을 열어 조건을 채운 뒤 완료해주세요.`); return; }
+    }
     patch(item.id, { 상태: next });
   };
 
@@ -618,7 +626,18 @@ export default function Contracts() {
   const saveStep = async (item, complete) => {
     if (!draft) return;
     const fields = { ...draft, 제목: (draft.제목 || "").trim(), 파트너사: (draft.파트너사 || item.파트너사).trim(), 프로젝트: (draft.프로젝트 || "").trim() };
-    fields.상태 = complete ? "완료" : (item.상태 === "완료" ? "완료" : "진행중");
+    // 완료 상태가 되려면 완료 조건을 충족해야 함
+    const reason = missingForComplete(fields);
+    if (complete) {
+      // 명시적 완료 시도 — 조건 미충족이면 차단
+      if (reason) { alert(`완료할 수 없습니다 — ${reason}.\n조건을 채운 뒤 완료해주세요.`); return; }
+      fields.상태 = "완료";
+    } else if (item.상태 === "완료") {
+      // 완료 항목 수정 저장 — 조건 미충족이면 진행중으로 자동 강등(모순 방지)
+      fields.상태 = reason ? "진행중" : "완료";
+    } else {
+      fields.상태 = "진행중";
+    }
     const next = complete ? nextIncompleteInGroup(item) : null;
     await patch(item.id, fields);
     setEditingStep(null);
@@ -1019,14 +1038,20 @@ export default function Contracts() {
                 <button onClick={() => setEditingStep(item.id)} disabled={isBusy}
                   style={{ padding: "8px 16px", fontSize: 12, fontWeight: 600, border: `1px solid ${green}`, borderRadius: 6, background: greenFaint, color: green, cursor: "pointer", fontFamily: "inherit" }}>✎ 수정</button>
               ) : (<>
-                {!done && (
-                  <button onClick={() => saveStep(item, false)} disabled={isBusy}
-                    style={{ padding: "8px 14px", fontSize: 12, fontWeight: 600, border: `1px solid ${amber}`, borderRadius: 6, background: amberFaint, color: "#B45309", cursor: "pointer", fontFamily: "inherit" }}>저장 (진행중)</button>
-                )}
-                <button onClick={() => saveStep(item, !done)} disabled={isBusy}
-                  style={{ padding: "8px 16px", fontSize: 12, fontWeight: 600, border: "none", borderRadius: 6, background: done ? green : amber, color: done ? "#fff" : "#1a1a1a", cursor: "pointer", fontFamily: "inherit" }}>
-                  {done ? "저장" : "완료하고 다음 단계 →"}
-                </button>
+                {(() => { const cb = missingForComplete(draft); return (<>
+                  {!done && cb && (
+                    <span style={{ fontSize: 10.5, color: "#C2410C", marginRight: 4 }} title={cb}>완료 조건: {cb}</span>
+                  )}
+                  {!done && (
+                    <button onClick={() => saveStep(item, false)} disabled={isBusy}
+                      style={{ padding: "8px 14px", fontSize: 12, fontWeight: 600, border: `1px solid ${amber}`, borderRadius: 6, background: amberFaint, color: "#B45309", cursor: "pointer", fontFamily: "inherit" }}>저장 (진행중)</button>
+                  )}
+                  <button onClick={() => saveStep(item, !done)} disabled={isBusy || (!done && !!cb)}
+                    title={!done && cb ? `완료하려면: ${cb}` : ""}
+                    style={{ padding: "8px 16px", fontSize: 12, fontWeight: 600, border: "none", borderRadius: 6, background: done ? green : amber, color: done ? "#fff" : "#1a1a1a", cursor: (!done && cb) ? "not-allowed" : "pointer", opacity: (!done && cb) ? 0.5 : 1, fontFamily: "inherit" }}>
+                    {done ? "저장" : "완료하고 다음 단계 →"}
+                  </button>
+                </>); })()}
               </>)}
               {deleteConfirm === item.id ? (
                 <button onClick={() => remove(item)} style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: red, border: "none", borderRadius: 4, padding: "6px 9px", cursor: "pointer" }}>삭제 확인</button>
