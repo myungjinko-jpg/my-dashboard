@@ -95,10 +95,10 @@ const VENDOR_FIELDS = [
   ["거래처국가", ""],
   ["거래처주소", "주소 / 도시 / 우편번호"],
   ["거래처대표", ""],
-  ["거래처담당자", ""],
   ["거래처Email", ""],
   ["거래처계좌번호", "법인통장 기재"],
 ];
+// 거래처담당자(내부 담당 PM)는 거래처 정보에서 입력하지 않는다 — 파트너사에 설정된 '담당자'로 자동 관리(상세 헤더 칩).
 const BANK_FIELDS = ["BankName", "BranchName", "BankAddress", "BeneficiaryName", "AccountNumber"];
 
 const EMPTY_FORM = {
