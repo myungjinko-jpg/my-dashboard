@@ -153,6 +153,15 @@ function orderGroup(rows) {
   return [...rows].sort((a, b) => (KIND_ORDER[a.구분] || 9) - (KIND_ORDER[b.구분] || 9));
 }
 
+function LinkOpen({ href }) {
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer"
+      style={{ fontSize: 10, fontWeight: 600, padding: "6px 9px", borderRadius: 4, background: blueFaint, color: blue, border: "1px solid rgba(0,120,212,.25)", textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}>
+      열기 →
+    </a>
+  );
+}
+
 function StatusBadge({ 상태 }) {
   if (상태 === "완료") return <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".03em", padding: "2px 7px", borderRadius: 3, background: greenFaint, color: green }}>완료</span>;
   if (상태 === "진행중") return <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".03em", padding: "2px 7px", borderRadius: 3, background: amberFaint, color: amber }}>진행중</span>;
@@ -711,31 +720,29 @@ export default function Contracts() {
           {!coveredForm && (
             <div>
               <span style={label}>계약서 기안 URL <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 네이버웍스</span></span>
-              <input style={input} value={vals.기안링크} onChange={e => upd(f => ({ ...f, 기안링크: e.target.value }))} placeholder="https:// (네이버웍스 기안)" />
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input style={{ ...input, flex: 1 }} value={vals.기안링크} onChange={e => upd(f => ({ ...f, 기안링크: e.target.value }))} placeholder="https:// (네이버웍스 기안)" />
+                {vals.기안링크 && <LinkOpen href={vals.기안링크} />}
+              </div>
             </div>
           )}
           {/* 계약서 파일 URL — 원드라이브 최종 서명본 */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "end" }}>
-            <div>
-              <span style={label}>계약서 파일 URL <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 원드라이브 서명본</span></span>
-              {coveredForm ? (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 33 }}>
-                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".03em", color: "#B45309", background: amberFaint, border: "1px solid rgba(245,180,0,.3)", borderRadius: 3, padding: "1px 6px", flexShrink: 0 }}>파트너십계약 연동</span>
-                  {masterUrlForm ? (
-                    <a href={masterUrlForm} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: blue, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{masterUrlForm} ↗</a>
-                  ) : (
-                    <span style={{ fontSize: 11, color: "var(--muted)" }}>파트너십계약서 링크 미등록</span>
-                  )}
-                </div>
-              ) : (
-                <input style={input} value={vals.계약서URL} onChange={e => upd(f => ({ ...f, 계약서URL: e.target.value }))} placeholder="https:// (원드라이브 최종 전자서명본)" />
-              )}
-            </div>
-            {!coveredForm && (
-              <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", paddingBottom: 8 }} title="자동갱신 조항이 있는 계약">
-                <input type="checkbox" checked={vals.자동갱신} onChange={e => upd(f => ({ ...f, 자동갱신: e.target.checked }))} />
-                자동갱신
-              </label>
+          <div>
+            <span style={label}>계약서 파일 URL <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 원드라이브 서명본</span></span>
+            {coveredForm ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 33 }}>
+                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".03em", color: "#B45309", background: amberFaint, border: "1px solid rgba(245,180,0,.3)", borderRadius: 3, padding: "1px 6px", flexShrink: 0 }}>파트너십계약 연동</span>
+                {masterUrlForm ? (
+                  <a href={masterUrlForm} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: blue, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{masterUrlForm} ↗</a>
+                ) : (
+                  <span style={{ fontSize: 11, color: "var(--muted)" }}>파트너십계약서 링크 미등록</span>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input style={{ ...input, flex: 1 }} value={vals.계약서URL} onChange={e => upd(f => ({ ...f, 계약서URL: e.target.value }))} placeholder="https:// (원드라이브 최종 전자서명본)" />
+                {vals.계약서URL && <LinkOpen href={vals.계약서URL} />}
+              </div>
             )}
           </div>
         </>)}
@@ -804,7 +811,10 @@ export default function Contracts() {
         {vals.구분 === "지출기안" && (<>
           <div>
             <span style={label}>기안 링크</span>
-            <input style={input} value={vals.기안링크} onChange={e => upd(f => ({ ...f, 기안링크: e.target.value }))} placeholder="https:// (네이버웍스 기안)" />
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input style={{ ...input, flex: 1 }} value={vals.기안링크} onChange={e => upd(f => ({ ...f, 기안링크: e.target.value }))} placeholder="https:// (네이버웍스 기안)" />
+              {vals.기안링크 && <LinkOpen href={vals.기안링크} />}
+            </div>
           </div>
           <div>
             <span style={{ ...label, marginTop: 4 }}>해외 송금 정보</span>
