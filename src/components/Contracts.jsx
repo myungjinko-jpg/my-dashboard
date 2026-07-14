@@ -755,8 +755,8 @@ export default function Contracts() {
               </div>
             );})}
           </div>
-          {/* 계약서 기안 URL — 네이버웍스 */}
-          {!coveredForm && (
+          {/* 계약서 기안 URL — 네이버웍스. 부속합의서는 기안을 하지 않으므로 파트너십계약·NDA에서만 노출 */}
+          {(vals.구분 === "파트너십계약" || vals.구분 === "NDA") && (
             <div>
               <span style={label}>계약서 기안 URL <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 네이버웍스</span></span>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
