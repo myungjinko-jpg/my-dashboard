@@ -475,7 +475,8 @@ export default function Contracts() {
   const commonRows = orderGroup(selectedRows.filter(i => PARTNER_LEVEL_KINDS.includes(i.구분)));
   const projectNames = [...new Set(selectedRows.filter(i => PROJECT_LEVEL_KINDS.includes(i.구분)).map(i => i.프로젝트 || "(프로젝트 미지정)"))].sort();
   const projectRows = (proj) => orderGroup(selectedRows.filter(i => PROJECT_LEVEL_KINDS.includes(i.구분) && (i.프로젝트 || "(프로젝트 미지정)") === proj));
-  const doneCount = selectedRows.filter(i => i.상태 === "완료").length;
+  const activeRows = selectedRows.filter(i => !itemMuted(i)); // 종료·드랍 프로젝트 제외
+  const doneCount = activeRows.filter(i => i.상태 === "완료").length;
 
   // ── 지금 할 일 큐 (PROCESS.md 백로그 1~5: 다음 단계·완료 경고·정체·이터레이션·헬스체크) ──
   const todoQueue = useMemo(() => {
@@ -945,11 +946,13 @@ export default function Contracts() {
 
   // ── 사이드바 파트너 항목 ──
   const renderSidebarPartner = (partner) => {
-    const rows = byPartner[partner] || [];
+    const allRows = byPartner[partner] || [];
+    // 진행률·경고는 종료·드랍 프로젝트 항목 제외 (활성 항목만)
+    const rows = allRows.filter(i => !itemMuted(i));
     const done = rows.filter(i => i.상태 === "완료").length;
     const pct = rows.length === 0 ? 0 : Math.round((done / rows.length) * 100);
     const isActive = selected === partner;
-    const projCount = new Set(rows.filter(i => i.프로젝트).map(i => i.프로젝트)).size;
+    const projCount = new Set(allRows.filter(i => i.프로젝트).map(i => i.프로젝트)).size;
     const warn = rows.some(i => {
       const d = dday(i.만료일);
       const docsMissing = (DOCS_BY_KIND[i.구분] || []).some(doc => !docReceived(i, doc)) && i.상태 === "진행중";
@@ -1468,7 +1471,7 @@ export default function Contracts() {
                   )}
                   <button onClick={() => openAdd("파트너십계약", selected)} style={addBtn(false)}>+ 항목</button>
                   <span style={{ fontSize: 11, color: "var(--muted)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-                    <span style={{ fontWeight: 700, color: green }}>{doneCount}</span>/{selectedRows.length} 완료
+                    <span style={{ fontWeight: 700, color: green }}>{doneCount}</span>/{activeRows.length} 완료
                   </span>
                 </div>
 
