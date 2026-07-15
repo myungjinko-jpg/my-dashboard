@@ -212,22 +212,6 @@ export default function Contracts() {
   const [copiedId, setCopiedId] = useState(null);  // 링크 복사 피드백
   const deepLinkDone = useRef(false);
 
-  // 딥링크: ?item=<id> 로 들어오면 해당 항목의 파트너 선택 + 펼침 + 스크롤 (최초 1회)
-  useEffect(() => {
-    if (deepLinkDone.current || !items.length) return;
-    const itemId = new URLSearchParams(window.location.search).get("item");
-    if (!itemId) { deepLinkDone.current = true; return; }
-    const target = items.find(i => i.id === itemId);
-    if (target) {
-      deepLinkDone.current = true;
-      // pendingOpen을 통해 [selected] 이펙트가 openId를 덮어쓰지 않도록 함
-      pendingOpen.current = itemId;
-      setSelected(target.파트너사);
-      setOpenId(itemId);
-      setTimeout(() => document.getElementById(`step-${itemId}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 350);
-    }
-  }, [items]);
-
   const copyItemLink = (id) => {
     const url = `${window.location.origin}${window.location.pathname}?tab=contracts&item=${id}`;
     navigator.clipboard?.writeText(url);
@@ -286,9 +270,25 @@ export default function Contracts() {
     return [...has, ...empty];
   }, [allPartners, items, ownerFilter]);
 
+  // 초기 파트너 선택 — 딥링크(?item=)가 있으면 그 항목의 파트너 우선, 없으면 첫 파트너.
+  // 단일 이펙트로 처리해 자동선택과 딥링크가 경쟁하지 않도록 함.
   useEffect(() => {
-    if (!selected && visiblePartnerList.length > 0) setSelected(visiblePartnerList[0]);
-  }, [visiblePartnerList, selected]);
+    if (selected || visiblePartnerList.length === 0) return;
+    const itemId = new URLSearchParams(window.location.search).get("item");
+    if (itemId && !deepLinkDone.current) {
+      const target = items.find(i => i.id === itemId);
+      if (target) {
+        deepLinkDone.current = true;
+        pendingOpen.current = itemId;  // [selected] 이펙트가 이 항목을 펼침
+        setSelected(target.파트너사);
+        setTimeout(() => document.getElementById(`step-${itemId}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 400);
+        return;
+      }
+      if (!items.length) return;   // 아직 로딩 중 → 대기
+      deepLinkDone.current = true; // 로드됐는데 못 찾음 → 폴백 허용
+    }
+    setSelected(visiblePartnerList[0]);
+  }, [visiblePartnerList, selected, items]);
 
   const byPartner = useMemo(() => {
     const map = {};
