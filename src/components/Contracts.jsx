@@ -44,6 +44,15 @@ function Flag({ country, size = 15 }) {
   return <img src={`https://flagcdn.com/w20/${code}.png`} alt="" width={size} style={{ borderRadius: 2, flexShrink: 0, display: "inline-block", verticalAlign: "-1px" }} />;
 }
 
+// 사이드바 다크 슬레이트 팔레트
+const SB_BG = "#2B2D3A";
+const SB_TEXT = "#f0f2f5";
+const SB_MUTED = "rgba(255,255,255,.5)";
+const SB_LINE = "rgba(255,255,255,.08)";
+const SB_HOVER = "rgba(255,255,255,.06)";
+const SB_GRP_BG = "rgba(255,255,255,.04)";
+const SB_ACTIVE = "rgba(245,180,0,.18)";
+
 const amber = "#F5B400";
 const amberFaint = "rgba(245,180,0,0.10)";
 const green = "#16A34A";
@@ -985,26 +994,26 @@ export default function Contracts() {
       return docsMissing || (CONTRACT_KINDS.includes(i.구분) && !i.자동갱신 && d !== null && d >= 0 && d <= 30);
     });
     return (
-      <div key={partner} style={{ borderBottom: "1px solid var(--line)" }}>
+      <div key={partner} style={{ borderBottom: `1px solid ${SB_LINE}` }}>
         <div onClick={() => setSelected(partner)}
           style={{
             padding: "10px 14px", cursor: "pointer",
             borderLeft: `2px solid ${isActive ? amber : "transparent"}`,
-            background: isActive ? amberFaint : "transparent",
+            background: isActive ? SB_ACTIVE : "transparent",
             transition: "background .1s",
           }}
-          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "#F8F9FA"; }}
+          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = SB_HOVER; }}
           onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 5 }}>
-            <span style={{ fontSize: 13, fontWeight: isActive ? 600 : 400, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{partner}</span>
-            {warn && <span style={{ width: 6, height: 6, borderRadius: "50%", background: red, flexShrink: 0 }} />}
-            {projCount > 0 && <span style={{ fontSize: 10, color: "var(--muted)", flexShrink: 0 }}>프로젝트 {projCount}</span>}
+            <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 500, color: isActive ? "#fff" : SB_TEXT, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{partner}</span>
+            {warn && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ff6b6b", flexShrink: 0 }} />}
+            {projCount > 0 && <span style={{ fontSize: 10, color: SB_MUTED, flexShrink: 0 }}>프로젝트 {projCount}</span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ flex: 1, height: 2, background: "var(--line)", borderRadius: 1, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${pct}%`, background: done === rows.length && rows.length > 0 ? green : amber, borderRadius: 1, transition: "width .3s" }} />
+            <div style={{ flex: 1, height: 2, background: "rgba(255,255,255,.15)", borderRadius: 1, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${pct}%`, background: done === rows.length && rows.length > 0 ? "#4ADE80" : amber, borderRadius: 1, transition: "width .3s" }} />
             </div>
-            <span style={{ fontSize: 9, color: "var(--muted)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{done}/{rows.length}</span>
+            <span style={{ fontSize: 9, color: SB_MUTED, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{done}/{rows.length}</span>
           </div>
         </div>
       </div>
@@ -1308,18 +1317,18 @@ export default function Contracts() {
         <div style={{ display: "flex", flex: 1, overflow: "hidden", height: 620, maxHeight: "74vh", background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
 
           {/* ── 작업 존 · 왼쪽 nav (파트너사) ── */}
-          <div style={{ width: 210, flexShrink: 0, borderRight: "1px solid #c3c9d3", display: "flex", flexDirection: "column", background: "#d5dbe4" }}>
-            <div style={{ padding: "10px 14px 8px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--muted)", flex: 1 }}>파트너사 · 선택</span>
+          <div style={{ width: 210, flexShrink: 0, borderRight: `1px solid ${SB_LINE}`, display: "flex", flexDirection: "column", background: SB_BG }}>
+            <div style={{ padding: "10px 14px 8px", borderBottom: `1px solid ${SB_LINE}`, display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: SB_MUTED, flex: 1 }}>파트너사 · 선택</span>
               <button onClick={load} title="새로고침" style={{
                 fontSize: 11, padding: "2px 6px", borderRadius: 3,
-                border: "1px solid var(--line)", color: "var(--muted)", background: "transparent", cursor: "pointer", fontFamily: "inherit",
+                border: `1px solid ${SB_LINE}`, color: SB_MUTED, background: "transparent", cursor: "pointer", fontFamily: "inherit",
               }}>↻</button>
             </div>
 
             <div className="slim-scroll" style={{ flex: 1, overflowY: "auto" }}>
               {visiblePartnerList.length === 0 && (
-                <div style={{ padding: "24px 14px", fontSize: 12, color: "var(--muted)", textAlign: "center" }}>파트너사 없음</div>
+                <div style={{ padding: "24px 14px", fontSize: 12, color: SB_MUTED, textAlign: "center" }}>파트너사 없음</div>
               )}
               {(() => {
                 // 개발소재지별 그룹 (없는 파트너는 '미지정'으로 맨 아래)
@@ -1338,7 +1347,7 @@ export default function Contracts() {
                 if (sorted.length === 1 && sorted[0][0] === "미지정") return sorted[0][1].map(renderSidebarPartner);
                 return sorted.map(([country, list]) => (
                   <div key={country}>
-                    <div style={{ padding: "7px 14px 4px", fontSize: 9, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "var(--muted)", background: "#F8F9FA", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 5 }}>
+                    <div style={{ padding: "7px 14px 4px", fontSize: 9, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: SB_MUTED, background: SB_GRP_BG, borderBottom: `1px solid ${SB_LINE}`, display: "flex", alignItems: "center", gap: 5 }}>
                       {country !== "미지정" && <Flag country={country} size={14} />}
                       <span>{country === "미지정" ? "국가 미지정" : country}</span>
                       <span style={{ fontWeight: 400 }}>· {list.length}</span>
@@ -1349,7 +1358,7 @@ export default function Contracts() {
               })()}
             </div>
 
-            <div style={{ padding: 8, borderTop: "1px solid var(--line)" }}>
+            <div style={{ padding: 8, borderTop: `1px solid ${SB_LINE}` }}>
               {addingPartner ? (
                 <form style={{ display: "flex", flexDirection: "column", gap: 6 }}
                   onSubmit={e => {
