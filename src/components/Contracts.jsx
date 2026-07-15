@@ -98,17 +98,21 @@ const KIND_GUIDE = {
   },
 };
 
+// [필드, 힌트(빈칸일 때 placeholder), 좌측 라벨]
 const VENDOR_FIELDS = [
-  ["거래처식별번호", "법인등록증 내 기재"],
-  ["거래처명", "법인등록증 내 기재"],
-  ["거래처국가", "법인 등록국"],
-  ["거래처주소", "주소 / 도시 / 우편번호"],
-  ["거래처대표", ""],
-  ["거래처Email", ""],
-  ["거래처계좌번호", "법인통장 기재"],
+  ["거래처식별번호", "법인등록증 내 기재", "식별번호"],
+  ["거래처명", "법인등록증 내 기재", "거래처명"],
+  ["거래처국가", "법인 등록국", "국가"],
+  ["거래처주소", "주소 / 도시 / 우편번호", "주소"],
+  ["거래처대표", "", "대표"],
+  ["거래처Email", "", "Email"],
+  ["거래처계좌번호", "법인통장 기재", "계좌번호"],
 ];
 // 거래처담당자(내부 담당 PM)는 거래처 정보에서 입력하지 않는다 — 파트너사에 설정된 '담당자'로 자동 관리(상세 헤더 칩).
 const BANK_FIELDS = ["BankName", "BranchName", "BankAddress", "BeneficiaryName", "AccountNumber"];
+const BANK_LABELS = { BankName: "은행명", BranchName: "지점", BankAddress: "은행주소", BeneficiaryName: "수취인", AccountNumber: "계좌·IBAN" };
+// 좌측 라벨 + 입력 한 줄 (라벨 고정폭, 1열)
+const fieldLabelStyle = { fontSize: 11, color: "var(--muted)", width: 64, flexShrink: 0, textAlign: "right", paddingTop: 8 };
 
 const EMPTY_FORM = {
   제목: "", 파트너사: "", 프로젝트: "", 구분: "파트너십계약", 상태: "요청전", 메모: "", 담당자: "", 개발소재지: "", 프로젝트상태: "",
@@ -923,19 +927,25 @@ export default function Contracts() {
         {vals.구분 === "거래처등록" && (<>
           <div>
             <span style={{ ...label, marginTop: 4 }}>거래처 정보</span>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-              {VENDOR_FIELDS.map(([field, hint]) => (
-                <input key={field} style={input} value={vals[field]} placeholder={field + (hint ? ` (${hint})` : "")}
-                  onChange={e => upd(f => ({ ...f, [field]: e.target.value }))} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {VENDOR_FIELDS.map(([field, hint, lbl]) => (
+                <div key={field} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                  <span style={fieldLabelStyle}>{lbl}</span>
+                  <input style={{ ...input, flex: 1 }} value={vals[field]} placeholder={hint || ""}
+                    onChange={e => upd(f => ({ ...f, [field]: e.target.value }))} />
+                </div>
               ))}
             </div>
           </div>
           <div>
             <span style={{ ...label, marginTop: 4 }}>해외 송금 정보 <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 지출기안에 연동됨</span></span>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {BANK_FIELDS.map(field => (
-                <input key={field} style={input} value={vals[field]} placeholder={field}
-                  onChange={e => upd(f => ({ ...f, [field]: e.target.value }))} />
+                <div key={field} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                  <span style={fieldLabelStyle}>{BANK_LABELS[field]}</span>
+                  <input style={{ ...input, flex: 1 }} value={vals[field]} placeholder={field}
+                    onChange={e => upd(f => ({ ...f, [field]: e.target.value }))} />
+                </div>
               ))}
             </div>
           </div>
@@ -958,11 +968,11 @@ export default function Contracts() {
                 return <div style={{ fontSize: 11.5, color: "var(--muted)", padding: "6px 0" }}>거래처등록에서 해외 송금 정보를 먼저 입력하세요.</div>;
               }
               return (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {BANK_FIELDS.map(field => (
-                    <div key={field} style={{ ...input, background: "var(--card-bg-subtle)", display: "flex", flexDirection: "column", gap: 1, minHeight: 34, justifyContent: "center" }}>
-                      <span style={{ fontSize: 9, color: "var(--muted)" }}>{field}</span>
-                      <span style={{ fontSize: 12, color: (v[field] || "").trim() ? "var(--text)" : "var(--muted)" }}>{(v[field] || "").trim() || "—"}</span>
+                    <div key={field} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ ...fieldLabelStyle, paddingTop: 0 }}>{BANK_LABELS[field]}</span>
+                      <span style={{ flex: 1, fontSize: 12, color: (v[field] || "").trim() ? "var(--text)" : "var(--muted)", background: "var(--card-bg-subtle)", border: "1px solid var(--line)", borderRadius: 4, padding: "7px 10px", minHeight: 33, boxSizing: "border-box", display: "flex", alignItems: "center" }}>{(v[field] || "").trim() || "—"}</span>
                     </div>
                   ))}
                 </div>
