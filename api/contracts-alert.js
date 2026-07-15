@@ -55,6 +55,8 @@ export default async function handler(req, res) {
         구분: p["구분"]?.select?.name || "",
         상태: p["상태"]?.select?.name || "요청전",
         파트너사: p["파트너사"]?.select?.name || txt("파트너사"),
+        프로젝트: txt("프로젝트"),
+        프로젝트상태: p["프로젝트상태"]?.select?.name || "",
         만료일: p["만료일"]?.date?.start || null,
         자동갱신: p["자동갱신"]?.checkbox || false,
         최종업데이트일: p["최종업데이트일"]?.date?.start || null,
@@ -73,6 +75,14 @@ export default async function handler(req, res) {
       .filter(i => i.d !== null && i.d >= 0 && i.d <= 30)
       .sort((a, b) => a.d - b.d);
 
+    // 종료·드랍 프로젝트 = 알림 제외. (파트너,프로젝트) 단위로 상태 수집
+    const PROJECT_KINDS = ["부속합의서", "지출기안"];
+    const projStatus = {};
+    items.forEach(i => {
+      if (PROJECT_KINDS.includes(i.구분) && i.프로젝트상태) projStatus[`${i.파트너사}||${i.프로젝트}`] = i.프로젝트상태;
+    });
+    const muted = (i) => PROJECT_KINDS.includes(i.구분) && (projStatus[`${i.파트너사}||${i.프로젝트}`] || "진행중") !== "진행중";
+
     // 2) 서류 미비 진행중 항목 (파트너 공통 서류는 거래처등록 상태를 따름)
     const vendorByPartner = {};
     items.forEach(i => { if (i.구분 === "거래처등록") vendorByPartner[i.파트너사] = i; });
@@ -84,14 +94,14 @@ export default async function handler(req, res) {
       return !!item[doc];
     };
     const missingDocs = items
-      .filter(i => i.상태 === "진행중" && DOCS_BY_KIND[i.구분])
+      .filter(i => i.상태 === "진행중" && DOCS_BY_KIND[i.구분] && !muted(i))
       .map(i => ({ 제목: i.제목, missing: DOCS_BY_KIND[i.구분].filter(doc => !docOk(i, doc)) }))
       .filter(i => i.missing.length > 0);
 
     // 3) 정체 감지 — 최종업데이트일 기준 7일+ 무변화인 미완료 항목
     const STALE_DAYS = 7;
     const stale = items
-      .filter(i => i.상태 !== "완료" && i.최종업데이트일)
+      .filter(i => i.상태 !== "완료" && i.최종업데이트일 && !muted(i))
       .map(i => ({ 제목: i.제목, sd: -dday(i.최종업데이트일) }))
       .filter(i => i.sd >= STALE_DAYS)
       .sort((a, b) => b.sd - a.sd);

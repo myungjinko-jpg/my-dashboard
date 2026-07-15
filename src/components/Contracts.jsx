@@ -102,7 +102,7 @@ const VENDOR_FIELDS = [
 const BANK_FIELDS = ["BankName", "BranchName", "BankAddress", "BeneficiaryName", "AccountNumber"];
 
 const EMPTY_FORM = {
-  제목: "", 파트너사: "", 프로젝트: "", 구분: "파트너십계약", 상태: "요청전", 메모: "", 담당자: "", 개발소재지: "",
+  제목: "", 파트너사: "", 프로젝트: "", 구분: "파트너십계약", 상태: "요청전", 메모: "", 담당자: "", 개발소재지: "", 프로젝트상태: "",
   체결일: "", 만료일: "", 자동갱신: false, 계약서URL: "", 기안링크: "", 이터레이션구분: "", 파트너십계약포함: false,
   법인등록증: false, 법인통장: false, 부속합의서: false, 스펙내용: false, 인보이스: false,
   법인등록증링크: "", 법인통장링크: "", 부속합의서링크: "", 스펙내용링크: "", 인보이스링크: "",
@@ -453,6 +453,23 @@ export default function Contracts() {
     return !!item[doc];
   };
 
+  // 프로젝트 상태 (진행중/종료/드랍) — 프로젝트 단위 행에 저장, 아무 행에서나 읽음. 기본 진행중
+  const projectStatusOf = (partner, proj) => {
+    const rows = items.filter(i => i.파트너사 === partner && PROJECT_LEVEL_KINDS.includes(i.구분) && (i.프로젝트 || "(프로젝트 미지정)") === proj);
+    const withStatus = rows.find(r => r.프로젝트상태);
+    return withStatus ? withStatus.프로젝트상태 : "진행중";
+  };
+  const projectMuted = (partner, proj) => projectStatusOf(partner, proj) !== "진행중"; // 종료·드랍 = 알림/큐 제외
+  const itemMuted = (i) => PROJECT_LEVEL_KINDS.includes(i.구분) && projectMuted(i.파트너사, i.프로젝트 || "(프로젝트 미지정)");
+  const setProjectStatus = async (partner, proj, status) => {
+    const rows = items.filter(i => i.파트너사 === partner && PROJECT_LEVEL_KINDS.includes(i.구분) && (i.프로젝트 || "(프로젝트 미지정)") === proj);
+    setItems(list => list.map(i => rows.some(r => r.id === i.id) ? { ...i, 프로젝트상태: status } : i));
+    await Promise.all(rows.map(r => fetch(`${API_BASE}/api/partner-admin`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pageId: r.id, 프로젝트상태: status }),
+    }).catch(() => {})));
+  };
+
   // ── 선택 파트너의 순차 그룹 구성 ──
   const selectedRows = selected ? (byPartner[selected] || []) : [];
   const commonRows = orderGroup(selectedRows.filter(i => PARTNER_LEVEL_KINDS.includes(i.구분)));
@@ -482,22 +499,25 @@ export default function Contracts() {
       if (nc) pushNext(nc);
       const projs = [...new Set(rows.filter(i => PROJECT_LEVEL_KINDS.includes(i.구분)).map(i => i.프로젝트 || "(프로젝트 미지정)"))];
       projs.forEach(proj => {
+        if (projectMuted(p, proj)) return; // 종료·드랍 프로젝트는 큐에서 제외
         const plist = orderGroup(rows.filter(i => PROJECT_LEVEL_KINDS.includes(i.구분) && (i.프로젝트 || "(프로젝트 미지정)") === proj));
         const np = plist.find(i => i.상태 !== "완료");
         if (np) pushNext(np);
-        else out.push({ key: `iter-${p}-${proj}`, kind: "iter", partner: p, proj, label: `[${proj}] 다음 이터레이션 지출기안`, reason: "전 단계 완료 — 다음 정산 확정 시 생성", prio: 5 });
+        // 이터레이션은 사업 판단이라 자동 재촉하지 않음 — 다음 이터는 "+ 지출기안"으로 수동 추가
         // 헬스체크: 프로젝트에 부속합의서 단계 자체가 없음 (구버전 템플릿)
         if (!plist.some(i => i.구분 === "부속합의서")) {
           out.push({ key: `heal-${p}-${proj}`, kind: "heal", partner: p, proj, label: `[${proj}] 부속합의서 단계 누락`, reason: "클릭해서 단계 생성", prio: 4, firstProject: projs.length === 1 });
         }
       });
-      // 완료 조건 경고
+      // 완료 조건 경고 (종료·드랍 프로젝트 제외)
       rows.forEach(i => {
+        if (itemMuted(i)) return;
         const w = doneWarning(i);
         if (w) out.push({ key: `warn-${i.id}`, kind: "warn", partner: p, item: i, label: i.제목, reason: `완료인데 ${w}`, prio: 3 });
       });
-      // 만료 임박 (자동갱신 제외)
+      // 만료 임박 (자동갱신·종료·드랍 제외)
       rows.forEach(i => {
+        if (itemMuted(i)) return;
         const d = dday(i.만료일);
         if (CONTRACT_KINDS.includes(i.구분) && !i.자동갱신 && d !== null && d >= 0 && d <= 30) {
           out.push({ key: `exp-${i.id}`, kind: "expire", partner: p, item: i, label: i.제목, reason: d === 0 ? "오늘 만료" : `D-${d} 만료`, prio: 0 });
@@ -1468,17 +1488,36 @@ export default function Contracts() {
                     </>
                   )}
 
-                  {projectNames.map(proj => (
+                  {projectNames.map(proj => {
+                    const pstatus = projectStatusOf(selected, proj);
+                    const muted = pstatus !== "진행중";
+                    const statusStyle = pstatus === "드랍"
+                      ? { color: "#DC2626", background: "rgba(220,38,38,.08)", border: "1px solid rgba(220,38,38,.25)" }
+                      : { color: "var(--muted)", background: "var(--card-bg-subtle)", border: "1px solid var(--line)" };
+                    return (
                     <div key={proj}>
-                      {renderDivider(proj,
-                        <button onClick={() => openAdd("지출기안", selected, proj === "(프로젝트 미지정)" ? "" : proj)}
-                          style={{ ...addBtn(false), padding: "3px 9px", fontSize: 11 }}>
-                          + 지출기안
-                        </button>
+                      {renderDivider(
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+                          <span style={{ textDecoration: muted ? "line-through" : "none" }}>{proj}</span>
+                          <select value={pstatus} onChange={e => setProjectStatus(selected, proj, e.target.value)}
+                            title="프로젝트 상태" onClick={e => e.stopPropagation()}
+                            style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".03em", borderRadius: 3, padding: "1px 4px", cursor: "pointer", fontFamily: "inherit", ...statusStyle }}>
+                            {["진행중", "종료", "드랍"].map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </span>,
+                        !muted && (
+                          <button onClick={() => openAdd("지출기안", selected, proj === "(프로젝트 미지정)" ? "" : proj)}
+                            style={{ ...addBtn(false), padding: "3px 9px", fontSize: 11 }}>
+                            + 지출기안
+                          </button>
+                        )
                       )}
-                      {renderGroup(projectRows(proj))}
+                      <div style={{ opacity: muted ? 0.55 : 1 }}>
+                        {renderGroup(projectRows(proj))}
+                      </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </>
             )}
