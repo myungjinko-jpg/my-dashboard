@@ -433,9 +433,10 @@ export default function Contracts() {
   const addBtn = (accent) => ({
     padding: "5px 11px", borderRadius: 6, fontSize: 12, fontWeight: 600,
     cursor: "pointer", fontFamily: "inherit", lineHeight: 1, whiteSpace: "nowrap",
-    border: `1px solid ${accent ? amber : "var(--line)"}`,
-    background: accent ? amberFaint : "transparent",
-    color: accent ? "#B45309" : "var(--muted)",
+    border: `1px solid ${accent ? amber : "#c7ccd4"}`,
+    background: accent ? amberFaint : "var(--card)",
+    color: accent ? "#B45309" : "var(--text)",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
   });
 
   // 파트너의 거래처등록 항목 (파트너 공통 서류의 원본)
@@ -1095,8 +1096,9 @@ export default function Contracts() {
             title="이 항목으로 바로 가는 링크 복사"
             style={{ fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, whiteSpace: "nowrap", fontFamily: "inherit", cursor: "pointer",
               background: copiedId === item.id ? greenFaint : "var(--card)",
-              color: copiedId === item.id ? green : "var(--muted)",
-              border: `1px solid ${copiedId === item.id ? "rgba(22,163,74,.25)" : "var(--line)"}` }}>
+              color: copiedId === item.id ? green : "var(--text)",
+              border: `1px solid ${copiedId === item.id ? "rgba(22,163,74,.25)" : "#c7ccd4"}`,
+              boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
             {copiedId === item.id ? "✓ 복사됨" : "링크복사"}
           </button>
           <span style={{ fontSize: 12, color: "var(--muted)", flexShrink: 0, transform: isOpen ? "rotate(180deg)" : "none", transition: "transform .15s" }}>▾</span>
