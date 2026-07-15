@@ -1078,14 +1078,10 @@ export default function Contracts() {
             </div>
           </div>
 
-          {/* 우측 상태/링크/펼침 */}
-          {isOpen ? null : <StatusBadge 상태={item.상태 || "요청전"} />}
+          {/* 우측 링크/펼침 — 상태는 좌측 체크서클로 표현 */}
           {!isOpen && item.계약서URL && <a href={item.계약서URL} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, background: blueFaint, color: blue, border: "1px solid rgba(0,120,212,.25)", textDecoration: "none", whiteSpace: "nowrap" }}>계약서 →</a>}
           {!isOpen && covered && !item.계약서URL && masterUrl && <a href={masterUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, background: blueFaint, color: blue, border: "1px solid rgba(0,120,212,.25)", textDecoration: "none", whiteSpace: "nowrap" }}>파트너십계약서 →</a>}
           {!isOpen && item.기안링크 && <a href={item.기안링크} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, background: greenFaint, color: green, border: "1px solid rgba(22,163,74,.25)", textDecoration: "none", whiteSpace: "nowrap" }}>기안 →</a>}
-          {done && !isOpen && (
-            <button onClick={e => { e.stopPropagation(); openEdit(item); }} title="수정" style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", padding: 2 }}>✎</button>
-          )}
           <button onClick={e => { e.stopPropagation(); copyItemLink(item.id); }}
             title="이 항목으로 바로 가는 링크 복사" style={{ fontSize: 11, border: "none", background: "transparent", color: copiedId === item.id ? green : "var(--muted)", cursor: "pointer", padding: 2, whiteSpace: "nowrap", fontFamily: "inherit" }}>
             {copiedId === item.id ? "✓ 복사됨" : "🔗"}
@@ -1538,7 +1534,7 @@ export default function Contracts() {
                         !muted && (
                           <button onClick={() => openAdd("지출기안", selected, proj === "(프로젝트 미지정)" ? "" : proj)}
                             style={{ ...addBtn(false), padding: "3px 9px", fontSize: 11 }}>
-                            + 지출기안
+                            + 항목
                           </button>
                         )
                       )}
