@@ -44,14 +44,14 @@ function Flag({ country, size = 15 }) {
   return <img src={`https://flagcdn.com/w20/${code}.png`} alt="" width={size} style={{ borderRadius: 2, flexShrink: 0, display: "inline-block", verticalAlign: "-1px" }} />;
 }
 
-// 사이드바 다크 팔레트 — 저채도 차콜 (남색기 제거, 여러 파트너가 쌓여도 차분하게)
-const SB_BG = "#3a3d42";
-const SB_TEXT = "#eceef0";
-const SB_MUTED = "rgba(255,255,255,.48)";
-const SB_LINE = "rgba(255,255,255,.07)";
-const SB_HOVER = "rgba(255,255,255,.05)";
-const SB_GRP_BG = "rgba(255,255,255,.035)";
-const SB_ACTIVE = "rgba(245,180,0,.16)";
+// 사이드바 팔레트 — 쿨 그레이 패널 (밝은 캔버스보다 한 단계 진한 중립 회색)
+const SB_BG = "#C8CFD9";
+const SB_TEXT = "#1a1d23";
+const SB_MUTED = "#5b6270";
+const SB_LINE = "#b3bac6";
+const SB_HOVER = "rgba(255,255,255,.35)";
+const SB_GRP_BG = "rgba(0,0,0,.05)";
+const SB_ACTIVE = "rgba(245,180,0,.22)";
 
 const amber = "#F5B400";
 const amberFaint = "rgba(245,180,0,0.10)";
@@ -1005,13 +1005,13 @@ export default function Contracts() {
           onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = SB_HOVER; }}
           onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 5 }}>
-            <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 500, color: isActive ? "#fff" : SB_TEXT, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{partner}</span>
-            {warn && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#ff6b6b", flexShrink: 0 }} />}
+            <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 500, color: SB_TEXT, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{partner}</span>
+            {warn && <span style={{ width: 6, height: 6, borderRadius: "50%", background: red, flexShrink: 0 }} />}
             {projCount > 0 && <span style={{ fontSize: 10, color: SB_MUTED, flexShrink: 0 }}>프로젝트 {projCount}</span>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ flex: 1, height: 2, background: "rgba(255,255,255,.15)", borderRadius: 1, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${pct}%`, background: done === rows.length && rows.length > 0 ? "#4ADE80" : amber, borderRadius: 1, transition: "width .3s" }} />
+            <div style={{ flex: 1, height: 2, background: "rgba(0,0,0,.14)", borderRadius: 1, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${pct}%`, background: done === rows.length && rows.length > 0 ? green : amber, borderRadius: 1, transition: "width .3s" }} />
             </div>
             <span style={{ fontSize: 9, color: SB_MUTED, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{done}/{rows.length}</span>
           </div>
