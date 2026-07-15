@@ -220,9 +220,11 @@ export default function Contracts() {
     const target = items.find(i => i.id === itemId);
     if (target) {
       deepLinkDone.current = true;
+      // pendingOpen을 통해 [selected] 이펙트가 openId를 덮어쓰지 않도록 함
+      pendingOpen.current = itemId;
       setSelected(target.파트너사);
       setOpenId(itemId);
-      setTimeout(() => document.getElementById(`step-${itemId}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 250);
+      setTimeout(() => document.getElementById(`step-${itemId}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 350);
     }
   }, [items]);
 
