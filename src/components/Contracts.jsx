@@ -44,14 +44,14 @@ function Flag({ country, size = 15 }) {
   return <img src={`https://flagcdn.com/w20/${code}.png`} alt="" width={size} style={{ borderRadius: 2, flexShrink: 0, display: "inline-block", verticalAlign: "-1px" }} />;
 }
 
-// 사이드바 다크 슬레이트 팔레트
-const SB_BG = "#2B2D3A";
-const SB_TEXT = "#f0f2f5";
-const SB_MUTED = "rgba(255,255,255,.5)";
-const SB_LINE = "rgba(255,255,255,.08)";
-const SB_HOVER = "rgba(255,255,255,.06)";
-const SB_GRP_BG = "rgba(255,255,255,.04)";
-const SB_ACTIVE = "rgba(245,180,0,.18)";
+// 사이드바 다크 팔레트 — 저채도 차콜 (남색기 제거, 여러 파트너가 쌓여도 차분하게)
+const SB_BG = "#3a3d42";
+const SB_TEXT = "#eceef0";
+const SB_MUTED = "rgba(255,255,255,.48)";
+const SB_LINE = "rgba(255,255,255,.07)";
+const SB_HOVER = "rgba(255,255,255,.05)";
+const SB_GRP_BG = "rgba(255,255,255,.035)";
+const SB_ACTIVE = "rgba(245,180,0,.16)";
 
 const amber = "#F5B400";
 const amberFaint = "rgba(245,180,0,0.10)";
