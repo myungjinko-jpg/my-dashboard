@@ -209,6 +209,29 @@ export default function Contracts() {
   const [openId, setOpenId] = useState(null);  // null=자동(첫 미완료), ""=전체 접힘, id=해당 항목
   const [editingStep, setEditingStep] = useState(null);  // 완료 항목 편집 잠금 해제된 id
   const [draft, setDraft] = useState(null);    // 인라인 편집 중인 값
+  const [copiedId, setCopiedId] = useState(null);  // 링크 복사 피드백
+  const deepLinkDone = useRef(false);
+
+  // 딥링크: ?item=<id> 로 들어오면 해당 항목의 파트너 선택 + 펼침 + 스크롤 (최초 1회)
+  useEffect(() => {
+    if (deepLinkDone.current || !items.length) return;
+    const itemId = new URLSearchParams(window.location.search).get("item");
+    if (!itemId) { deepLinkDone.current = true; return; }
+    const target = items.find(i => i.id === itemId);
+    if (target) {
+      deepLinkDone.current = true;
+      setSelected(target.파트너사);
+      setOpenId(itemId);
+      setTimeout(() => document.getElementById(`step-${itemId}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 250);
+    }
+  }, [items]);
+
+  const copyItemLink = (id) => {
+    const url = `${window.location.origin}${window.location.pathname}?tab=contracts&item=${id}`;
+    navigator.clipboard?.writeText(url);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(c => c === id ? null : c), 2000);
+  };
 
   const sendAlert = async () => {
     setSending(true); setSentMsg("");
@@ -1005,7 +1028,7 @@ export default function Contracts() {
     const headBg = isOpen ? "var(--card)" : done ? greenFaint : "var(--card)";
 
     return (
-      <div key={item.id} style={{
+      <div key={item.id} id={`step-${item.id}`} style={{
         border: `${isOpen ? 2 : 1}px solid ${isOpen ? blue : done ? "rgba(22,163,74,.3)" : "var(--line)"}`,
         borderRadius: 8, marginBottom: 8, overflow: "hidden",
         background: "var(--card)", opacity: dim ? 0.6 : (isBusy ? 0.5 : 1),
@@ -1063,6 +1086,10 @@ export default function Contracts() {
           {done && !isOpen && (
             <button onClick={e => { e.stopPropagation(); openEdit(item); }} title="수정" style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", padding: 2 }}>✎</button>
           )}
+          <button onClick={e => { e.stopPropagation(); copyItemLink(item.id); }}
+            title="이 항목으로 바로 가는 링크 복사" style={{ fontSize: 11, border: "none", background: "transparent", color: copiedId === item.id ? green : "var(--muted)", cursor: "pointer", padding: 2, whiteSpace: "nowrap", fontFamily: "inherit" }}>
+            {copiedId === item.id ? "✓ 복사됨" : "🔗"}
+          </button>
           <span style={{ fontSize: 12, color: "var(--muted)", flexShrink: 0, transform: isOpen ? "rotate(180deg)" : "none", transition: "transform .15s" }}>▾</span>
         </div>
 

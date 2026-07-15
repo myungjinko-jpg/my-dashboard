@@ -45,6 +45,12 @@ export default function App() {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
+  // 딥링크: ?tab=contracts 등으로 특정 탭 바로 열기
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    if (t) setActiveTab(t);
+  }, []);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setMsgIndex((prev) => {
