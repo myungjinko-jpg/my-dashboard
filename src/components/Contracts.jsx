@@ -1078,13 +1078,26 @@ export default function Contracts() {
             </div>
           </div>
 
-          {/* 우측 링크/펼침 — 상태는 좌측 체크서클로 표현 */}
-          {!isOpen && item.계약서URL && <a href={item.계약서URL} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, background: blueFaint, color: blue, border: "1px solid rgba(0,120,212,.25)", textDecoration: "none", whiteSpace: "nowrap" }}>계약서 →</a>}
-          {!isOpen && covered && !item.계약서URL && masterUrl && <a href={masterUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, background: blueFaint, color: blue, border: "1px solid rgba(0,120,212,.25)", textDecoration: "none", whiteSpace: "nowrap" }}>파트너십계약서 →</a>}
-          {!isOpen && item.기안링크 && <a href={item.기안링크} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, background: greenFaint, color: green, border: "1px solid rgba(22,163,74,.25)", textDecoration: "none", whiteSpace: "nowrap" }}>기안 →</a>}
+          {/* 우측 링크/펼침 — 상태는 좌측 체크서클로 표현. 계약서 라벨은 구분에 맞게 (혼동 방지) */}
+          {(() => {
+            const docLabel = item.구분 === "NDA" ? "NDA"
+              : item.구분 === "부속합의서" ? (item.파트너십계약포함 ? "파트너십계약서" : "부속합의서")
+              : "파트너십계약서"; // 파트너십계약
+            const pill = { fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, textDecoration: "none", whiteSpace: "nowrap" };
+            const bluePill = { ...pill, background: blueFaint, color: blue, border: "1px solid rgba(0,120,212,.25)" };
+            return !isOpen && (<>
+              {item.계약서URL && <a href={item.계약서URL} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={bluePill}>{docLabel} →</a>}
+              {covered && !item.계약서URL && masterUrl && <a href={masterUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={bluePill}>파트너십계약서 →</a>}
+              {item.기안링크 && <a href={item.기안링크} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ ...pill, background: greenFaint, color: green, border: "1px solid rgba(22,163,74,.25)" }}>기안 →</a>}
+            </>);
+          })()}
           <button onClick={e => { e.stopPropagation(); copyItemLink(item.id); }}
-            title="이 항목으로 바로 가는 링크 복사" style={{ fontSize: 11, border: "none", background: "transparent", color: copiedId === item.id ? green : "var(--muted)", cursor: "pointer", padding: 2, whiteSpace: "nowrap", fontFamily: "inherit" }}>
-            {copiedId === item.id ? "✓ 복사됨" : "🔗"}
+            title="이 항목으로 바로 가는 링크 복사"
+            style={{ fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, whiteSpace: "nowrap", fontFamily: "inherit", cursor: "pointer",
+              background: copiedId === item.id ? greenFaint : "var(--card)",
+              color: copiedId === item.id ? green : "var(--muted)",
+              border: `1px solid ${copiedId === item.id ? "rgba(22,163,74,.25)" : "var(--line)"}` }}>
+            {copiedId === item.id ? "✓ 복사됨" : "링크복사"}
           </button>
           <span style={{ fontSize: 12, color: "var(--muted)", flexShrink: 0, transform: isOpen ? "rotate(180deg)" : "none", transition: "transform .15s" }}>▾</span>
         </div>
