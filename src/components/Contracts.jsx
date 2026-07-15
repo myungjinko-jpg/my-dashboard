@@ -1308,7 +1308,7 @@ export default function Contracts() {
         <div style={{ display: "flex", flex: 1, overflow: "hidden", height: 620, maxHeight: "74vh", background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
 
           {/* ── 작업 존 · 왼쪽 nav (파트너사) ── */}
-          <div style={{ width: 210, flexShrink: 0, borderRight: "1px solid var(--line)", display: "flex", flexDirection: "column", background: "var(--zone)" }}>
+          <div style={{ width: 210, flexShrink: 0, borderRight: "1px solid #c3c9d3", display: "flex", flexDirection: "column", background: "#d5dbe4" }}>
             <div style={{ padding: "10px 14px 8px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--muted)", flex: 1 }}>파트너사 · 선택</span>
               <button onClick={load} title="새로고침" style={{
