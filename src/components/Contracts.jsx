@@ -444,6 +444,12 @@ export default function Contracts() {
       const v = partnerVendor(item.파트너사);
       return v ? (!!v[doc] || !!v[`${doc}링크`]) : false;
     }
+    // 지출기안의 부속합의서 서류 → 같은 프로젝트 부속합의서 항목에서 연동
+    if (item.구분 === "지출기안" && doc === "부속합의서") {
+      const add = items.find(i => i.파트너사 === item.파트너사 && (i.프로젝트 || "") === (item.프로젝트 || "") && i.구분 === "부속합의서");
+      if (!add) return false;
+      return add.상태 === "완료" || !!add.계약서URL || (add.파트너십계약포함 && !!partnerMasterUrl(item.파트너사));
+    }
     return !!item[doc];
   };
 
@@ -792,6 +798,29 @@ export default function Contracts() {
             <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "4px 0" }}>
               {DOCS_BY_KIND[vals.구분].map(doc => {
                 const linkKey = `${doc}링크`;
+                // 지출기안의 '부속합의서' 서류 → 같은 프로젝트의 부속합의서 항목에서 연동 (읽기 전용)
+                if (vals.구분 === "지출기안" && doc === "부속합의서") {
+                  const add = items.find(i => i.파트너사 === vals.파트너사 && (i.프로젝트 || "") === (vals.프로젝트 || "") && i.구분 === "부속합의서");
+                  const addUrl = add ? (add.파트너십계약포함 ? partnerMasterUrl(vals.파트너사) : (add.계약서URL || "")) : "";
+                  const addOk = add ? (add.상태 === "완료" || !!addUrl) : false;
+                  const covered = add?.파트너십계약포함;
+                  return (
+                    <div key={doc} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input type="checkbox" checked={addOk} disabled title="부속합의서 항목에서 연동됨"
+                        style={{ accentColor: green, flexShrink: 0 }} />
+                      <span style={{ fontSize: 12, width: 82, flexShrink: 0, color: "var(--text)" }}>{doc}</span>
+                      <span style={{ flex: 1, display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--muted)" }}>
+                        <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".03em", border: "1px solid var(--line)", borderRadius: 3, padding: "1px 5px", flexShrink: 0 }}>{covered ? "파트너십계약 포함" : "부속합의서 연동"}</span>
+                        {!add && "부속합의서 항목 없음"}
+                        {add && !addUrl && !covered && "계약서 링크 미등록"}
+                      </span>
+                      {addUrl && (
+                        <a href={addUrl} target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: 10, fontWeight: 600, padding: "5px 8px", borderRadius: 4, background: blueFaint, color: blue, border: "1px solid rgba(0,120,212,.25)", textDecoration: "none", whiteSpace: "nowrap", flexShrink: 0 }}>열기 →</a>
+                      )}
+                    </div>
+                  );
+                }
                 // 파트너 공통 서류 & 거래처등록이 아닌 항목 → 거래처등록에서 연동 (읽기 전용)
                 const inherited = vals.구분 !== "거래처등록" && PARTNER_DOCS.includes(doc);
                 if (inherited) {
