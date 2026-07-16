@@ -7,12 +7,13 @@ const FIELD_TYPES = {
   이터레이션구분: "text", 메모: "text", 프로젝트: "text", 개발소재지: "text",
   거래처식별번호: "text", 거래처명: "text", 거래처국가: "text", 거래처주소: "text",
   거래처대표: "text", 거래처담당자: "text", 거래처계좌번호: "text",
-  BankName: "text", BranchName: "text", BankAddress: "text", BeneficiaryName: "text", AccountNumber: "text",
+  BankName: "text", BranchName: "text", BankAddress: "text", BeneficiaryName: "text", AccountNumber: "text", SWIFT: "text",
+  프로토타입비용: "text", 이터레이션비용: "text",
   거래처Email: "email",
   계약서URL: "url", 기안링크: "url",
   법인등록증링크: "url", 법인통장링크: "url", 부속합의서링크: "url", 스펙내용링크: "url", 인보이스링크: "url",
   법인등록증: "checkbox", 법인통장: "checkbox", 부속합의서: "checkbox", 스펙내용: "checkbox", 인보이스: "checkbox", 자동갱신: "checkbox", 파트너십계약포함: "checkbox", 우선처리: "checkbox",
-  체결일: "date", 만료일: "date", 최종업데이트일: "date",
+  체결일: "date", 만료일: "date", 최종업데이트일: "date", 개발완료일: "date",
 };
 
 function toNotionProp(key, value) {

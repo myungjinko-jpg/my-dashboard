@@ -130,8 +130,8 @@ const VENDOR_FIELDS = [
   ["거래처계좌번호", "법인통장 기재", "계좌번호"],
 ];
 // 거래처담당자(내부 담당 PM)는 거래처 정보에서 입력하지 않는다 — 파트너사에 설정된 '담당자'로 자동 관리(상세 헤더 칩).
-const BANK_FIELDS = ["BankName", "BranchName", "BankAddress", "BeneficiaryName", "AccountNumber"];
-const BANK_LABELS = { BankName: "은행명", BranchName: "지점", BankAddress: "은행주소", BeneficiaryName: "수취인", AccountNumber: "계좌·IBAN" };
+const BANK_FIELDS = ["BankName", "BranchName", "BankAddress", "SWIFT", "BeneficiaryName", "AccountNumber"];
+const BANK_LABELS = { BankName: "은행명", BranchName: "지점", BankAddress: "은행주소", SWIFT: "SWIFT", BeneficiaryName: "수취인", AccountNumber: "계좌·IBAN" };
 // 좌측 라벨 + 입력 한 줄 (라벨 고정폭, 1열)
 const fieldLabelStyle = { fontSize: 11, color: "var(--muted)", width: 64, flexShrink: 0, textAlign: "right", paddingTop: 8 };
 
@@ -141,7 +141,8 @@ const EMPTY_FORM = {
   법인등록증: false, 법인통장: false, 부속합의서: false, 스펙내용: false, 인보이스: false, 우선처리: false,
   법인등록증링크: "", 법인통장링크: "", 부속합의서링크: "", 스펙내용링크: "", 인보이스링크: "",
   거래처식별번호: "", 거래처명: "", 거래처국가: "", 거래처주소: "", 거래처대표: "", 거래처담당자: "", 거래처Email: "", 거래처계좌번호: "",
-  BankName: "", BranchName: "", BankAddress: "", BeneficiaryName: "", AccountNumber: "",
+  BankName: "", BranchName: "", BankAddress: "", SWIFT: "", BeneficiaryName: "", AccountNumber: "",
+  프로토타입비용: "", 이터레이션비용: "", 개발완료일: "",
 };
 
 // 항목 → 폼 값 객체
@@ -715,9 +716,7 @@ export default function Contracts() {
     if (!hadPending && detailScrollRef.current) detailScrollRef.current.scrollTop = 0;
   }, [selected]);
 
-  // 네이버웍스 기안 상세내용 생성용 임시 입력값 (저장 안 함 · 복사 전용)
-  const GEN_INIT = { iter: "", pubType: "하이브리드 캐주얼", doneDate: "", amount: "", payDate: "", swift: "", wht: true };
-  const [gen, setGen] = useState(GEN_INIT);
+  // 네이버웍스 기안 복사 피드백 (어떤 버튼을 눌렀는지)
   const [genCopied, setGenCopied] = useState("");
 
   // 열린 스텝이 바뀌면 draft 로드
@@ -725,8 +724,6 @@ export default function Contracts() {
     if (!effectiveOpen) { setDraft(null); return; }
     const item = items.find(i => i.id === effectiveOpen);
     setDraft(item ? itemToForm(item) : null);
-    // 지출기안이면 기안 생성 입력값 초기화 (이터레이션 라벨만 프리필)
-    if (item && item.구분 === "지출기안") setGen({ ...GEN_INIT, iter: item.이터레이션구분 || "" });
     setGenCopied("");
   }, [effectiveOpen]); // eslint-disable-line
 
@@ -1004,6 +1001,22 @@ export default function Contracts() {
           </div>
         </>)}
 
+        {vals.구분 === "부속합의서" && (
+          <div>
+            <span style={{ ...label, marginTop: 4 }}>개발 비용 (USD) <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 부속합의서 명시 금액 · 지출기안에 연동</span></span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {[["프로토타입비용", "프로토타입"], ["이터레이션비용", "이터레이션"]].map(([field, lbl]) => (
+                <div key={field} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ ...fieldLabelStyle, paddingTop: 0, width: 72 }}>{lbl}</span>
+                  <span style={{ fontSize: 12, color: "var(--muted)" }}>$</span>
+                  <input style={{ ...input, flex: 1 }} value={vals[field]} placeholder="1988.13"
+                    onChange={e => upd(f => ({ ...f, [field]: e.target.value }))} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {vals.구분 === "지출기안" && (<>
           <div>
             <span style={label}>기안 링크</span>
@@ -1011,6 +1024,10 @@ export default function Contracts() {
               <input style={{ ...input, flex: 1 }} value={vals.기안링크} onChange={e => upd(f => ({ ...f, 기안링크: e.target.value }))} placeholder="https:// (네이버웍스 기안)" />
               {vals.기안링크 && <LinkOpen href={vals.기안링크} />}
             </div>
+          </div>
+          <div>
+            <span style={label}>개발 완료일 <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 마케팅 집행일 기준 (스펙 받을 때 입력)</span></span>
+            <input type="date" style={{ ...input, width: 200 }} value={vals.개발완료일} onChange={e => upd(f => ({ ...f, 개발완료일: e.target.value }))} />
           </div>
           <div>
             <span style={{ ...label, marginTop: 4 }}>해외 송금 정보 <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 거래처등록 연동 (읽기 전용)</span></span>
@@ -1033,32 +1050,46 @@ export default function Contracts() {
             })()}
           </div>
 
-          {/* 네이버웍스 기안 상세내용 생성 — 딸깍 복사 */}
+          {/* 네이버웍스 기안 상세내용 — 앞단 값 자동 조합 · 딸깍 복사 */}
           {(() => {
             const v = partnerVendor(vals.파트너사) || {};
-            const iter = (gen.iter || "").trim();
             const proj = (vals.프로젝트 || "").trim();
             const partner = (vals.파트너사 || "").trim();
+            const iter = (vals.이터레이션구분 || "").trim();
+            const isProto = iter === "프로토타입" || iter === "";
+            // 부속합의서(같은 프로젝트)에서 금액 참조 — 프로토타입/이터레이션 분기
+            const sub = items.find(i => i.파트너사 === vals.파트너사 && (i.프로젝트 || "") === proj && i.구분 === "부속합의서");
+            const amountRaw = ((isProto ? sub?.프로토타입비용 : sub?.이터레이션비용) || "").toString().replace(/,/g, "").trim();
+            const amountNum = parseFloat(amountRaw);
+            const amountFmt = amountRaw && !isNaN(amountNum)
+              ? amountNum.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+              : amountRaw;
+            const doneDate = vals.개발완료일 || "";
+            const swift = v.SWIFT || "";
             const paren = [partner, proj.replace(/\s+/g, ""), iter.replace(/\s+/g, "")].filter(Boolean).join("_");
             const 지출명 = `파트너 개발사 개발비용 지급(${paren})`;
+            const 거래처명 = (v.거래처명 || "").trim();
             const detail = [
               "1. 개요",
-              `${(gen.pubType || "하이브리드 캐주얼")} 퍼블리싱 파트너사 ${partner}의 ${proj}${iter ? " " + iter : ""} 작업 완료에 대한 지급 건`,
+              `하이브리드 캐주얼 퍼블리싱 파트너사 ${partner}의 ${proj}${iter ? " " + iter : ""} 작업 완료에 대한 지급 건`,
               "",
               "2. 내용",
-              `${gen.doneDate || "(개발완료일)"} 개발 완료하여 테스트 진행한 건에 대한 Prototype Fee $ ${gen.amount || "(금액)"} 지급 건입니다.`,
-              ...(gen.wht ? ["원천세 제외 후 송금 예정입니다."] : []),
+              `${doneDate || "(개발완료일 미입력)"} 개발 완료하여 테스트 진행한 건에 대한 Prototype Fee $ ${amountFmt || "(금액 미입력)"} 지급 건입니다.`,
+              "원천세 제외 후 송금 예정입니다.",
               "",
               "3. 기타",
               `Bank Name (은행명): ${v.BankName || ""}`,
               `Branch Name (지점명): ${v.BranchName || ""}`,
               `Address (은행 주소): ${v.BankAddress || ""}`,
-              `SWIFT CODE (스위프트 코드): ${gen.swift || ""}`,
+              `SWIFT CODE (스위프트 코드): ${swift}`,
               `Beneficiary Name (예금주명): ${v.BeneficiaryName || ""}`,
               `Account Number (계좌번호): ${v.AccountNumber || ""}`,
             ].join("\n");
-            const genLabel = { ...fieldLabelStyle, width: 72, paddingTop: 0 };
-            const genInput = { ...input, flex: 1, minWidth: 0 };
+            // 비어 있는 앞단 값 안내
+            const missing = [];
+            if (!doneDate) missing.push("개발완료일(이 항목)");
+            if (!amountFmt) missing.push(`${isProto ? "프로토타입" : "이터레이션"}비용(부속합의서)`);
+            if (!swift) missing.push("SWIFT(거래처등록)");
             const chip = (key, text, disabled) => (
               <button type="button" disabled={disabled} onClick={() => copyGen(key, text)}
                 style={{ ...pillStyle(genCopied === key ? "green" : "default"), opacity: disabled ? 0.45 : 1, cursor: disabled ? "not-allowed" : "pointer" }}>
@@ -1067,48 +1098,21 @@ export default function Contracts() {
             );
             return (
               <div style={{ marginTop: 6, border: "1px solid var(--line)", borderRadius: 8, padding: "12px 14px", background: "var(--card-bg-subtle)" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", marginBottom: 2 }}>📋 네이버웍스 기안 내용 만들기</div>
-                <div style={{ fontSize: 10.5, color: "var(--muted)", marginBottom: 10 }}>은행정보·거래처명·지출명은 자동. 아래 3~4개만 입력하면 상세내용이 완성됩니다. (저장 안 됨 · 복사 전용)</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 200px", minWidth: 0 }}>
-                      <span style={genLabel}>개발완료일</span>
-                      <input type="date" style={genInput} value={gen.doneDate} onChange={e => setGen(g => ({ ...g, doneDate: e.target.value }))} />
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 200px", minWidth: 0 }}>
-                      <span style={genLabel}>지출예정일</span>
-                      <input type="date" style={genInput} value={gen.payDate} onChange={e => setGen(g => ({ ...g, payDate: e.target.value }))} />
-                    </div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", marginBottom: 2 }}>📋 네이버웍스 기안 내용</div>
+                <div style={{ fontSize: 10.5, color: "var(--muted)", marginBottom: 10 }}>금액·SWIFT·개발완료일까지 앞단에 입력돼 있으면 딸깍 한 번으로 완성됩니다.</div>
+                {missing.length > 0 && (
+                  <div style={{ fontSize: 10.5, color: "#C2410C", background: "rgba(245,180,0,.10)", border: "1px solid rgba(245,180,0,.30)", borderRadius: 5, padding: "6px 9px", marginBottom: 10 }}>
+                    미입력: {missing.join(" · ")} — 해당 앞단 항목에서 먼저 채우면 자동으로 들어갑니다.
                   </div>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 200px", minWidth: 0 }}>
-                      <span style={genLabel}>금액(USD)</span>
-                      <input style={genInput} value={gen.amount} onChange={e => setGen(g => ({ ...g, amount: e.target.value }))} placeholder="1,988.13" />
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 200px", minWidth: 0 }}>
-                      <span style={genLabel}>SWIFT</span>
-                      <input style={genInput} value={gen.swift} onChange={e => setGen(g => ({ ...g, swift: e.target.value }))} placeholder="ASCBVNX (직접 입력)" />
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 200px", minWidth: 0 }}>
-                      <span style={genLabel}>이터레이션</span>
-                      <input style={genInput} value={gen.iter} onChange={e => setGen(g => ({ ...g, iter: e.target.value }))} placeholder="Iteration#3" />
-                    </div>
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: "var(--text)", flex: "1 1 200px", cursor: "pointer" }}>
-                      <input type="checkbox" checked={gen.wht} onChange={e => setGen(g => ({ ...g, wht: e.target.checked }))} />
-                      원천세 제외 후 송금 예정 문구 포함
-                    </label>
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap", marginTop: 11 }}>
+                )}
+                <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
                   <button type="button" onClick={() => copyGen("상세내용", detail)}
                     style={{ ...pillStyle(genCopied === "상세내용" ? "green" : "amberSolid") }}>
                     {genCopied === "상세내용" ? "✓ 상세내용 복사됨" : "📋 상세내용 복사"}
                   </button>
                   {chip("지출명", 지출명)}
-                  {chip("거래처명", v.거래처명 || "", !(v.거래처명 || "").trim())}
-                  {chip("금액", gen.amount ? `USD ${gen.amount}` : "", !gen.amount)}
+                  {chip("거래처명", 거래처명, !거래처명)}
+                  {chip("금액", amountFmt ? `USD ${amountFmt}` : "", !amountFmt)}
                 </div>
               </div>
             );
