@@ -7,6 +7,9 @@ const NOTION_DB_URL = "https://app.notion.com/p/519164c16c9145679dafce69b6d9ab58
 const DRAFT_URL = "https://flow.worksmobile.com/v/approval/docbox/share";  // 기안 · 네이버웍스
 const CONTRACT_DRIVE_URL = "https://adxcorporation-my.sharepoint.com/shared?listurl=https%3A%2F%2Fadxcorporation%2Dmy%2Esharepoint%2Ecom%2Fpersonal%2Fsun%5Fadxcorporation%5Fonmicrosoft%5Fcom%2FDocuments&id=%2Fpersonal%2Fsun%5Fadxcorporation%5Fonmicrosoft%5Fcom%2FDocuments%2F%ED%95%98%EC%9D%B4%EB%B8%8C%EB%A6%AC%EB%93%9C%20%EC%BA%90%EC%A5%AC%EC%96%BC%20%ED%8D%BC%EB%B8%94%EB%A6%AC%EC%8B%B1%2F%ED%8C%8C%ED%8A%B8%EB%84%88%EC%8B%AD%20%EA%B3%84%EC%95%BD%EC%84%9C&viewid=ddec4962%2D5940%2D442b%2Dbb0f%2D304663c6ea1b";  // 계약서 · 원드라이브
 const PARTNER_DOCS_URL = "https://drive.google.com/drive/u/0/folders/1UZoKsr_raqIkSYtzXflwQ53hZy4I8jti";  // 파트너사 서류 · 구글드라이브
+// PM 작성용 고정 양식 (public/templates/) — PM이 다운받아 작성 후 구글드라이브 업로드
+const TPL_BUILDSPEC = "/templates/BuildSpec_StudioName_Projectname_2026xxxx.docx";
+const TPL_INVOICE = "";  // 인보이스 양식 파일 받으면 경로 지정
 
 const CONTRACT_KINDS = ["파트너십계약", "부속합의서", "NDA"];
 const PARTNER_LEVEL_KINDS = ["파트너십계약", "NDA", "거래처등록"];
@@ -911,7 +914,22 @@ export default function Contracts() {
 
         {DOCS_BY_KIND[vals.구분] && (
           <div>
-            <span style={label}>필요 서류 · 구글드라이브 링크</span>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+              <span style={label}>필요 서류 · 구글드라이브 링크</span>
+              {vals.구분 === "지출기안" && (TPL_BUILDSPEC || TPL_INVOICE) && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                  <span style={{ fontSize: 10.5, color: "var(--muted)" }}>작성 양식</span>
+                  {TPL_BUILDSPEC && (
+                    <a href={TPL_BUILDSPEC} download style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 600, padding: "5px 9px", borderRadius: 7, border: "1px solid #c7ccd4", background: "var(--card)", color: "var(--text)", textDecoration: "none", whiteSpace: "nowrap", boxShadow: BTN_SHADOW }}
+                      title="빌드 스펙 작성 양식 다운로드 (.docx)">BuildSpec ⬇</a>
+                  )}
+                  {TPL_INVOICE && (
+                    <a href={TPL_INVOICE} download style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 600, padding: "5px 9px", borderRadius: 7, border: "1px solid #c7ccd4", background: "var(--card)", color: "var(--text)", textDecoration: "none", whiteSpace: "nowrap", boxShadow: BTN_SHADOW }}
+                      title="인보이스 작성 양식 다운로드 (.docx)">Invoice ⬇</a>
+                  )}
+                </div>
+              )}
+            </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "4px 0" }}>
               {DOCS_BY_KIND[vals.구분].map(doc => {
                 const linkKey = `${doc}링크`;
