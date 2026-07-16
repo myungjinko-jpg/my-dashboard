@@ -696,7 +696,14 @@ export default function Contracts() {
 
   // 파트너 전환 시 아코디언 초기화 (자동 = 첫 미완료). 큐 클릭으로 넘어온 경우엔 지정 항목을 연다
   const pendingOpen = useRef(null);
-  useEffect(() => { setOpenId(pendingOpen.current); pendingOpen.current = null; }, [selected]);
+  const detailScrollRef = useRef(null);
+  useEffect(() => {
+    const hadPending = pendingOpen.current;
+    setOpenId(pendingOpen.current); pendingOpen.current = null;
+    // 파트너 전환 시 상세 패널 스크롤을 맨 위로 — 항상 헤더 기준점에서 시작
+    // (큐/딥링크로 특정 항목을 여는 경우는 그쪽 scrollIntoView에 맡김)
+    if (!hadPending && detailScrollRef.current) detailScrollRef.current.scrollTop = 0;
+  }, [selected]);
 
   // 열린 스텝이 바뀌면 draft 로드
   useEffect(() => {
@@ -1371,7 +1378,7 @@ export default function Contracts() {
           데이터 로드 실패: {error} <button onClick={load} style={{ marginLeft: 8 }}>재시도</button>
         </div>
       ) : (
-        <div style={{ display: "flex", flex: 1, overflow: "hidden", height: 620, maxHeight: "74vh", background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+        <div style={{ display: "flex", overflow: "hidden", height: "74vh", minHeight: 460, maxHeight: 900, background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
 
           {/* ── 작업 존 · 왼쪽 nav (파트너사) ── */}
           <div style={{ width: 210, flexShrink: 0, borderRight: `1px solid ${SB_LINE}`, display: "flex", flexDirection: "column", background: SB_BG }}>
@@ -1582,7 +1589,7 @@ export default function Contracts() {
                 </div>
 
                 {/* 순차 아코디언 */}
-                <div className="slim-scroll" style={{ flex: 1, overflowY: "auto", padding: "8px 20px 20px" }}>
+                <div ref={detailScrollRef} className="slim-scroll" style={{ flex: 1, overflowY: "auto", padding: "8px 20px 20px" }}>
                   {selectedRows.length === 0 && (
                     <div style={{ padding: "30px 20px", fontSize: 12.5, color: "var(--muted)", textAlign: "center" }}>
                       아직 항목이 없습니다.
