@@ -253,6 +253,13 @@ export default function Contracts() {
     setTimeout(() => setCopiedId(c => c === id ? null : c), 2000);
   };
 
+  // 네이버웍스 기안 복사 (key: 어떤 버튼을 눌렀는지 표시용)
+  const copyGen = (key, text) => {
+    navigator.clipboard?.writeText(text);
+    setGenCopied(key);
+    setTimeout(() => setGenCopied(k => k === key ? "" : k), 2000);
+  };
+
   const sendAlert = async () => {
     setSending(true); setSentMsg("");
     try {
@@ -708,11 +715,19 @@ export default function Contracts() {
     if (!hadPending && detailScrollRef.current) detailScrollRef.current.scrollTop = 0;
   }, [selected]);
 
+  // 네이버웍스 기안 상세내용 생성용 임시 입력값 (저장 안 함 · 복사 전용)
+  const GEN_INIT = { iter: "", pubType: "하이브리드 캐주얼", doneDate: "", amount: "", payDate: "", swift: "", wht: true };
+  const [gen, setGen] = useState(GEN_INIT);
+  const [genCopied, setGenCopied] = useState("");
+
   // 열린 스텝이 바뀌면 draft 로드
   useEffect(() => {
     if (!effectiveOpen) { setDraft(null); return; }
     const item = items.find(i => i.id === effectiveOpen);
     setDraft(item ? itemToForm(item) : null);
+    // 지출기안이면 기안 생성 입력값 초기화 (이터레이션 라벨만 프리필)
+    if (item && item.구분 === "지출기안") setGen({ ...GEN_INIT, iter: item.이터레이션구분 || "" });
+    setGenCopied("");
   }, [effectiveOpen]); // eslint-disable-line
 
   const openStep = (item) => { setOpenId(item.id); setEditingStep(null); };
@@ -1017,6 +1032,87 @@ export default function Contracts() {
               );
             })()}
           </div>
+
+          {/* 네이버웍스 기안 상세내용 생성 — 딸깍 복사 */}
+          {(() => {
+            const v = partnerVendor(vals.파트너사) || {};
+            const iter = (gen.iter || "").trim();
+            const proj = (vals.프로젝트 || "").trim();
+            const partner = (vals.파트너사 || "").trim();
+            const paren = [partner, proj.replace(/\s+/g, ""), iter.replace(/\s+/g, "")].filter(Boolean).join("_");
+            const 지출명 = `파트너 개발사 개발비용 지급(${paren})`;
+            const detail = [
+              "1. 개요",
+              `${(gen.pubType || "하이브리드 캐주얼")} 퍼블리싱 파트너사 ${partner}의 ${proj}${iter ? " " + iter : ""} 작업 완료에 대한 지급 건`,
+              "",
+              "2. 내용",
+              `${gen.doneDate || "(개발완료일)"} 개발 완료하여 테스트 진행한 건에 대한 Prototype Fee $ ${gen.amount || "(금액)"} 지급 건입니다.`,
+              ...(gen.wht ? ["원천세 제외 후 송금 예정입니다."] : []),
+              "",
+              "3. 기타",
+              `Bank Name (은행명): ${v.BankName || ""}`,
+              `Branch Name (지점명): ${v.BranchName || ""}`,
+              `Address (은행 주소): ${v.BankAddress || ""}`,
+              `SWIFT CODE (스위프트 코드): ${gen.swift || ""}`,
+              `Beneficiary Name (예금주명): ${v.BeneficiaryName || ""}`,
+              `Account Number (계좌번호): ${v.AccountNumber || ""}`,
+            ].join("\n");
+            const genLabel = { ...fieldLabelStyle, width: 72, paddingTop: 0 };
+            const genInput = { ...input, flex: 1, minWidth: 0 };
+            const chip = (key, text, disabled) => (
+              <button type="button" disabled={disabled} onClick={() => copyGen(key, text)}
+                style={{ ...pillStyle(genCopied === key ? "green" : "default"), opacity: disabled ? 0.45 : 1, cursor: disabled ? "not-allowed" : "pointer" }}>
+                {genCopied === key ? "✓ 복사됨" : key}
+              </button>
+            );
+            return (
+              <div style={{ marginTop: 6, border: "1px solid var(--line)", borderRadius: 8, padding: "12px 14px", background: "var(--card-bg-subtle)" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", marginBottom: 2 }}>📋 네이버웍스 기안 내용 만들기</div>
+                <div style={{ fontSize: 10.5, color: "var(--muted)", marginBottom: 10 }}>은행정보·거래처명·지출명은 자동. 아래 3~4개만 입력하면 상세내용이 완성됩니다. (저장 안 됨 · 복사 전용)</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 200px", minWidth: 0 }}>
+                      <span style={genLabel}>개발완료일</span>
+                      <input type="date" style={genInput} value={gen.doneDate} onChange={e => setGen(g => ({ ...g, doneDate: e.target.value }))} />
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 200px", minWidth: 0 }}>
+                      <span style={genLabel}>지출예정일</span>
+                      <input type="date" style={genInput} value={gen.payDate} onChange={e => setGen(g => ({ ...g, payDate: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 200px", minWidth: 0 }}>
+                      <span style={genLabel}>금액(USD)</span>
+                      <input style={genInput} value={gen.amount} onChange={e => setGen(g => ({ ...g, amount: e.target.value }))} placeholder="1,988.13" />
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 200px", minWidth: 0 }}>
+                      <span style={genLabel}>SWIFT</span>
+                      <input style={genInput} value={gen.swift} onChange={e => setGen(g => ({ ...g, swift: e.target.value }))} placeholder="ASCBVNX (직접 입력)" />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 200px", minWidth: 0 }}>
+                      <span style={genLabel}>이터레이션</span>
+                      <input style={genInput} value={gen.iter} onChange={e => setGen(g => ({ ...g, iter: e.target.value }))} placeholder="Iteration#3" />
+                    </div>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: "var(--text)", flex: "1 1 200px", cursor: "pointer" }}>
+                      <input type="checkbox" checked={gen.wht} onChange={e => setGen(g => ({ ...g, wht: e.target.checked }))} />
+                      원천세 제외 후 송금 예정 문구 포함
+                    </label>
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap", marginTop: 11 }}>
+                  <button type="button" onClick={() => copyGen("상세내용", detail)}
+                    style={{ ...pillStyle(genCopied === "상세내용" ? "green" : "amberSolid") }}>
+                    {genCopied === "상세내용" ? "✓ 상세내용 복사됨" : "📋 상세내용 복사"}
+                  </button>
+                  {chip("지출명", 지출명)}
+                  {chip("거래처명", v.거래처명 || "", !(v.거래처명 || "").trim())}
+                  {chip("금액", gen.amount ? `USD ${gen.amount}` : "", !gen.amount)}
+                </div>
+              </div>
+            );
+          })()}
         </>)}
 
         <div>
