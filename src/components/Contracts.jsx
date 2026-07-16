@@ -1301,24 +1301,21 @@ export default function Contracts() {
         })}
 
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <a className="m-notion" href={NOTION_DB_URL} target="_blank" rel="noopener noreferrer"
-            style={{ padding: "8px 15px", borderRadius: 7, fontSize: 12, fontWeight: 600, textDecoration: "none", letterSpacing: ".02em", display: "inline-block" }}>
-            Notion DB ↗
-          </a>
           {[
-            { t: "기안", src: "네이버웍스", url: DRAFT_URL },
-            { t: "계약서", src: "원드라이브", url: CONTRACT_DRIVE_URL },
-            { t: "파트너사 서류", src: "구글드라이브", url: PARTNER_DOCS_URL },
+            { t: "Notion DB", url: NOTION_DB_URL, tip: "통합 계약 DB 열기 — 가급적 여기서 직접 수정하지 말고 대시보드로 관리하세요" },
+            { t: "기안", url: DRAFT_URL, tip: "네이버웍스 결재함 열기" },
+            { t: "계약서", url: CONTRACT_DRIVE_URL, tip: "원드라이브 파트너십 계약서(서명본) 폴더 열기" },
+            { t: "파트너사 서류", url: PARTNER_DOCS_URL, tip: "구글드라이브 파트너사 서류함 열기" },
           ].map(l => (
             <a key={l.t} href={l.url} target="_blank" rel="noopener noreferrer"
-              title={`${l.t} · ${l.src}`}
+              title={l.tip}
               style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "8px 13px", borderRadius: 7, border: "1px solid var(--line)", background: "var(--card)", color: "var(--text)", fontSize: 12, fontWeight: 600, textDecoration: "none", fontFamily: "inherit", whiteSpace: "nowrap", boxShadow: BTN_SHADOW }}
               onMouseEnter={e => { e.currentTarget.style.background = "rgba(120,124,135,.08)"; }}
               onMouseLeave={e => { e.currentTarget.style.background = "var(--card)"; }}>
               {l.t} <span style={{ fontSize: 10, fontWeight: 400, color: "var(--muted)" }}>↗</span>
             </a>
           ))}
-          <button disabled title="준비 중인 기능입니다"
+          <button disabled title="Slack 자동 알림 — 준비 중인 기능입니다"
             style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 13px", borderRadius: 7, border: "1px solid var(--line)", background: "var(--card)", color: "var(--muted)", fontSize: 12, fontWeight: 600, cursor: "not-allowed", opacity: 0.5, fontFamily: "inherit" }}>
             Slack 알림 <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.85 }}>(준비중)</span>
           </button>
