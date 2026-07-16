@@ -1258,8 +1258,8 @@ export default function Contracts() {
       {/* ── ① 확인 존: 담당자 필터 · 상태 카운트 · 알림 칩 · 액션 ── */}
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
       <div style={{ background: SB_HEADER_BG, padding: "9px 18px", display: "flex", alignItems: "center", gap: 7 }}>
-        <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: SB_HEADER_TEXT }}>확인</span>
-        <span style={{ fontSize: 11, fontWeight: 400, color: SB_HEADER_MUTED }}>오늘 주의할 것</span>
+        <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: SB_HEADER_TEXT }}>개요</span>
+        <span style={{ fontSize: 11, fontWeight: 400, color: SB_HEADER_MUTED }}>담당 · 현황 · 알림 한눈에</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px 12px", padding: "12px 18px" }}>
         {owners.length > 0 && (
@@ -1298,11 +1298,13 @@ export default function Contracts() {
         })}
 
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-          {sentMsg && <span style={{ fontSize: 11, color: green, fontWeight: 600 }}>{sentMsg}</span>}
-          <button onClick={sendAlert} disabled={sending}
-            style={{ padding: "8px 13px", borderRadius: 7, border: "1px solid var(--line)", background: "var(--card)", color: "var(--text)", fontSize: 12, fontWeight: 600, cursor: sending ? "not-allowed" : "pointer", opacity: sending ? 0.6 : 1, fontFamily: "inherit" }}>
-            {sending ? "발송 중…" : "Slack 알림"}
-          </button>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <button disabled title="준비 중인 기능입니다"
+              style={{ padding: "8px 13px", borderRadius: 7, border: "1px solid var(--line)", background: "var(--card)", color: "var(--muted)", fontSize: 12, fontWeight: 600, cursor: "not-allowed", opacity: 0.5, fontFamily: "inherit" }}>
+              Slack 알림
+            </button>
+            <span style={{ fontSize: 10, color: "var(--muted)" }}>(준비중)</span>
+          </span>
           <a className="m-notion" href={NOTION_DB_URL} target="_blank" rel="noopener noreferrer"
             style={{ padding: "8px 15px", borderRadius: 7, fontSize: 12, fontWeight: 600, textDecoration: "none", letterSpacing: ".02em", display: "inline-block" }}>
             Notion DB ↗
