@@ -1347,7 +1347,7 @@ export default function Contracts() {
           );
         };
         return (
-        <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderLeft: `3px solid ${amber}`, borderRadius: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+        <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
           <div onClick={() => setQueueOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: SB_HEADER_BG, padding: "9px 18px" }}>
             <span style={{ fontSize: 12, color: SB_HEADER_MUTED, transform: queueOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}>▾</span>
             <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: SB_HEADER_TEXT }}>지금 할 일</span>
