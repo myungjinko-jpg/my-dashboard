@@ -1133,16 +1133,22 @@ export default function Contracts() {
           {!done && (
             <button onClick={e => { e.stopPropagation(); togglePriority(item); }}
               title={item.우선처리 ? "우선처리 해제" : "우선처리 지정 (지금 할 일 오른쪽으로)"}
-              style={{ fontSize: 12, border: "none", background: "transparent", cursor: "pointer", padding: "2px 3px", opacity: item.우선처리 ? 1 : 0.35, filter: item.우선처리 ? "none" : "grayscale(1)" }}>📌</button>
+              style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 3, whiteSpace: "nowrap", fontFamily: "inherit", cursor: "pointer",
+                background: item.우선처리 ? amberFaint : "var(--card)",
+                color: item.우선처리 ? "#B45309" : "var(--text)",
+                border: `1px solid ${item.우선처리 ? "rgba(245,180,0,.4)" : "#c7ccd4"}`,
+                boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+              <span style={{ filter: item.우선처리 ? "none" : "grayscale(1)", opacity: item.우선처리 ? 1 : 0.6 }}>📌</span>우선처리
+            </button>
           )}
           <button onClick={e => { e.stopPropagation(); copyItemLink(item.id); }}
             title="이 항목으로 바로 가는 링크 복사"
-            style={{ fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, whiteSpace: "nowrap", fontFamily: "inherit", cursor: "pointer",
+            style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 3, whiteSpace: "nowrap", fontFamily: "inherit", cursor: "pointer",
               background: copiedId === item.id ? greenFaint : "var(--card)",
               color: copiedId === item.id ? green : "var(--text)",
               border: `1px solid ${copiedId === item.id ? "rgba(22,163,74,.25)" : "#c7ccd4"}`,
               boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-            {copiedId === item.id ? "✓ 복사됨" : "링크복사"}
+            {copiedId === item.id ? "✓ 복사됨" : <><span>🔗</span>링크복사</>}
           </button>
           <span style={{ fontSize: 12, color: "var(--muted)", flexShrink: 0, transform: isOpen ? "rotate(180deg)" : "none", transition: "transform .15s" }}>▾</span>
         </div>
