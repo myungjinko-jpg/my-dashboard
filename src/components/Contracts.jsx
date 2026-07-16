@@ -45,13 +45,19 @@ function Flag({ country, size = 15 }) {
 }
 
 // 사이드바 팔레트 — 쿨 그레이 패널 (밝은 캔버스보다 한 단계 진한 중립 회색)
-const SB_BG = "#C8CFD9";
+const SB_BG = "#ffffff";              // 스튜디오 목록 영역 — 우측 상세와 동일한 흰색
 const SB_TEXT = "#1a1d23";
-const SB_MUTED = "#5b6270";
-const SB_LINE = "#b3bac6";
-const SB_HOVER = "rgba(255,255,255,.35)";
-const SB_GRP_BG = "rgba(0,0,0,.05)";
-const SB_ACTIVE = "rgba(245,180,0,.22)";
+const SB_MUTED = "#6b7280";
+const SB_LINE = "#eaecef";             // 흰 배경용 옅은 헤어라인
+const SB_HOVER = "rgba(0,0,0,.035)";
+const SB_HEADER_BG = "#2b2f36";        // "파트너사 · 선택" 헤더 — 짙은 차콜
+const SB_HEADER_TEXT = "#e8eaed";
+const SB_HEADER_MUTED = "#9aa0a8";
+const SB_GRP_BG = "#5b6068";           // 국가 그룹 헤더 — 옅은 차콜
+const SB_GRP_TEXT = "#dfe2e6";
+const SB_ACTIVE_BG = "rgba(0,120,212,.12)";   // 선택 상태 — 차분한 블루 틴트
+const SB_ACTIVE_BORDER = "#0078D4";
+const SB_ACTIVE_TEXT = "#0c447c";
 
 const amber = "#F5B400";
 const amberFaint = "rgba(245,180,0,0.10)";
@@ -1030,14 +1036,14 @@ export default function Contracts() {
         <div onClick={() => setSelected(partner)}
           style={{
             padding: "10px 14px", cursor: "pointer",
-            borderLeft: `2px solid ${isActive ? amber : "transparent"}`,
-            background: isActive ? SB_ACTIVE : "transparent",
+            borderLeft: `3px solid ${isActive ? SB_ACTIVE_BORDER : "transparent"}`,
+            background: isActive ? SB_ACTIVE_BG : "transparent",
             transition: "background .1s",
           }}
           onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = SB_HOVER; }}
           onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "transparent"; }}>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 5 }}>
-            <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 500, color: SB_TEXT, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{partner}</span>
+            <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 500, color: isActive ? SB_ACTIVE_TEXT : SB_TEXT, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{partner}</span>
             {warn && <span style={{ width: 6, height: 6, borderRadius: "50%", background: red, flexShrink: 0 }} />}
             {projCount > 0 && <span style={{ fontSize: 10, color: SB_MUTED, flexShrink: 0 }}>프로젝트 {projCount}</span>}
           </div>
@@ -1369,11 +1375,11 @@ export default function Contracts() {
 
           {/* ── 작업 존 · 왼쪽 nav (파트너사) ── */}
           <div style={{ width: 210, flexShrink: 0, borderRight: `1px solid ${SB_LINE}`, display: "flex", flexDirection: "column", background: SB_BG }}>
-            <div style={{ padding: "10px 14px 8px", borderBottom: `1px solid ${SB_LINE}`, display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: SB_MUTED, flex: 1 }}>파트너사 · 선택</span>
+            <div style={{ padding: "11px 14px", background: SB_HEADER_BG, display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: SB_HEADER_TEXT, flex: 1 }}>파트너사 · 선택</span>
               <button onClick={load} title="새로고침" style={{
                 fontSize: 11, padding: "2px 6px", borderRadius: 3,
-                border: `1px solid ${SB_LINE}`, color: SB_MUTED, background: "transparent", cursor: "pointer", fontFamily: "inherit",
+                border: `1px solid rgba(255,255,255,.2)`, color: SB_HEADER_MUTED, background: "transparent", cursor: "pointer", fontFamily: "inherit",
               }}>↻</button>
             </div>
 
@@ -1398,7 +1404,7 @@ export default function Contracts() {
                 if (sorted.length === 1 && sorted[0][0] === "미지정") return sorted[0][1].map(renderSidebarPartner);
                 return sorted.map(([country, list]) => (
                   <div key={country}>
-                    <div style={{ padding: "7px 14px 4px", fontSize: 9, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: SB_MUTED, background: SB_GRP_BG, borderBottom: `1px solid ${SB_LINE}`, display: "flex", alignItems: "center", gap: 5 }}>
+                    <div style={{ padding: "6px 14px", fontSize: 9, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: SB_GRP_TEXT, background: SB_GRP_BG, display: "flex", alignItems: "center", gap: 5 }}>
                       {country !== "미지정" && <Flag country={country} size={14} />}
                       <span>{country === "미지정" ? "국가 미지정" : country}</span>
                       <span style={{ fontWeight: 400 }}>· {list.length}</span>
