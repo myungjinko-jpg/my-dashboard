@@ -1256,11 +1256,12 @@ export default function Contracts() {
       <datalist id="owner-list">{owners.map(o => <option key={o} value={o} />)}</datalist>
 
       {/* ── ① 확인 존: 담당자 필터 · 상태 카운트 · 알림 칩 · 액션 ── */}
-      <div style={{ padding: "10px 18px 12px", background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-        <span>확인</span><span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>오늘 주의할 것</span>
+      <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+      <div style={{ background: SB_HEADER_BG, padding: "9px 18px", display: "flex", alignItems: "center", gap: 7 }}>
+        <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: SB_HEADER_TEXT }}>확인</span>
+        <span style={{ fontSize: 11, fontWeight: 400, color: SB_HEADER_MUTED }}>오늘 주의할 것</span>
       </div>
-      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px 12px" }}>
+      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px 12px", padding: "12px 18px" }}>
         {owners.length > 0 && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 700, letterSpacing: ".05em" }}>담당자</span>
@@ -1334,18 +1335,18 @@ export default function Contracts() {
           );
         };
         return (
-        <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderLeft: `3px solid ${amber}`, borderRadius: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", padding: "8px 18px" }}>
-          <div onClick={() => setQueueOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: queueOpen ? 8 : 0, cursor: "pointer" }}>
-            <span style={{ fontSize: 12, color: "var(--muted)", transform: queueOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}>▾</span>
-            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "#B45309" }}>지금 할 일</span>
-            <span style={{ fontSize: 10, color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>자동 {filteredQueue.length} · 우선 {manualQueue.length}</span>
+        <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderLeft: `3px solid ${amber}`, borderRadius: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+          <div onClick={() => setQueueOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: SB_HEADER_BG, padding: "9px 18px" }}>
+            <span style={{ fontSize: 12, color: SB_HEADER_MUTED, transform: queueOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}>▾</span>
+            <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: SB_HEADER_TEXT }}>지금 할 일</span>
+            <span style={{ fontSize: 10, color: SB_HEADER_MUTED, fontVariantNumeric: "tabular-nums" }}>자동 {filteredQueue.length} · 우선 {manualQueue.length}</span>
             {(queueFilter || ownerFilter) && (
               <button onClick={e => { e.stopPropagation(); setQueueFilter(null); setOwnerFilter(null); }}
-                style={{ fontSize: 10, color: blue, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit" }}>필터 해제</button>
+                style={{ fontSize: 10, color: "#7fb8f0", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit" }}>필터 해제</button>
             )}
           </div>
           {queueOpen && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, padding: "10px 18px 12px" }}>
               {/* 좌: 자동 */}
               <div>
                 <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 5 }}>자동 · 시스템 판단</div>
@@ -1357,7 +1358,7 @@ export default function Contracts() {
               </div>
               {/* 우: 우선처리(수동) */}
               <div style={{ borderLeft: "1px solid var(--line)", paddingLeft: 12 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase", color: "#B45309", marginBottom: 5 }}>📌 우선처리 · 지정</div>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 5 }}>📌 우선처리 · 지정</div>
                 <div className="slim-scroll" style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 150, overflowY: "auto" }}>
                   {manualQueue.length === 0
                     ? <div style={{ fontSize: 11, color: "var(--muted)", padding: "6px 2px" }}>항목의 📌를 눌러 여기 올리세요</div>
