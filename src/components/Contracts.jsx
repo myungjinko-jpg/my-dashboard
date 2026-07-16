@@ -61,6 +61,18 @@ const red = "#DC2626";
 const blue = "#0078D4";
 const blueFaint = "rgba(0,120,212,0.08)";
 
+// 공통 버튼 규격 — radius 7, 동일 높이, 은은한 그림자(입체감). className "pill-btn"로 호버·눌림
+const BTN_SHADOW = "0 1px 2px rgba(16,24,40,.07), 0 1px 3px rgba(16,24,40,.04)";
+function pillStyle(variant) {
+  const base = { display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, fontWeight: 600, lineHeight: 1, padding: "6px 11px", borderRadius: 7, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", textDecoration: "none", boxShadow: BTN_SHADOW };
+  if (variant === "blue") return { ...base, background: blueFaint, color: blue, border: "1px solid rgba(0,120,212,.30)" };
+  if (variant === "green") return { ...base, background: greenFaint, color: green, border: "1px solid rgba(22,163,74,.30)" };
+  // 우선처리 — 앰버에 빨강기를 살짝 더한 웜 오렌지
+  if (variant === "amber") return { ...base, background: "rgba(232,120,55,.13)", color: "#B0480F", border: "1px solid rgba(232,120,55,.48)" };
+  if (variant === "amberSolid") return { ...base, background: amber, color: "#1a1a1a", border: "1px solid #e0a500" };
+  return { ...base, background: "var(--card)", color: "var(--text)", border: "1px solid #c7ccd4" };
+}
+
 const DOCS_BY_KIND = {
   거래처등록: ["법인등록증", "법인통장"],
   지출기안: ["법인등록증", "법인통장", "부속합의서", "스펙내용", "인보이스"],
@@ -445,14 +457,7 @@ export default function Contracts() {
   const label = { fontSize: 11, fontWeight: 600, color: "var(--muted)", marginBottom: 4, display: "block" };
 
   // 공용 "추가" 버튼 스타일 — 전부 동일, accent(맥락상 유도할 하나)만 앰버 강조
-  const addBtn = (accent) => ({
-    padding: "5px 11px", borderRadius: 6, fontSize: 12, fontWeight: 600,
-    cursor: "pointer", fontFamily: "inherit", lineHeight: 1, whiteSpace: "nowrap",
-    border: `1px solid ${accent ? amber : "#c7ccd4"}`,
-    background: accent ? amberFaint : "var(--card)",
-    color: accent ? "#B45309" : "var(--text)",
-    boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-  });
+  const addBtn = (accent) => pillStyle(accent ? "amberSolid" : "default");
 
   // 파트너의 거래처등록 항목 (파트너 공통 서류의 원본)
   const partnerVendor = (partner) => items.find(i => i.파트너사 === partner && i.구분 === "거래처등록") || null;
@@ -1122,32 +1127,22 @@ export default function Contracts() {
             const docLabel = item.구분 === "NDA" ? "NDA"
               : item.구분 === "부속합의서" ? (item.파트너십계약포함 ? "파트너십계약서" : "부속합의서")
               : "파트너십계약서"; // 파트너십계약
-            const pill = { fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, textDecoration: "none", whiteSpace: "nowrap" };
-            const bluePill = { ...pill, background: blueFaint, color: blue, border: "1px solid rgba(0,120,212,.25)" };
             return !isOpen && (<>
-              {item.계약서URL && <a href={item.계약서URL} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={bluePill}>{docLabel} →</a>}
-              {covered && !item.계약서URL && masterUrl && <a href={masterUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={bluePill}>파트너십계약서 →</a>}
-              {item.기안링크 && <a href={item.기안링크} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ ...pill, background: greenFaint, color: green, border: "1px solid rgba(22,163,74,.25)" }}>기안 →</a>}
+              {item.계약서URL && <a className="pill-btn" href={item.계약서URL} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={pillStyle("blue")}>{docLabel} →</a>}
+              {covered && !item.계약서URL && masterUrl && <a className="pill-btn" href={masterUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={pillStyle("blue")}>파트너십계약서 →</a>}
+              {item.기안링크 && <a className="pill-btn" href={item.기안링크} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={pillStyle("green")}>기안 →</a>}
             </>);
           })()}
           {!done && (
-            <button onClick={e => { e.stopPropagation(); togglePriority(item); }}
+            <button className="pill-btn" onClick={e => { e.stopPropagation(); togglePriority(item); }}
               title={item.우선처리 ? "우선처리 해제" : "우선처리 지정 (지금 할 일 오른쪽으로)"}
-              style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 3, whiteSpace: "nowrap", fontFamily: "inherit", cursor: "pointer",
-                background: item.우선처리 ? amberFaint : "var(--card)",
-                color: item.우선처리 ? "#B45309" : "var(--text)",
-                border: `1px solid ${item.우선처리 ? "rgba(245,180,0,.4)" : "#c7ccd4"}`,
-                boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-              <span style={{ filter: item.우선처리 ? "none" : "grayscale(1)", opacity: item.우선처리 ? 1 : 0.6 }}>📌</span>우선처리
+              style={item.우선처리 ? pillStyle("amber") : pillStyle("default")}>
+              <span style={{ filter: item.우선처리 ? "none" : "grayscale(1)", opacity: item.우선처리 ? 1 : 0.55 }}>📌</span>우선처리
             </button>
           )}
-          <button onClick={e => { e.stopPropagation(); copyItemLink(item.id); }}
+          <button className="pill-btn" onClick={e => { e.stopPropagation(); copyItemLink(item.id); }}
             title="이 항목으로 바로 가는 링크 복사"
-            style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 3, whiteSpace: "nowrap", fontFamily: "inherit", cursor: "pointer",
-              background: copiedId === item.id ? greenFaint : "var(--card)",
-              color: copiedId === item.id ? green : "var(--text)",
-              border: `1px solid ${copiedId === item.id ? "rgba(22,163,74,.25)" : "#c7ccd4"}`,
-              boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+            style={copiedId === item.id ? pillStyle("green") : pillStyle("default")}>
             {copiedId === item.id ? "✓ 복사됨" : <><span>🔗</span>링크복사</>}
           </button>
           <span style={{ fontSize: 12, color: "var(--muted)", flexShrink: 0, transform: isOpen ? "rotate(180deg)" : "none", transition: "transform .15s" }}>▾</span>
@@ -1171,23 +1166,23 @@ export default function Contracts() {
             </fieldset>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 16 }}>
               <button onClick={() => openEdit(item)} style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", fontFamily: "inherit", marginRight: "auto" }}>전체 편집 창 ↗</button>
-              <button onClick={collapseStep} disabled={isBusy}
-                style={{ padding: "8px 14px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 6, background: "var(--card)", color: "var(--text)", cursor: "pointer", fontFamily: "inherit" }}>접기</button>
+              <button className="pill-btn" onClick={collapseStep} disabled={isBusy}
+                style={pillStyle("default")}>접기</button>
               {locked ? (
-                <button onClick={() => setEditingStep(item.id)} disabled={isBusy}
-                  style={{ padding: "8px 16px", fontSize: 12, fontWeight: 600, border: `1px solid ${green}`, borderRadius: 6, background: greenFaint, color: green, cursor: "pointer", fontFamily: "inherit" }}>✎ 수정</button>
+                <button className="pill-btn" onClick={() => setEditingStep(item.id)} disabled={isBusy}
+                  style={pillStyle("green")}>✎ 수정</button>
               ) : (<>
                 {(() => { const cb = missingForComplete(draft); return (<>
                   {!done && cb && (
                     <span style={{ fontSize: 10.5, color: "#C2410C", marginRight: 4 }} title={cb}>완료 조건: {cb}</span>
                   )}
                   {!done && (
-                    <button onClick={() => saveStep(item, false)} disabled={isBusy}
-                      style={{ padding: "8px 14px", fontSize: 12, fontWeight: 600, border: `1px solid ${amber}`, borderRadius: 6, background: amberFaint, color: "#B45309", cursor: "pointer", fontFamily: "inherit" }}>저장 (진행중)</button>
+                    <button className="pill-btn" onClick={() => saveStep(item, false)} disabled={isBusy}
+                      style={pillStyle("amber")}>저장 (진행중)</button>
                   )}
-                  <button onClick={() => saveStep(item, !done)} disabled={isBusy || (!done && !!cb)}
+                  <button className="pill-btn" onClick={() => saveStep(item, !done)} disabled={isBusy || (!done && !!cb)}
                     title={!done && cb ? `완료하려면: ${cb}` : ""}
-                    style={{ padding: "8px 16px", fontSize: 12, fontWeight: 600, border: "none", borderRadius: 6, background: done ? green : amber, color: done ? "#fff" : "#1a1a1a", cursor: (!done && cb) ? "not-allowed" : "pointer", opacity: (!done && cb) ? 0.5 : 1, fontFamily: "inherit" }}>
+                    style={{ ...pillStyle(done ? "green" : "amberSolid"), cursor: (!done && cb) ? "not-allowed" : "pointer", opacity: (!done && cb) ? 0.5 : 1 }}>
                     {done ? "저장" : "완료하고 다음 단계 →"}
                   </button>
                 </>); })()}
@@ -1236,6 +1231,9 @@ export default function Contracts() {
         .slim-scroll::-webkit-scrollbar-thumb:hover { background: rgba(120,124,135,.55); }
         .m-notion { background: #2B2D3A; color: #fff; transition: background .12s; }
         .m-notion:hover { background: #1C1D26; }
+        .pill-btn { transition: box-shadow .12s, transform .06s, background .12s; }
+        .pill-btn:hover { box-shadow: 0 2px 5px rgba(16,24,40,.12), 0 1px 2px rgba(16,24,40,.06); }
+        .pill-btn:active { transform: translateY(1px); box-shadow: 0 1px 1px rgba(16,24,40,.06); }
       `}</style>
 
       {/* 전역 자동완성 목록 (국가·담당자) */}
@@ -1458,16 +1456,16 @@ export default function Contracts() {
                     placeholder="담당자 (선택)"
                     style={{ width: "100%", padding: "6px 9px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", boxSizing: "border-box" }} />
                   <div style={{ display: "flex", gap: 6 }}>
-                    <button type="button" onClick={() => { setAddingPartner(false); setNewPartnerName(""); setNewPartnerProject(""); }}
-                      style={{ ...addBtn(false), flex: 1, textAlign: "center" }}>취소</button>
-                    <button type="submit" disabled={!newPartnerName.trim() || creatingTpl}
-                      style={{ ...addBtn(true), flex: 2, textAlign: "center", opacity: !newPartnerName.trim() || creatingTpl ? 0.5 : 1 }}>
+                    <button type="button" className="pill-btn" onClick={() => { setAddingPartner(false); setNewPartnerName(""); setNewPartnerProject(""); }}
+                      style={{ ...addBtn(false), flex: 1, justifyContent: "center" }}>취소</button>
+                    <button type="submit" className="pill-btn" disabled={!newPartnerName.trim() || creatingTpl}
+                      style={{ ...addBtn(true), flex: 2, justifyContent: "center", opacity: !newPartnerName.trim() || creatingTpl ? 0.5 : 1 }}>
                       {creatingTpl ? "생성 중…" : "생성 (Enter)"}
                     </button>
                   </div>
                 </form>
               ) : (
-                <button onClick={() => setAddingPartner(true)} style={{ ...addBtn(partnerIsPrimary), width: "100%", textAlign: "center" }}>+ 파트너사</button>
+                <button className="pill-btn" onClick={() => setAddingPartner(true)} style={{ ...addBtn(partnerIsPrimary), width: "100%", justifyContent: "center" }}>+ 파트너사</button>
               )}
             </div>
           </div>
@@ -1569,9 +1567,9 @@ export default function Contracts() {
                         style={{ padding: "4px 9px", fontSize: 11, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", width: 160 }} />
                     </form>
                   ) : (
-                    <button onClick={() => setAddingProject(true)} disabled={creatingTpl} style={{ ...addBtn(projectIsPrimary), opacity: creatingTpl ? 0.5 : 1 }}>{creatingTpl ? "생성 중…" : "+ 프로젝트"}</button>
+                    <button className="pill-btn" onClick={() => setAddingProject(true)} disabled={creatingTpl} style={{ ...addBtn(projectIsPrimary), opacity: creatingTpl ? 0.5 : 1 }}>{creatingTpl ? "생성 중…" : "+ 프로젝트"}</button>
                   )}
-                  <button onClick={() => openAdd("파트너십계약", selected)} style={addBtn(false)}>+ 항목</button>
+                  <button className="pill-btn" onClick={() => openAdd("파트너십계약", selected)} style={addBtn(false)}>+ 항목</button>
                   <span style={{ fontSize: 11, color: "var(--muted)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
                     <span style={{ fontWeight: 700, color: green }}>{doneCount}</span>/{activeRows.length} 완료
                   </span>
@@ -1582,7 +1580,7 @@ export default function Contracts() {
                   {selectedRows.length === 0 && (
                     <div style={{ padding: "30px 20px", fontSize: 12.5, color: "var(--muted)", textAlign: "center" }}>
                       아직 항목이 없습니다.
-                      <button onClick={() => openAdd("파트너십계약", selected)} style={{ ...addBtn(true), marginLeft: 8 }}>+ 파트너십계약</button>
+                      <button className="pill-btn" onClick={() => openAdd("파트너십계약", selected)} style={{ ...addBtn(true), marginLeft: 8 }}>+ 파트너십계약</button>
                     </div>
                   )}
 
@@ -1611,8 +1609,8 @@ export default function Contracts() {
                           </select>
                         </span>,
                         !muted && (
-                          <button onClick={() => openAdd("지출기안", selected, proj === "(프로젝트 미지정)" ? "" : proj)}
-                            style={{ ...addBtn(false), padding: "3px 9px", fontSize: 11 }}>
+                          <button className="pill-btn" onClick={() => openAdd("지출기안", selected, proj === "(프로젝트 미지정)" ? "" : proj)}
+                            style={{ ...addBtn(false), padding: "4px 10px" }}>
                             + 항목
                           </button>
                         )
