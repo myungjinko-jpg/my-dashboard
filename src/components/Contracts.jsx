@@ -902,6 +902,13 @@ export default function Contracts() {
           </div>
         </>)}
 
+        {vals.구분 === "지출기안" && (
+          <div>
+            <span style={label}>개발 완료일 <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 마케팅 집행일 기준 (스펙 받을 때 입력)</span></span>
+            <input type="date" style={{ ...input, width: 200 }} value={vals.개발완료일} onChange={e => upd(f => ({ ...f, 개발완료일: e.target.value }))} />
+          </div>
+        )}
+
         {DOCS_BY_KIND[vals.구분] && (
           <div>
             <span style={label}>필요 서류 · 구글드라이브 링크</span>
@@ -1019,17 +1026,6 @@ export default function Contracts() {
 
         {vals.구분 === "지출기안" && (<>
           <div>
-            <span style={label}>기안 링크</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <input style={{ ...input, flex: 1 }} value={vals.기안링크} onChange={e => upd(f => ({ ...f, 기안링크: e.target.value }))} placeholder="https:// (네이버웍스 기안)" />
-              {vals.기안링크 && <LinkOpen href={vals.기안링크} />}
-            </div>
-          </div>
-          <div>
-            <span style={label}>개발 완료일 <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 마케팅 집행일 기준 (스펙 받을 때 입력)</span></span>
-            <input type="date" style={{ ...input, width: 200 }} value={vals.개발완료일} onChange={e => upd(f => ({ ...f, 개발완료일: e.target.value }))} />
-          </div>
-          <div>
             <span style={{ ...label, marginTop: 4 }}>해외 송금 정보 <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 거래처등록 연동 (읽기 전용)</span></span>
             {(() => {
               const v = partnerVendor(vals.파트너사);
@@ -1121,6 +1117,14 @@ export default function Contracts() {
               </div>
             );
           })()}
+          {/* 기안 링크 — 네이버웍스에서 기안 올린 뒤 받는 최종 링크 (파이프라인 마지막) */}
+          <div>
+            <span style={label}>기안 링크 <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 네이버웍스 기안 완료 후 최종 링크</span></span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input style={{ ...input, flex: 1 }} value={vals.기안링크} onChange={e => upd(f => ({ ...f, 기안링크: e.target.value }))} placeholder="https:// (네이버웍스 기안)" />
+              {vals.기안링크 && <LinkOpen href={vals.기안링크} />}
+            </div>
+          </div>
         </>)}
 
         <div>
