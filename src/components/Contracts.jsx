@@ -117,7 +117,7 @@ const fieldLabelStyle = { fontSize: 11, color: "var(--muted)", width: 64, flexSh
 const EMPTY_FORM = {
   제목: "", 파트너사: "", 프로젝트: "", 구분: "파트너십계약", 상태: "요청전", 메모: "", 담당자: "", 개발소재지: "", 프로젝트상태: "",
   체결일: "", 만료일: "", 자동갱신: false, 계약서URL: "", 기안링크: "", 이터레이션구분: "", 파트너십계약포함: false,
-  법인등록증: false, 법인통장: false, 부속합의서: false, 스펙내용: false, 인보이스: false,
+  법인등록증: false, 법인통장: false, 부속합의서: false, 스펙내용: false, 인보이스: false, 우선처리: false,
   법인등록증링크: "", 법인통장링크: "", 부속합의서링크: "", 스펙내용링크: "", 인보이스링크: "",
   거래처식별번호: "", 거래처명: "", 거래처국가: "", 거래처주소: "", 거래처대표: "", 거래처담당자: "", 거래처Email: "", 거래처계좌번호: "",
   BankName: "", BranchName: "", BankAddress: "", BeneficiaryName: "", AccountNumber: "",
@@ -575,13 +575,30 @@ export default function Contracts() {
     heal: todoQueue.filter(a => a.kind === "heal").length,
   }), [todoQueue]);
 
-  // 담당자·종류 필터 적용된 큐
+  // 담당자·종류 필터 적용된 큐 (자동). 우선처리로 지정된 항목은 오른쪽 수동 큐로 빠짐(중복 제거)
   const filteredQueue = useMemo(() => todoQueue.filter(a => {
+    if (a.item?.우선처리) return false;
     if (ownerFilter && partnerOwner(a.partner) !== ownerFilter) return false;
     if (queueFilter === "stale") return !!a.stale;
     if (queueFilter) return a.kind === queueFilter;
     return true;
   }), [todoQueue, ownerFilter, queueFilter]); // eslint-disable-line
+
+  // 수동 큐 — 사람이 '우선처리'로 지정한 항목 (완료·종료·드랍 제외)
+  const manualQueue = useMemo(() => items
+    .filter(i => i.우선처리 && i.상태 !== "완료" && !itemMuted(i))
+    .filter(i => !ownerFilter || partnerOwner(i.파트너사) === ownerFilter)
+    .map(i => ({ partner: i.파트너사, item: i, label: i.제목 })),
+  [items, ownerFilter]); // eslint-disable-line
+
+  const togglePriority = (item) => {
+    const next = !item.우선처리;
+    setItems(list => list.map(i => i.id === item.id ? { ...i, 우선처리: next } : i));
+    fetch(`${API_BASE}/api/partner-admin`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pageId: item.id, 우선처리: next }),
+    }).catch(() => {});
+  };
 
   // 누락된 부속합의서 단계 생성 — 유일 프로젝트면 첫 프로젝트로 보고 파트너십계약 포함(완료) 처리
   const healProject = (a) => {
@@ -1113,6 +1130,11 @@ export default function Contracts() {
               {item.기안링크 && <a href={item.기안링크} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ ...pill, background: greenFaint, color: green, border: "1px solid rgba(22,163,74,.25)" }}>기안 →</a>}
             </>);
           })()}
+          {!done && (
+            <button onClick={e => { e.stopPropagation(); togglePriority(item); }}
+              title={item.우선처리 ? "우선처리 해제" : "우선처리 지정 (지금 할 일 오른쪽으로)"}
+              style={{ fontSize: 12, border: "none", background: "transparent", cursor: "pointer", padding: "2px 3px", opacity: item.우선처리 ? 1 : 0.35, filter: item.우선처리 ? "none" : "grayscale(1)" }}>📌</button>
+          )}
           <button onClick={e => { e.stopPropagation(); copyItemLink(item.id); }}
             title="이 항목으로 바로 가는 링크 복사"
             style={{ fontSize: 10, fontWeight: 600, padding: "3px 7px", borderRadius: 3, whiteSpace: "nowrap", fontFamily: "inherit", cursor: "pointer",
@@ -1271,50 +1293,65 @@ export default function Contracts() {
       </div>
       </div>
 
-      {/* ── ② 지금 할 일 존 (접이식) ── */}
-      {!loading && !error && todoQueue.length > 0 && (
+      {/* ── ② 지금 할 일 존 (접이식) — 좌: 자동 / 우: 우선처리(수동) ── */}
+      {!loading && !error && (todoQueue.length > 0 || manualQueue.length > 0) && (() => {
+        const queueRow = (a, right) => {
+          const chip = right ? { t: "우선", c: "#B45309", bg: amberFaint }
+            : a.kind === "expire" ? { t: "만료", c: "#DC2626", bg: "rgba(220,38,38,.08)" }
+            : a.kind === "warn" ? { t: "경고", c: "#C2410C", bg: "rgba(194,65,29,.10)" }
+            : a.kind === "heal" ? { t: "누락", c: "#B45309", bg: amberFaint }
+            : { t: "다음", c: blue, bg: blueFaint };
+          return (
+            <button key={a.key || a.item.id} onClick={() => actOn(a)}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", borderRadius: 5, border: "1px solid var(--line)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", minWidth: 0 }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(120,124,135,.10)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "var(--card)"; }}>
+              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".04em", color: chip.c, background: chip.bg, border: `1px solid ${chip.c === "var(--muted)" ? "var(--line)" : "transparent"}`, borderRadius: 3, padding: "1px 6px", flexShrink: 0 }}>{chip.t}</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", flexShrink: 0 }}>{a.partner}</span>
+              {partnerOwner(a.partner) && <span style={{ fontSize: 10, color: "var(--muted)", flexShrink: 0 }}>· {partnerOwner(a.partner)}</span>}
+              <span style={{ fontSize: 12, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.label}</span>
+              {!right && <span style={{ marginLeft: "auto", fontSize: 10.5, color: a.stale ? "#C2410C" : "var(--muted)", flexShrink: 0, fontWeight: a.stale ? 700 : 400 }}>{a.stale ? `${a.stale}일 정체 · ` : ""}{a.reason}</span>}
+              {right && <span onClick={e => { e.stopPropagation(); togglePriority(a.item); }} title="우선처리 해제"
+                style={{ marginLeft: "auto", fontSize: 11, color: "var(--muted)", flexShrink: 0, padding: "0 2px" }}>✕</span>}
+            </button>
+          );
+        };
+        return (
         <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderLeft: `3px solid ${amber}`, borderRadius: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", padding: "8px 18px" }}>
-          <div onClick={() => setQueueOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: queueOpen ? 6 : 0, cursor: "pointer" }}>
+          <div onClick={() => setQueueOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: queueOpen ? 8 : 0, cursor: "pointer" }}>
             <span style={{ fontSize: 12, color: "var(--muted)", transform: queueOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}>▾</span>
             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "#B45309" }}>지금 할 일</span>
-            <span style={{ fontSize: 10, color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>
-              {filteredQueue.length}{filteredQueue.length !== todoQueue.length ? `/${todoQueue.length}` : ""}건
-            </span>
-            {queueOpen && !queueFilter && !ownerFilter && <span style={{ fontSize: 10, color: "var(--muted)" }}>· 여기서 시작</span>}
+            <span style={{ fontSize: 10, color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>자동 {filteredQueue.length} · 우선 {manualQueue.length}</span>
             {(queueFilter || ownerFilter) && (
               <button onClick={e => { e.stopPropagation(); setQueueFilter(null); setOwnerFilter(null); }}
                 style={{ fontSize: 10, color: blue, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit" }}>필터 해제</button>
             )}
           </div>
           {queueOpen && (
-            <div className="slim-scroll" style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 132, overflowY: "auto" }}>
-              {filteredQueue.length === 0 ? (
-                <div style={{ fontSize: 11, color: "var(--muted)", padding: "6px 2px" }}>해당 항목 없음</div>
-              ) : filteredQueue.map(a => {
-                const chip = a.kind === "expire" ? { t: "만료", c: "#DC2626", bg: "rgba(220,38,38,.08)" }
-                  : a.kind === "warn" ? { t: "경고", c: "#C2410C", bg: "rgba(194,65,29,.10)" }
-                  : a.kind === "heal" ? { t: "누락", c: "#B45309", bg: amberFaint }
-                  : a.kind === "iter" ? { t: "정산", c: "var(--muted)", bg: "transparent" }
-                  : { t: "다음", c: blue, bg: blueFaint };
-                return (
-                  <button key={a.key} onClick={() => actOn(a)}
-                    style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", borderRadius: 5, border: "1px solid var(--line)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", minWidth: 0 }}
-                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(120,124,135,.10)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "var(--card)"; }}>
-                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".04em", color: chip.c, background: chip.bg, border: `1px solid ${chip.c === "var(--muted)" ? "var(--line)" : "transparent"}`, borderRadius: 3, padding: "1px 6px", flexShrink: 0 }}>{chip.t}</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text)", flexShrink: 0 }}>{a.partner}</span>
-                    {partnerOwner(a.partner) && <span style={{ fontSize: 10, color: "var(--muted)", flexShrink: 0 }}>· {partnerOwner(a.partner)}</span>}
-                    <span style={{ fontSize: 12, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.label}</span>
-                    <span style={{ marginLeft: "auto", fontSize: 10.5, color: a.stale ? "#C2410C" : "var(--muted)", flexShrink: 0, fontWeight: a.stale ? 700 : 400 }}>
-                      {a.stale ? `${a.stale}일 정체 · ` : ""}{a.reason}
-                    </span>
-                  </button>
-                );
-              })}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {/* 좌: 자동 */}
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 5 }}>자동 · 시스템 판단</div>
+                <div className="slim-scroll" style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 150, overflowY: "auto" }}>
+                  {filteredQueue.length === 0
+                    ? <div style={{ fontSize: 11, color: "var(--muted)", padding: "6px 2px" }}>해당 항목 없음</div>
+                    : filteredQueue.map(a => queueRow(a, false))}
+                </div>
+              </div>
+              {/* 우: 우선처리(수동) */}
+              <div style={{ borderLeft: "1px solid var(--line)", paddingLeft: 12 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".05em", textTransform: "uppercase", color: "#B45309", marginBottom: 5 }}>📌 우선처리 · 지정</div>
+                <div className="slim-scroll" style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 150, overflowY: "auto" }}>
+                  {manualQueue.length === 0
+                    ? <div style={{ fontSize: 11, color: "var(--muted)", padding: "6px 2px" }}>항목의 📌를 눌러 여기 올리세요</div>
+                    : manualQueue.map(a => queueRow(a, true))}
+                </div>
+              </div>
             </div>
           )}
         </div>
-      )}
+        );
+      })()}
 
       {/* ── Body ── */}
       {loading ? (
