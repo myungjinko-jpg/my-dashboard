@@ -1111,6 +1111,13 @@ export default function Contracts() {
                     {genCopied === "상세내용" ? "✓ 상세내용 복사됨" : "📋 상세내용 복사"}
                   </button>
                 </div>
+                <div style={{ marginTop: 11, paddingTop: 10, borderTop: "1px solid var(--line)", display: "flex", alignItems: "flex-start", gap: 7 }}>
+                  <span style={{ fontSize: 13, lineHeight: 1.2, flexShrink: 0 }}>📎</span>
+                  <div style={{ fontSize: 10.5, color: "var(--muted)", lineHeight: 1.5 }}>
+                    네이버웍스 첨부는 <b style={{ color: "#B0480F" }}>모두 PDF 원칙</b> — 인보이스 · 법인등록증 · 법인통장 · 부속합의서.
+                    스캔·이미지(png/jpg)는 PDF로 변환 후 첨부하세요.
+                  </div>
+                </div>
               </div>
             );
           })()}
