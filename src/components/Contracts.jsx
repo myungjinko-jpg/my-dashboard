@@ -4,6 +4,9 @@ const IS_DEV = import.meta.env.DEV;
 const API_BASE = IS_DEV ? "http://localhost:5601" : "";
 
 const NOTION_DB_URL = "https://app.notion.com/p/519164c16c9145679dafce69b6d9ab58";
+const DRAFT_URL = "https://flow.worksmobile.com/v/approval/docbox/share";  // 기안 · 네이버웍스
+const CONTRACT_DRIVE_URL = "https://adxcorporation-my.sharepoint.com/shared?listurl=https%3A%2F%2Fadxcorporation%2Dmy%2Esharepoint%2Ecom%2Fpersonal%2Fsun%5Fadxcorporation%5Fonmicrosoft%5Fcom%2FDocuments&id=%2Fpersonal%2Fsun%5Fadxcorporation%5Fonmicrosoft%5Fcom%2FDocuments%2F%ED%95%98%EC%9D%B4%EB%B8%8C%EB%A6%AC%EB%93%9C%20%EC%BA%90%EC%A5%AC%EC%96%BC%20%ED%8D%BC%EB%B8%94%EB%A6%AC%EC%8B%B1%2F%ED%8C%8C%ED%8A%B8%EB%84%88%EC%8B%AD%20%EA%B3%84%EC%95%BD%EC%84%9C&viewid=ddec4962%2D5940%2D442b%2Dbb0f%2D304663c6ea1b";  // 계약서 · 원드라이브
+const PARTNER_DOCS_URL = "https://drive.google.com/drive/u/0/folders/1UZoKsr_raqIkSYtzXflwQ53hZy4I8jti";  // 파트너사 서류 · 구글드라이브
 
 const CONTRACT_KINDS = ["파트너십계약", "부속합의서", "NDA"];
 const PARTNER_LEVEL_KINDS = ["파트너십계약", "NDA", "거래처등록"];
@@ -1297,15 +1300,28 @@ export default function Contracts() {
           );
         })}
 
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-          <button disabled title="준비 중인 기능입니다"
-            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 13px", borderRadius: 7, border: "1px solid var(--line)", background: "var(--card)", color: "var(--muted)", fontSize: 12, fontWeight: 600, cursor: "not-allowed", opacity: 0.5, fontFamily: "inherit" }}>
-            Slack 알림 <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.85 }}>(준비중)</span>
-          </button>
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <a className="m-notion" href={NOTION_DB_URL} target="_blank" rel="noopener noreferrer"
             style={{ padding: "8px 15px", borderRadius: 7, fontSize: 12, fontWeight: 600, textDecoration: "none", letterSpacing: ".02em", display: "inline-block" }}>
             Notion DB ↗
           </a>
+          {[
+            { t: "기안", src: "네이버웍스", url: DRAFT_URL },
+            { t: "계약서", src: "원드라이브", url: CONTRACT_DRIVE_URL },
+            { t: "파트너사 서류", src: "구글드라이브", url: PARTNER_DOCS_URL },
+          ].map(l => (
+            <a key={l.t} href={l.url} target="_blank" rel="noopener noreferrer"
+              title={`${l.t} · ${l.src}`}
+              style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "8px 13px", borderRadius: 7, border: "1px solid var(--line)", background: "var(--card)", color: "var(--text)", fontSize: 12, fontWeight: 600, textDecoration: "none", fontFamily: "inherit", whiteSpace: "nowrap", boxShadow: BTN_SHADOW }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(120,124,135,.08)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "var(--card)"; }}>
+              {l.t} <span style={{ fontSize: 10, fontWeight: 400, color: "var(--muted)" }}>↗</span>
+            </a>
+          ))}
+          <button disabled title="준비 중인 기능입니다"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 13px", borderRadius: 7, border: "1px solid var(--line)", background: "var(--card)", color: "var(--muted)", fontSize: 12, fontWeight: 600, cursor: "not-allowed", opacity: 0.5, fontFamily: "inherit" }}>
+            Slack 알림 <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.85 }}>(준비중)</span>
+          </button>
         </div>
       </div>
       </div>
