@@ -1110,9 +1110,6 @@ export default function Contracts() {
                     style={{ ...pillStyle(genCopied === "상세내용" ? "green" : "amberSolid") }}>
                     {genCopied === "상세내용" ? "✓ 상세내용 복사됨" : "📋 상세내용 복사"}
                   </button>
-                  {chip("지출명", 지출명)}
-                  {chip("거래처명", 거래처명, !거래처명)}
-                  {chip("금액", amountFmt ? `USD ${amountFmt}` : "", !amountFmt)}
                 </div>
               </div>
             );
