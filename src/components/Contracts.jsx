@@ -1298,13 +1298,10 @@ export default function Contracts() {
         })}
 
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-            <button disabled title="준비 중인 기능입니다"
-              style={{ padding: "8px 13px", borderRadius: 7, border: "1px solid var(--line)", background: "var(--card)", color: "var(--muted)", fontSize: 12, fontWeight: 600, cursor: "not-allowed", opacity: 0.5, fontFamily: "inherit" }}>
-              Slack 알림
-            </button>
-            <span style={{ fontSize: 10, color: "var(--muted)" }}>(준비중)</span>
-          </span>
+          <button disabled title="준비 중인 기능입니다"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 13px", borderRadius: 7, border: "1px solid var(--line)", background: "var(--card)", color: "var(--muted)", fontSize: 12, fontWeight: 600, cursor: "not-allowed", opacity: 0.5, fontFamily: "inherit" }}>
+            Slack 알림 <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.85 }}>(준비중)</span>
+          </button>
           <a className="m-notion" href={NOTION_DB_URL} target="_blank" rel="noopener noreferrer"
             style={{ padding: "8px 15px", borderRadius: 7, fontSize: 12, fontWeight: 600, textDecoration: "none", letterSpacing: ".02em", display: "inline-block" }}>
             Notion DB ↗
