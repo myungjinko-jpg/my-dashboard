@@ -9,7 +9,7 @@ const CONTRACT_DRIVE_URL = "https://adxcorporation-my.sharepoint.com/shared?list
 const PARTNER_DOCS_URL = "https://drive.google.com/drive/u/0/folders/1UZoKsr_raqIkSYtzXflwQ53hZy4I8jti";  // 파트너사 서류 · 구글드라이브
 // PM 작성용 고정 양식 (public/templates/) — PM이 다운받아 작성 후 구글드라이브 업로드
 const TPL_BUILDSPEC = "/templates/BuildSpec_StudioName_Projectname_2026xxxx.docx";
-const TPL_INVOICE = "";  // 인보이스 양식 파일 받으면 경로 지정
+const TPL_INVOICE = "/templates/Invoice_StudioName_Projectname_2026xxxx.docx";  // 인보이스 · PM 작성 양식
 
 const CONTRACT_KINDS = ["파트너십계약", "부속합의서", "NDA"];
 const PARTNER_LEVEL_KINDS = ["파트너십계약", "NDA", "거래처등록"];
