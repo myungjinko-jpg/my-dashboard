@@ -1,7 +1,9 @@
 const SHEET_ID = "1pBJWVce2CgrPBlFMGbS2yCp6tBQnNn4gkEHz7jG3LZk";
 const API_URL = `https://opensheet.elk.sh/${SHEET_ID}/Test_Raw%20Data`;
 const DASHBOARD_URL = "https://my-dashboard-gamma-amber.vercel.app";
-const BIZ_GROUP_ID = "S0AE7K2HLM6";
+// 그룹 멘션(@biz) ID는 슬랙 워크스페이스마다 다르므로 환경변수로 관리 (미설정 시 멘션 생략)
+const BIZ_GROUP_ID = process.env.SLACK_BIZ_GROUP_ID || "";
+const BIZ_MENTION = BIZ_GROUP_ID ? ` <!subteam^${BIZ_GROUP_ID}|biz>` : "";
 
 function parseDateValue(value) {
   if (!value) return null;
@@ -99,7 +101,7 @@ export default async function handler(req, res) {
     const allDone = relevantEntries.length > 0 && relevantEntries.every(([, v]) => v === true);
 
     const text = [
-      `*📊 CPI Test 데이터 업데이트 현황 - \`${dateStr} 기준\`* <!subteam^${BIZ_GROUP_ID}|biz>`,
+      `*📊 CPI Test 데이터 업데이트 현황 - \`${dateStr} 기준\`*${BIZ_MENTION}`,
       ...lines,
       ``,
       `CPI Test 대시보드 바로가기`,
