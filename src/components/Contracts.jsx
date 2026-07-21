@@ -156,7 +156,7 @@ function toBothCurrency(amountStr, currency) {
   if (isNaN(n)) return { usd: null, krw: null };
   return currency === "KRW" ? { usd: n / USD_KRW, krw: n } : { usd: n, krw: n * USD_KRW };
 }
-const fmtUsd = (n) => n == null ? "—" : `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const fmtUsd = (n) => n == null ? "—" : `$${Math.round(n).toLocaleString("en-US")}`;
 const fmtKrw = (n) => n == null ? "—" : `₩${Math.round(n).toLocaleString("ko-KR")}`;
 // 합산용 축약 원화 (₩18.6M 등)
 const fmtKrwShort = (n) => {
@@ -1580,43 +1580,66 @@ export default function Contracts() {
         const totUsd = rows.reduce((s, r) => s + r.usd, 0);
         const totKrw = rows.reduce((s, r) => s + r.krw, 0);
 
+        // 상대 라벨 (지난달/이번달/다음달 · 지난주/이번주/다음주)
+        const now = new Date();
+        const nowKey = keyOf(`${now.getFullYear()}. ${now.getMonth() + 1}. ${now.getDate()}`);
+        const relLabel = (k) => {
+          if (expenseGran === "month") {
+            const [y, m] = k.split("-").map(Number); const [ny, nm] = nowKey.split("-").map(Number);
+            const diff = (y * 12 + m) - (ny * 12 + nm);
+            return diff === 0 ? "이번달" : diff === -1 ? "지난달" : diff === 1 ? "다음달" : null;
+          }
+          const diffW = Math.round((new Date(k) - new Date(nowKey)) / (7 * 86400000));
+          return diffW === 0 ? "이번주" : diffW === -1 ? "지난주" : diffW === 1 ? "다음주" : null;
+        };
+
         return (
           <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
             <div onClick={() => setExpenseOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: SB_HEADER_BG, padding: "9px 18px" }}>
               <span style={{ fontSize: 12, color: SB_HEADER_MUTED, transform: expenseOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}>▾</span>
               <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: SB_HEADER_TEXT }}>💸 지출 예정</span>
-              <span style={{ fontSize: 10, color: SB_HEADER_MUTED }}>지급예정일 기준 · {rows.length}건</span>
-              <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, color: "#fff", fontVariantNumeric: "tabular-nums" }}>{fmtUsd(totUsd)} <span style={{ color: SB_HEADER_MUTED, fontWeight: 400 }}>({fmtKrwShort(totKrw)})</span></span>
+              <span style={{ fontSize: 10, color: SB_HEADER_MUTED }}>지급예정일 기준</span>
+              <div onClick={e => e.stopPropagation()} style={{ marginLeft: "auto", display: "inline-flex", border: "1px solid #4a4e57", borderRadius: 6, overflow: "hidden" }}>
+                {[["month", "월별"], ["week", "주별"]].map(([g, lbl]) => (
+                  <button key={g} onClick={() => setExpenseGran(g)}
+                    style={{ fontSize: 11, fontWeight: 600, padding: "3px 11px", border: "none", cursor: "pointer", fontFamily: "inherit",
+                      background: expenseGran === g ? blue : "transparent", color: expenseGran === g ? "#fff" : SB_HEADER_MUTED }}>{lbl}</button>
+                ))}
+              </div>
             </div>
             {expenseOpen && (
-              <div style={{ padding: "10px 18px 12px" }}>
-                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-                  <div style={{ display: "inline-flex", border: "1px solid var(--line)", borderRadius: 6, overflow: "hidden" }}>
-                    {[["month", "월별"], ["week", "주별"]].map(([g, lbl]) => (
-                      <button key={g} onClick={() => setExpenseGran(g)}
-                        style={{ fontSize: 11, fontWeight: 600, padding: "4px 12px", border: "none", cursor: "pointer", fontFamily: "inherit",
-                          background: expenseGran === g ? blue : "var(--card)", color: expenseGran === g ? "#fff" : "var(--muted)" }}>{lbl}</button>
-                    ))}
-                  </div>
-                </div>
+              <div style={{ padding: "12px 18px 14px" }}>
                 {rows.length === 0 ? (
-                  <div style={{ fontSize: 12, color: "var(--muted)", padding: "10px 2px" }}>
+                  <div style={{ fontSize: 12, color: "var(--muted)", padding: "6px 2px" }}>
                     지출기안 항목에 <b style={{ color: "var(--text)" }}>지급 예정일</b>을 입력하면 여기에 월별·주별 합계가 표시됩니다.
                     (금액은 해당 프로젝트 부속합의서의 개발비용에서 자동 연동)
                   </div>
                 ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    {sortedKeys.map(k => (
-                      <div key={k} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 6, background: "var(--card-bg-subtle)" }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", minWidth: 96, fontVariantNumeric: "tabular-nums" }}>{expenseGran === "week" ? `${k} 주` : k}</span>
-                        <span style={{ fontSize: 10, color: "var(--muted)" }}>{groups[k].n}건</span>
-                        <span style={{ marginLeft: "auto", fontSize: 13, fontWeight: 700, color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmtUsd(groups[k].usd)}</span>
-                        <span style={{ fontSize: 11, color: "var(--muted)", minWidth: 88, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmtKrw(groups[k].krw)}</span>
-                      </div>
-                    ))}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
+                    {/* 전체 합계 (강조 타일) */}
+                    <div style={{ borderRadius: 10, padding: "11px 13px", background: blueFaint, border: `1px solid rgba(0,120,212,.3)` }}>
+                      <div style={{ fontSize: 11, color: blue, fontWeight: 600 }}>전체 합계 · {rows.length}건</div>
+                      <div style={{ fontSize: 19, fontWeight: 800, color: blue, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.5px" }}>{fmtUsd(totUsd)}</div>
+                      <div style={{ fontSize: 12, color: blue, fontVariantNumeric: "tabular-nums" }}>{fmtKrw(totKrw)}</div>
+                    </div>
+                    {sortedKeys.map(k => {
+                      const rel = relLabel(k);
+                      const isNow = rel === "이번달" || rel === "이번주";
+                      return (
+                        <div key={k} style={{ borderRadius: 10, padding: "11px 13px", background: "var(--card-bg-subtle)", border: `1px solid ${isNow ? "rgba(0,120,212,.35)" : "var(--line)"}` }}>
+                          <div style={{ fontSize: 11, color: "var(--muted)", display: "flex", alignItems: "center", gap: 5 }}>
+                            {rel && <span style={{ fontWeight: 700, color: isNow ? blue : "var(--text)" }}>{rel}</span>}
+                            <span style={{ fontVariantNumeric: "tabular-nums" }}>{expenseGran === "week" ? `${k} 주` : k}</span>
+                            <span>· {groups[k].n}건</span>
+                          </div>
+                          <div style={{ fontSize: 19, fontWeight: 800, color: "var(--text)", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.5px" }}>{fmtUsd(groups[k].usd)}</div>
+                          <div style={{ fontSize: 12, color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>{fmtKrw(groups[k].krw)}</div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
-                <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 8, textAlign: "right" }}>환율 ₩{USD_KRW.toLocaleString()}/$ 고정 · 종료·드랍 프로젝트 제외</div>
+                <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 10, textAlign: "right" }}>환율 ₩{USD_KRW.toLocaleString()}/$ 고정 · 종료·드랍 프로젝트 제외</div>
               </div>
             )}
           </div>
