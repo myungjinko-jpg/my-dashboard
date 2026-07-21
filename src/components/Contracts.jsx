@@ -1567,7 +1567,9 @@ export default function Contracts() {
             return { date: i.지급예정일, usd: both.usd, krw: both.krw, partner: i.파트너사, proj, label: i.제목 };
           })
           .filter(r => r.usd != null);
-        if (rows.length === 0) return null;
+        // 활성 지출기안이 하나도 없으면 패널 자체를 숨김. 있으면(지급예정일 미입력이어도) 안내와 함께 노출
+        const anyExpense = items.some(i => i.구분 === "지출기안" && !itemMuted(i));
+        if (!anyExpense) return null;
 
         const monKey = (d) => d.slice(0, 7);                       // YYYY-MM
         const weekKey = (d) => { const dt = new Date(d); const dow = (dt.getDay() + 6) % 7; dt.setDate(dt.getDate() - dow); return dt.toISOString().slice(0, 10); }; // 주 시작(월)
@@ -1597,16 +1599,23 @@ export default function Contracts() {
                     ))}
                   </div>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  {sortedKeys.map(k => (
-                    <div key={k} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 6, background: "var(--card-bg-subtle)" }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", minWidth: 96, fontVariantNumeric: "tabular-nums" }}>{expenseGran === "week" ? `${k} 주` : k}</span>
-                      <span style={{ fontSize: 10, color: "var(--muted)" }}>{groups[k].n}건</span>
-                      <span style={{ marginLeft: "auto", fontSize: 13, fontWeight: 700, color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmtUsd(groups[k].usd)}</span>
-                      <span style={{ fontSize: 11, color: "var(--muted)", minWidth: 88, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmtKrw(groups[k].krw)}</span>
-                    </div>
-                  ))}
-                </div>
+                {rows.length === 0 ? (
+                  <div style={{ fontSize: 12, color: "var(--muted)", padding: "10px 2px" }}>
+                    지출기안 항목에 <b style={{ color: "var(--text)" }}>지급 예정일</b>을 입력하면 여기에 월별·주별 합계가 표시됩니다.
+                    (금액은 해당 프로젝트 부속합의서의 개발비용에서 자동 연동)
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    {sortedKeys.map(k => (
+                      <div key={k} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 6, background: "var(--card-bg-subtle)" }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", minWidth: 96, fontVariantNumeric: "tabular-nums" }}>{expenseGran === "week" ? `${k} 주` : k}</span>
+                        <span style={{ fontSize: 10, color: "var(--muted)" }}>{groups[k].n}건</span>
+                        <span style={{ marginLeft: "auto", fontSize: 13, fontWeight: 700, color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmtUsd(groups[k].usd)}</span>
+                        <span style={{ fontSize: 11, color: "var(--muted)", minWidth: 88, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmtKrw(groups[k].krw)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 8, textAlign: "right" }}>환율 ₩{USD_KRW.toLocaleString()}/$ 고정 · 종료·드랍 프로젝트 제외</div>
               </div>
             )}
