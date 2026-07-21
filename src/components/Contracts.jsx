@@ -1610,7 +1610,7 @@ export default function Contracts() {
               </div>
             </div>
             {expenseOpen && (
-              <div style={{ padding: "12px 18px 14px" }}>
+              <div style={{ padding: "10px 18px 12px" }}>
                 {rows.length === 0 ? (
                   <div style={{ fontSize: 12, color: "var(--muted)", padding: "6px 2px" }}>
                     지출기안 항목에 <b style={{ color: "var(--text)" }}>지급 예정일</b>을 입력하면 여기에 월별·주별 합계가 표시됩니다.
@@ -1641,7 +1641,7 @@ export default function Contracts() {
                     })}
                   </div>
                 )}
-                <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 10, textAlign: "right" }}>환율 ₩{USD_KRW.toLocaleString()}/$ 고정 · 종료·드랍 프로젝트 제외</div>
+                <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 7, textAlign: "right" }}>환율 ₩{USD_KRW.toLocaleString()}/$ 고정 · 종료·드랍 프로젝트 제외</div>
               </div>
             )}
           </div>
