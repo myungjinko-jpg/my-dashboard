@@ -535,7 +535,7 @@ export default function LtvCalculator({ isDark }) {
           <div className="ltv-section-block">
             <div className="ltv-section-title">
               <Database size={14} /> Benchmark
-              <HelpTip text={"경쟁 앱의 실제 지표를 참고값으로 불러오는 기능입니다.\n---\n앱 선택 시 D1 · k · ARPDAU · CPI가 자동 입력됩니다.\n값은 참고용이며 슬라이더로 직접 조정할 수 있습니다."} />
+              <HelpTip text={"경쟁 앱의 실제 지표를 참고값으로 불러오는 기능입니다.\n---\nAppMagic에서 내보낸 CSV를 업로드하세요.\n필요 컬럼:\n· application (앱)\n· publisher (퍼블리셔)\n· tagsGames (장르)\n· retention_1 / retention_7 / retention_14 (D1·D7·D14 잔존율)\n· cumulative_rpd (누적 RPD)\n· ad_spend, downloads (광고비·다운로드)\n---\n계산 방식:\n· 잔존율 D1·D7·D14 → k(감쇠) 자동 산출\n· cumulative_rpd → ARPDAU 참고\n· ad_spend ÷ downloads → CPI\n---\n앱 선택 시 D1 · k · ARPDAU · CPI가 자동 입력됩니다. 값은 참고용이며 슬라이더로 직접 조정할 수 있습니다."} />
             </div>
             {!APPS_SCRIPT_URL ? (
               <div className="ltv-script-notice">Apps Script URL 설정 후 사용 가능합니다.</div>
