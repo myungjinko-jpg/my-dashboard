@@ -282,11 +282,13 @@ export default function LtvCalculator({ isDark }) {
   }, [d1, k]);
 
   // Cumulative LTV per user by day (total, IAP, IAA)
+  // D0(설치일): 잔존 100% → 설치일 매출 = ARPDAU. 누적을 이 값으로 시작해 total[d]가 D0를 포함.
+  //   total[0] = D0 + D1 매출 = "LTV D1"(D0 포함), ltv0(D0 단독) = arpdau
   const ltvByDay = useMemo(() => {
     const total = new Array(360);
     const iap = new Array(360);
     const iaa = new Array(360);
-    let cumT = 0, cumIap = 0, cumIaa = 0;
+    let cumT = arpdau, cumIap = iapArpdau, cumIaa = iaaArpdau;
     for (let d = 0; d < 360; d++) {
       cumT   += retByDay[d] * arpdau;
       cumIap += retByDay[d] * iapArpdau;
@@ -308,6 +310,8 @@ export default function LtvCalculator({ isDark }) {
         sumIap += retByDay[d] * iapArpdau;
         sumIaa += retByDay[d] * iaaArpdau;
       }
+      // D0(설치일) 매출은 첫 달 증분에 포함 → 월별 증분 합이 누적 LTV와 일치
+      if (m === 0) { sumRev += arpdau; sumIap += iapArpdau; sumIaa += iaaArpdau; }
       return {
         label,
         avgRet: sumRet / 30,
@@ -321,13 +325,14 @@ export default function LtvCalculator({ isDark }) {
     });
   }, [retByDay, arpdau, iapArpdau, iaaArpdau, ltvByDay]);
 
-  // Breakeven day
+  // Breakeven day — 누적 LTV가 CPI를 넘는 첫 날 (0 = D0 설치일에 이미 회수)
   const breakevenDay = useMemo(() => {
+    if (arpdau >= cpi) return 0;
     for (let d = 0; d < 360; d++) {
       if (ltvByDay.total[d] >= cpi) return d + 1;
     }
     return null;
-  }, [ltvByDay, cpi]);
+  }, [ltvByDay, cpi, arpdau]);
 
   // Retention chart (D1~D30 daily)
   const retChartData = useMemo(() => {
@@ -428,13 +433,13 @@ export default function LtvCalculator({ isDark }) {
           tension: 0.35,
         },
         {
-          label: "CPI",
+          label: "CPI (회수 기준선)",
           data: cpiLine,
-          borderColor: "#fb7185",
+          borderColor: "#ef4444",
           backgroundColor: "transparent",
           pointRadius: 0,
-          borderWidth: 1.5,
-          borderDash: [],
+          borderWidth: 2,
+          borderDash: [6, 4],
         },
       ],
     };
@@ -471,35 +476,64 @@ export default function LtvCalculator({ isDark }) {
     },
   });
 
+  const ltv0  = arpdau;              // D0(설치일) = 잔존 100% × ARPDAU
   const ltv1  = ltvByDay.total[0];
   const ltv7  = ltvByDay.total[6];
   const ltv14 = ltvByDay.total[13];
   const ltv30 = ltvByDay.total[29];
   const ltv90 = ltvByDay.total[89];
 
+  // 수익성 판정 — D90 누적 LTV vs CPI 고정 기준
+  const profitable = ltv90 >= cpi;
+  const roas = cpi > 0 ? ltv90 / cpi : 0;
+  const cpiGap = ltv90 - cpi;
+
   return (
     <div className="ltv-wrap">
-      {/* KPI Summary */}
+      {/* 수익성 판정 히어로 — LTV(D90) > CPI 여야 수익 */}
+      <div className={`ltv-verdict ${profitable ? "good" : "bad"}`}>
+        <div className="ltv-verdict-main">
+          <span className="ltv-verdict-icon">{profitable ? "✅" : "❌"}</span>
+          <div>
+            <div className="ltv-verdict-title">{profitable ? "수익 가능" : "수익 불가"}</div>
+            <div className="ltv-verdict-formula">LTV D90 {usd(ltv90)} {profitable ? "≥" : "<"} CPI {usd(cpi)}</div>
+          </div>
+        </div>
+        <div className="ltv-verdict-stats">
+          <div><div className="ltv-verdict-stat-label">ROAS (LTV/CPI)</div><div className="ltv-verdict-stat-value">{roas.toFixed(2)}x</div></div>
+          <div><div className="ltv-verdict-stat-label">CPI 대비</div><div className={`ltv-verdict-stat-value ${profitable ? "pos" : "neg"}`}>{cpiGap >= 0 ? "+" : "−"}{usd(Math.abs(cpiGap))}</div></div>
+          <div><div className="ltv-verdict-stat-label">Breakeven</div><div className="ltv-verdict-stat-value">{breakevenDay === 0 ? "D0" : breakevenDay ? `D${breakevenDay}` : "회수 불가"}</div></div>
+        </div>
+      </div>
+
+      {/* KPI Summary — CPI 회수율(LTV/CPI). CPI 돌파 시 초록 */}
       <div className="ltv-kpi-row">
         {[
-          { label: "LTV D1",  value: usd(ltv1),  sub: `ROI ${((ltv1  / cpi) * 100).toFixed(0)}%` },
-          { label: "LTV D7",  value: usd(ltv7),  sub: `ROI ${((ltv7  / cpi) * 100).toFixed(0)}%` },
-          { label: "LTV D14", value: usd(ltv14), sub: `ROI ${((ltv14 / cpi) * 100).toFixed(0)}%` },
-          { label: "LTV D30", value: usd(ltv30), sub: `ROI ${((ltv30 / cpi) * 100).toFixed(0)}%` },
-          { label: "LTV D90", value: usd(ltv90), sub: `ROI ${((ltv90 / cpi) * 100).toFixed(0)}%` },
+          { label: "LTV D0", value: usd(ltv0),  ltv: ltv0,  isNew: true },
+          { label: "LTV D1", value: usd(ltv1),  ltv: ltv1 },
+          { label: "LTV D7", value: usd(ltv7),  ltv: ltv7 },
+          { label: "LTV D14", value: usd(ltv14), ltv: ltv14 },
+          { label: "LTV D30", value: usd(ltv30), ltv: ltv30 },
+          { label: "LTV D90", value: usd(ltv90), ltv: ltv90 },
           {
             label: "Breakeven",
-            value: breakevenDay ? `D${breakevenDay}` : "360일 초과",
-            sub: breakevenDay ? `누적 LTV ≥ CPI ${usd(cpi)}` : "회수 불가",
-            accent: breakevenDay ? (breakevenDay <= 30 ? "good" : breakevenDay <= 90 ? "warn" : "bad") : "bad",
+            value: breakevenDay === 0 ? "D0" : breakevenDay ? `D${breakevenDay}` : "360일 초과",
+            sub: breakevenDay !== null ? `누적 LTV ≥ CPI ${usd(cpi)}` : "회수 불가",
+            accent: breakevenDay === null ? "bad" : breakevenDay <= 30 ? "good" : breakevenDay <= 90 ? "warn" : "bad",
           },
-        ].map(({ label, value, sub, accent }) => (
-          <div key={label} className={`ltv-kpi-card ${accent || ""}`}>
-            <div className="ltv-kpi-label">{label}</div>
-            <div className="ltv-kpi-value">{value}</div>
-            {sub && <div className="ltv-kpi-sub">{sub}</div>}
-          </div>
-        ))}
+        ].map(({ label, value, sub, ltv, accent, isNew }) => {
+          const recovered = ltv != null && ltv >= cpi;
+          const cardAccent = accent != null ? accent : (recovered ? "good" : "");
+          return (
+            <div key={label} className={`ltv-kpi-card ${cardAccent}`}>
+              <div className="ltv-kpi-label">{label}{isNew && <span className="ltv-kpi-new"> NEW</span>}</div>
+              <div className="ltv-kpi-value">{value}{recovered && <span className="ltv-kpi-check"> ✓</span>}</div>
+              {sub != null
+                ? <div className="ltv-kpi-sub">{sub}</div>
+                : <div className="ltv-kpi-sub">CPI 회수 {((ltv / cpi) * 100).toFixed(0)}%</div>}
+            </div>
+          );
+        })}
       </div>
 
       <div className="ltv-body">

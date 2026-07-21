@@ -548,6 +548,29 @@ tbody tr.row-highlight td:first-child {
 .ltv-kpi-label { font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 8px; }
 .ltv-kpi-value { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; }
 .ltv-kpi-sub   { font-size: 11px; color: var(--muted); margin-top: 5px; }
+.ltv-kpi-new   { font-size: 8px; color: var(--good); font-weight: 800; letter-spacing: 0.5px; }
+.ltv-kpi-check { color: var(--good); font-size: 15px; }
+
+/* ── 수익성 판정 히어로 (LTV > CPI) ── */
+.ltv-verdict {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 20px; flex-wrap: wrap;
+  border: 1px solid var(--card-border); border-radius: 14px;
+  padding: 16px 20px; margin-bottom: 14px;
+}
+.ltv-verdict.good { border-color: var(--good); background: linear-gradient(135deg, var(--card) 55%, rgba(16,185,129,0.10)); }
+.ltv-verdict.bad  { border-color: var(--bad);  background: linear-gradient(135deg, var(--card) 55%, rgba(239,68,68,0.10)); }
+.ltv-verdict-main { display: flex; align-items: center; gap: 14px; }
+.ltv-verdict-icon { font-size: 30px; line-height: 1; }
+.ltv-verdict-title { font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; }
+.ltv-verdict.good .ltv-verdict-title { color: var(--good); }
+.ltv-verdict.bad  .ltv-verdict-title { color: var(--bad); }
+.ltv-verdict-formula { font-size: 13px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.ltv-verdict-stats { display: flex; gap: 26px; flex-wrap: wrap; }
+.ltv-verdict-stat-label { font-size: 11px; color: var(--muted); font-weight: 600; }
+.ltv-verdict-stat-value { font-size: 21px; font-weight: 800; color: var(--text); letter-spacing: -0.5px; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.ltv-verdict-stat-value.pos { color: var(--good); }
+.ltv-verdict-stat-value.neg { color: var(--bad); }
 
 /* ── Body Layout ── */
 .ltv-body {
