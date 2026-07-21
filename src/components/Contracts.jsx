@@ -1582,7 +1582,9 @@ export default function Contracts() {
 
         // 상대 라벨 (지난달/이번달/다음달 · 지난주/이번주/다음주)
         const now = new Date();
-        const nowKey = keyOf(`${now.getFullYear()}. ${now.getMonth() + 1}. ${now.getDate()}`);
+        const pad2 = (x) => String(x).padStart(2, "0");
+        const nowIso = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+        const nowKey = keyOf(nowIso);
         const relLabel = (k) => {
           if (expenseGran === "month") {
             const [y, m] = k.split("-").map(Number); const [ny, nm] = nowKey.split("-").map(Number);
