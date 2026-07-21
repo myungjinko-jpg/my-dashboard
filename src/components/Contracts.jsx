@@ -145,7 +145,25 @@ const EMPTY_FORM = {
   법인등록증링크: "", 법인통장링크: "", 부속합의서링크: "", 스펙내용링크: "", 인보이스링크: "",
   거래처식별번호: "", 거래처명: "", 거래처국가: "", 거래처주소: "", 거래처대표: "", 거래처담당자: "", 거래처Email: "", 거래처계좌번호: "",
   BankName: "", BranchName: "", BankAddress: "", SWIFT: "", BeneficiaryName: "", AccountNumber: "",
-  프로토타입비용: "", 이터레이션비용: "", 개발완료일: "",
+  프로토타입비용: "", 이터레이션비용: "", 개발완료일: "", 지급예정일: "", 비용통화: "USD",
+};
+
+// 환율 고정 (내부 참고용) — 리스크 있으나 내부 합의값
+const USD_KRW = 1500;
+// 입력 통화 기준 금액(문자열)을 받아 USD/KRW 양쪽 숫자로 환산
+function toBothCurrency(amountStr, currency) {
+  const n = parseFloat(String(amountStr || "").replace(/,/g, ""));
+  if (isNaN(n)) return { usd: null, krw: null };
+  return currency === "KRW" ? { usd: n / USD_KRW, krw: n } : { usd: n, krw: n * USD_KRW };
+}
+const fmtUsd = (n) => n == null ? "—" : `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const fmtKrw = (n) => n == null ? "—" : `₩${Math.round(n).toLocaleString("ko-KR")}`;
+// 합산용 축약 원화 (₩18.6M 등)
+const fmtKrwShort = (n) => {
+  if (n == null) return "—";
+  if (n >= 1e8) return `₩${(n / 1e8).toFixed(1)}억`;
+  if (n >= 1e4) return `₩${Math.round(n / 1e4).toLocaleString("ko-KR")}만`;
+  return `₩${Math.round(n).toLocaleString("ko-KR")}`;
 };
 
 // 항목 → 폼 값 객체
@@ -230,6 +248,8 @@ export default function Contracts() {
   const [ownerFilter, setOwnerFilter] = useState(null);   // 담당자 필터 (null=전체)
   const [queueFilter, setQueueFilter] = useState(null);   // 큐 종류 필터 (null=전체)
   const [queueOpen, setQueueOpen] = useState(true);       // 큐 패널 접기
+  const [expenseOpen, setExpenseOpen] = useState(true);   // 지출 예정 패널 접기
+  const [expenseGran, setExpenseGran] = useState("month"); // month | week
   const [renamingPartner, setRenamingPartner] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [partnerBusy, setPartnerBusy] = useState(false);
@@ -1026,21 +1046,39 @@ export default function Contracts() {
           </div>
         </>)}
 
-        {vals.구분 === "부속합의서" && (
+        {vals.구분 === "부속합의서" && (() => {
+          const cur = vals.비용통화 || "USD";
+          return (
           <div>
-            <span style={{ ...label, marginTop: 4 }}>개발 비용 (USD) <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 부속합의서 명시 금액 · 지출기안에 연동</span></span>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {[["프로토타입비용", "프로토타입"], ["이터레이션비용", "이터레이션"]].map(([field, lbl]) => (
-                <div key={field} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ ...fieldLabelStyle, paddingTop: 0, width: 72 }}>{lbl}</span>
-                  <span style={{ fontSize: 12, color: "var(--muted)" }}>$</span>
-                  <input style={{ ...input, flex: 1 }} value={vals[field]} placeholder="1988.13"
-                    onChange={e => upd(f => ({ ...f, [field]: e.target.value }))} />
-                </div>
-              ))}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              <span style={{ ...label, marginTop: 4 }}>개발 비용 <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 부속합의서 명시 · 지출기안 연동</span></span>
+              <div style={{ display: "inline-flex", border: "1px solid var(--line)", borderRadius: 6, overflow: "hidden" }}>
+                {["USD", "KRW"].map(c => (
+                  <button key={c} type="button" onClick={() => upd(f => ({ ...f, 비용통화: c }))}
+                    style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", border: "none", cursor: "pointer", fontFamily: "inherit",
+                      background: cur === c ? blue : "var(--card)", color: cur === c ? "#fff" : "var(--muted)" }}>{c}</button>
+                ))}
+              </div>
             </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
+              {[["프로토타입비용", "프로토타입"], ["이터레이션비용", "이터레이션"]].map(([field, lbl]) => {
+                const both = toBothCurrency(vals[field], cur);
+                const conv = cur === "KRW" ? fmtUsd(both.usd) : fmtKrw(both.krw);
+                return (
+                  <div key={field} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ ...fieldLabelStyle, paddingTop: 0, width: 72 }}>{lbl}</span>
+                    <span style={{ fontSize: 12, color: "var(--muted)", width: 12 }}>{cur === "KRW" ? "₩" : "$"}</span>
+                    <input style={{ ...input, flex: 1 }} value={vals[field]} placeholder={cur === "KRW" ? "3000000" : "1988.13"}
+                      onChange={e => upd(f => ({ ...f, [field]: e.target.value }))} />
+                    <span style={{ fontSize: 11, color: "var(--muted)", whiteSpace: "nowrap", minWidth: 92, textAlign: "right" }}>≈ {conv}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4 }}>환율 ₩{USD_KRW.toLocaleString()}/$ 고정 (내부 참고)</div>
           </div>
-        )}
+          );
+        })()}
 
         {vals.구분 === "지출기안" && (<>
           <div>
@@ -1073,11 +1111,12 @@ export default function Contracts() {
             const isProto = iter === "프로토타입" || iter === "";
             // 부속합의서(같은 프로젝트)에서 금액 참조 — 프로토타입/이터레이션 분기
             const sub = items.find(i => i.파트너사 === vals.파트너사 && (i.프로젝트 || "") === proj && i.구분 === "부속합의서");
-            const amountRaw = ((isProto ? sub?.프로토타입비용 : sub?.이터레이션비용) || "").toString().replace(/,/g, "").trim();
-            const amountNum = parseFloat(amountRaw);
-            const amountFmt = amountRaw && !isNaN(amountNum)
-              ? amountNum.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-              : amountRaw;
+            // 비용은 입력 통화(비용통화) 기준 → 네이버웍스 기안은 USD 표기라 USD로 환산
+            const rawCost = isProto ? sub?.프로토타입비용 : sub?.이터레이션비용;
+            const amountUsd = toBothCurrency(rawCost, sub?.비용통화 || "USD").usd;
+            const amountFmt = amountUsd != null
+              ? amountUsd.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+              : "";
             const doneDate = vals.개발완료일 || "";
             const swift = v.SWIFT || "";
             const paren = [partner, proj.replace(/\s+/g, ""), iter.replace(/\s+/g, "")].filter(Boolean).join("_");
@@ -1120,10 +1159,12 @@ export default function Contracts() {
                   </div>
                 )}
                 <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
-                  <button type="button" onClick={() => copyGen("상세내용", detail)}
-                    style={{ ...pillStyle(genCopied === "상세내용" ? "green" : "amberSolid") }}>
+                  {/* button이 아닌 div — 완료(fieldset disabled) 상태에서도 복사 가능 */}
+                  <div role="button" tabIndex={0} onClick={() => copyGen("상세내용", detail)}
+                    onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); copyGen("상세내용", detail); } }}
+                    style={{ ...pillStyle(genCopied === "상세내용" ? "green" : "amberSolid"), userSelect: "none" }}>
                     {genCopied === "상세내용" ? "✓ 상세내용 복사됨" : "📋 상세내용 복사"}
-                  </button>
+                  </div>
                 </div>
                 <div style={{ marginTop: 11, paddingTop: 10, borderTop: "1px solid var(--line)", display: "flex", alignItems: "flex-start", gap: 7 }}>
                   <span style={{ fontSize: 13, lineHeight: 1.2, flexShrink: 0 }}>📎</span>
@@ -1135,13 +1176,17 @@ export default function Contracts() {
               </div>
             );
           })()}
-          {/* 기안 링크 — 네이버웍스에서 기안 올린 뒤 받는 최종 링크 (파이프라인 마지막) */}
+          {/* 기안 마무리 — 링크 + 지급 예정일 (파이프라인 마지막, 개발사에 지급일 안내 근거) */}
           <div>
             <span style={label}>기안 링크 <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 네이버웍스 기안 완료 후 최종 링크</span></span>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <input style={{ ...input, flex: 1 }} value={vals.기안링크} onChange={e => upd(f => ({ ...f, 기안링크: e.target.value }))} placeholder="https:// (네이버웍스 기안)" />
               {vals.기안링크 && <LinkOpen href={vals.기안링크} />}
             </div>
+          </div>
+          <div>
+            <span style={label}>지급 예정일 <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 개발사 지급 안내 기준 · 월별 합산 반영</span></span>
+            <input type="date" style={{ ...input, width: 200 }} value={vals.지급예정일} onChange={e => upd(f => ({ ...f, 지급예정일: e.target.value }))} />
           </div>
         </>)}
 
@@ -1506,6 +1551,66 @@ export default function Contracts() {
             </div>
           )}
         </div>
+        );
+      })()}
+
+      {/* ── 지출 예정 합산 (지급예정일 기준 · 월별/주별) ── */}
+      {!loading && !error && (() => {
+        const rows = items
+          .filter(i => i.구분 === "지출기안" && i.지급예정일 && !itemMuted(i))
+          .map(i => {
+            const proj = i.프로젝트 || "";
+            const isProto = (i.이터레이션구분 || "") === "프로토타입" || !(i.이터레이션구분 || "");
+            const sub = items.find(s => s.파트너사 === i.파트너사 && (s.프로젝트 || "") === proj && s.구분 === "부속합의서");
+            const rawCost = isProto ? sub?.프로토타입비용 : sub?.이터레이션비용;
+            const both = toBothCurrency(rawCost, sub?.비용통화 || "USD");
+            return { date: i.지급예정일, usd: both.usd, krw: both.krw, partner: i.파트너사, proj, label: i.제목 };
+          })
+          .filter(r => r.usd != null);
+        if (rows.length === 0) return null;
+
+        const monKey = (d) => d.slice(0, 7);                       // YYYY-MM
+        const weekKey = (d) => { const dt = new Date(d); const dow = (dt.getDay() + 6) % 7; dt.setDate(dt.getDate() - dow); return dt.toISOString().slice(0, 10); }; // 주 시작(월)
+        const keyOf = expenseGran === "week" ? weekKey : monKey;
+        const groups = {};
+        rows.forEach(r => { const k = keyOf(r.date); if (!groups[k]) groups[k] = { usd: 0, krw: 0, n: 0 }; groups[k].usd += r.usd; groups[k].krw += r.krw; groups[k].n++; });
+        const sortedKeys = Object.keys(groups).sort();
+        const totUsd = rows.reduce((s, r) => s + r.usd, 0);
+        const totKrw = rows.reduce((s, r) => s + r.krw, 0);
+
+        return (
+          <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
+            <div onClick={() => setExpenseOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: SB_HEADER_BG, padding: "9px 18px" }}>
+              <span style={{ fontSize: 12, color: SB_HEADER_MUTED, transform: expenseOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}>▾</span>
+              <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: SB_HEADER_TEXT }}>💸 지출 예정</span>
+              <span style={{ fontSize: 10, color: SB_HEADER_MUTED }}>지급예정일 기준 · {rows.length}건</span>
+              <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, color: "#fff", fontVariantNumeric: "tabular-nums" }}>{fmtUsd(totUsd)} <span style={{ color: SB_HEADER_MUTED, fontWeight: 400 }}>({fmtKrwShort(totKrw)})</span></span>
+            </div>
+            {expenseOpen && (
+              <div style={{ padding: "10px 18px 12px" }}>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+                  <div style={{ display: "inline-flex", border: "1px solid var(--line)", borderRadius: 6, overflow: "hidden" }}>
+                    {[["month", "월별"], ["week", "주별"]].map(([g, lbl]) => (
+                      <button key={g} onClick={() => setExpenseGran(g)}
+                        style={{ fontSize: 11, fontWeight: 600, padding: "4px 12px", border: "none", cursor: "pointer", fontFamily: "inherit",
+                          background: expenseGran === g ? blue : "var(--card)", color: expenseGran === g ? "#fff" : "var(--muted)" }}>{lbl}</button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  {sortedKeys.map(k => (
+                    <div key={k} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 6, background: "var(--card-bg-subtle)" }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)", minWidth: 96, fontVariantNumeric: "tabular-nums" }}>{expenseGran === "week" ? `${k} 주` : k}</span>
+                      <span style={{ fontSize: 10, color: "var(--muted)" }}>{groups[k].n}건</span>
+                      <span style={{ marginLeft: "auto", fontSize: 13, fontWeight: 700, color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{fmtUsd(groups[k].usd)}</span>
+                      <span style={{ fontSize: 11, color: "var(--muted)", minWidth: 88, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{fmtKrw(groups[k].krw)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 8, textAlign: "right" }}>환율 ₩{USD_KRW.toLocaleString()}/$ 고정 · 종료·드랍 프로젝트 제외</div>
+              </div>
+            )}
+          </div>
         );
       })()}
 

@@ -3,7 +3,7 @@ const NOTION_VERSION = "2022-06-28";
 
 const FIELD_TYPES = {
   제목: "title",
-  구분: "select", 상태: "select", 파트너사: "select", 담당자: "select", 프로젝트상태: "select",
+  구분: "select", 상태: "select", 파트너사: "select", 담당자: "select", 프로젝트상태: "select", 비용통화: "select",
   이터레이션구분: "text", 메모: "text", 프로젝트: "text", 개발소재지: "text",
   거래처식별번호: "text", 거래처명: "text", 거래처국가: "text", 거래처주소: "text",
   거래처대표: "text", 거래처담당자: "text", 거래처계좌번호: "text",
@@ -13,7 +13,7 @@ const FIELD_TYPES = {
   계약서URL: "url", 기안링크: "url",
   법인등록증링크: "url", 법인통장링크: "url", 부속합의서링크: "url", 스펙내용링크: "url", 인보이스링크: "url",
   법인등록증: "checkbox", 법인통장: "checkbox", 부속합의서: "checkbox", 스펙내용: "checkbox", 인보이스: "checkbox", 자동갱신: "checkbox", 파트너십계약포함: "checkbox", 우선처리: "checkbox",
-  체결일: "date", 만료일: "date", 최종업데이트일: "date", 개발완료일: "date",
+  체결일: "date", 만료일: "date", 최종업데이트일: "date", 개발완료일: "date", 지급예정일: "date",
 };
 
 function toNotionProp(key, value) {
