@@ -509,28 +509,19 @@ export default function LtvCalculator({ isDark }) {
       {/* KPI Summary — CPI 회수율(LTV/CPI). CPI 돌파 시 초록 */}
       <div className="ltv-kpi-row">
         {[
-          { label: "LTV D0", value: usd(ltv0),  ltv: ltv0,  isNew: true },
+          { label: "LTV D0", value: usd(ltv0),  ltv: ltv0 },
           { label: "LTV D1", value: usd(ltv1),  ltv: ltv1 },
           { label: "LTV D7", value: usd(ltv7),  ltv: ltv7 },
           { label: "LTV D14", value: usd(ltv14), ltv: ltv14 },
           { label: "LTV D30", value: usd(ltv30), ltv: ltv30 },
           { label: "LTV D90", value: usd(ltv90), ltv: ltv90 },
-          {
-            label: "Breakeven",
-            value: breakevenDay === 0 ? "D0" : breakevenDay ? `D${breakevenDay}` : "360일 초과",
-            sub: breakevenDay !== null ? `누적 LTV ≥ CPI ${usd(cpi)}` : "회수 불가",
-            accent: breakevenDay === null ? "bad" : breakevenDay <= 30 ? "good" : breakevenDay <= 90 ? "warn" : "bad",
-          },
-        ].map(({ label, value, sub, ltv, accent, isNew }) => {
-          const recovered = ltv != null && ltv >= cpi;
-          const cardAccent = accent != null ? accent : (recovered ? "good" : "");
+        ].map(({ label, value, ltv }) => {
+          const recovered = ltv >= cpi;
           return (
-            <div key={label} className={`ltv-kpi-card ${cardAccent}`}>
-              <div className="ltv-kpi-label">{label}{isNew && <span className="ltv-kpi-new"> NEW</span>}</div>
+            <div key={label} className={`ltv-kpi-card ${recovered ? "good" : ""}`}>
+              <div className="ltv-kpi-label">{label}</div>
               <div className="ltv-kpi-value">{value}{recovered && <span className="ltv-kpi-check"> ✓</span>}</div>
-              {sub != null
-                ? <div className="ltv-kpi-sub">{sub}</div>
-                : <div className="ltv-kpi-sub">CPI 회수 {((ltv / cpi) * 100).toFixed(0)}%</div>}
+              <div className="ltv-kpi-sub">CPI 회수 {((ltv / cpi) * 100).toFixed(0)}%</div>
             </div>
           );
         })}

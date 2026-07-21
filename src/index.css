@@ -4,17 +4,17 @@
   --primary: #4361ee;
   --primary-light: #eef0fd;
   --primary-border: #c7cdf8;
-  --bg: #f4f5f7;
+  --bg: #e9ecf1;
   --card: #ffffff;
   --zone: #dfe3ea;
-  --card-border: #e8eaed;
-  --card-bg-subtle: #f9fafb;
+  --card-border: #dbe0e8;
+  --card-bg-subtle: #f4f6f9;
   --shell-border: #e2e5ea;
   --shell-shadow: 0 2px 12px rgba(0,0,0,0.06);
   --text: #1a1d23;
   --muted: #6b7280;
   --line: #eaecef;
-  --shadow: 0 1px 4px rgba(0,0,0,0.06);
+  --shadow: 0 1px 2px rgba(16,24,40,0.06), 0 4px 10px rgba(16,24,40,0.05);
   --good: #0d7a4e;
   --bad: #c0392b;
   --select-project-bg: #eef0fd;
@@ -580,12 +580,13 @@ tbody tr.row-highlight td:first-child {
   align-items: start;
 }
 
-/* ── Left Inputs Panel ── */
+/* ── Left Inputs Panel ── 결과(흰색) 영역과 구분되게 살짝 다른 톤 */
 .ltv-inputs {
   padding: 0;
   display: flex;
   flex-direction: column;
   gap: 0;
+  background: var(--card-bg-subtle);
 }
 
 .ltv-section-block {
