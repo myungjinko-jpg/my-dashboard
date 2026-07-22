@@ -300,7 +300,7 @@ export default function App() {
         </button>
         */}
         <button className={`tab-btn ${activeTab === "contracts" ? "active" : ""}`} onClick={() => setActiveTab("contracts")}>
-          📝 계약 관리 <span style={{ fontSize: "10px", opacity: 0.6 }}>(테스트중)</span>
+          📝 계약 관리 <span style={{ fontSize: "9px", fontWeight: 800, letterSpacing: ".04em", color: "#fff", background: "#DC2626", borderRadius: 4, padding: "1px 5px", verticalAlign: "middle" }}>NEW</span>
         </button>
       </div>
 
