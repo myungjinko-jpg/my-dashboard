@@ -1600,7 +1600,7 @@ export default function Contracts() {
             <div onClick={() => setExpenseOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: SB_HEADER_BG, padding: "9px 18px" }}>
               <span style={{ fontSize: 12, color: SB_HEADER_MUTED, transform: expenseOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}>▾</span>
               <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: SB_HEADER_TEXT }}>💸 지출 예정</span>
-              <span style={{ fontSize: 10, color: SB_HEADER_MUTED }}>지급예정일 기준</span>
+              <span style={{ fontSize: 10, color: SB_HEADER_MUTED }}>지급예정일 기준 · 환율 ₩{USD_KRW.toLocaleString()}/$ 고정 · 종료·드랍 제외</span>
               <div onClick={e => e.stopPropagation()} style={{ marginLeft: "auto", display: "inline-flex", border: "1px solid #4a4e57", borderRadius: 6, overflow: "hidden" }}>
                 {[["month", "월별"], ["week", "주별"]].map(([g, lbl]) => (
                   <button key={g} onClick={() => setExpenseGran(g)}
@@ -1641,7 +1641,6 @@ export default function Contracts() {
                     })}
                   </div>
                 )}
-                <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 7, textAlign: "right" }}>환율 ₩{USD_KRW.toLocaleString()}/$ 고정 · 종료·드랍 프로젝트 제외</div>
               </div>
             )}
           </div>
