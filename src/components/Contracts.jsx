@@ -208,9 +208,19 @@ function doneWarning(i) {
   return missingForComplete(i);
 }
 
-// 그룹 내 순서 정렬 (지출기안 여러 건은 기존 순서 유지)
+// 지출기안 내부 순서: 프로토타입(0) → 이터레이션#1(1) → #2 … (미지정은 뒤로)
+function iterOrder(item) {
+  if (item.구분 !== "지출기안") return 0;
+  const s = (item.이터레이션구분 || "").trim();
+  if (!s || s.includes("프로토타입") || /prototype/i.test(s)) return 0;
+  const m = s.match(/\d+/);
+  return m ? parseInt(m[0], 10) : 999;
+}
+
+// 그룹 내 순서 정렬 — 구분(KIND_ORDER) 우선, 지출기안은 프로토타입→이터레이션 순
 function orderGroup(rows) {
-  return [...rows].sort((a, b) => (KIND_ORDER[a.구분] || 9) - (KIND_ORDER[b.구분] || 9));
+  return [...rows].sort((a, b) =>
+    (KIND_ORDER[a.구분] || 9) - (KIND_ORDER[b.구분] || 9) || iterOrder(a) - iterOrder(b));
 }
 
 function LinkOpen({ href }) {
