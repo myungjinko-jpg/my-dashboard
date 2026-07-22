@@ -1564,9 +1564,9 @@ export default function Contracts() {
             const sub = items.find(s => s.파트너사 === i.파트너사 && (s.프로젝트 || "") === proj && s.구분 === "부속합의서");
             const rawCost = isProto ? sub?.프로토타입비용 : sub?.이터레이션비용;
             const both = toBothCurrency(rawCost, sub?.비용통화 || "USD");
-            return { date: i.지급예정일, usd: both.usd, krw: both.krw, partner: i.파트너사, proj, label: i.제목 };
-          })
-          .filter(r => r.usd != null);
+            // 금액 미확인(부속합의서 비용 미입력)이어도 지급예정일이 있으면 건수로는 반영
+            return { date: i.지급예정일, usd: both.usd, krw: both.krw, missing: both.usd == null, partner: i.파트너사, proj, label: i.제목 };
+          });
         // 활성 지출기안이 하나도 없으면 패널 자체를 숨김. 있으면(지급예정일 미입력이어도) 안내와 함께 노출
         const anyExpense = items.some(i => i.구분 === "지출기안" && !itemMuted(i));
         if (!anyExpense) return null;
@@ -1575,10 +1575,11 @@ export default function Contracts() {
         const weekKey = (d) => { const dt = new Date(d); const dow = (dt.getDay() + 6) % 7; dt.setDate(dt.getDate() - dow); return dt.toISOString().slice(0, 10); }; // 주 시작(월)
         const keyOf = expenseGran === "week" ? weekKey : monKey;
         const groups = {};
-        rows.forEach(r => { const k = keyOf(r.date); if (!groups[k]) groups[k] = { usd: 0, krw: 0, n: 0 }; groups[k].usd += r.usd; groups[k].krw += r.krw; groups[k].n++; });
+        rows.forEach(r => { const k = keyOf(r.date); if (!groups[k]) groups[k] = { usd: 0, krw: 0, n: 0, missing: 0 }; groups[k].usd += r.usd || 0; groups[k].krw += r.krw || 0; groups[k].n++; if (r.missing) groups[k].missing++; });
         const sortedKeys = Object.keys(groups).sort();
-        const totUsd = rows.reduce((s, r) => s + r.usd, 0);
-        const totKrw = rows.reduce((s, r) => s + r.krw, 0);
+        const totUsd = rows.reduce((s, r) => s + (r.usd || 0), 0);
+        const totKrw = rows.reduce((s, r) => s + (r.krw || 0), 0);
+        const totMissing = rows.filter(r => r.missing).length;
 
         // 상대 라벨 (지난달/이번달/다음달 · 지난주/이번주/다음주)
         const now = new Date();
@@ -1620,22 +1621,29 @@ export default function Contracts() {
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
                     {/* 전체 합계 (강조 타일) */}
                     <div style={{ borderRadius: 10, padding: "11px 13px", background: blueFaint, border: `1px solid rgba(0,120,212,.3)` }}>
-                      <div style={{ fontSize: 11, color: blue, fontWeight: 600 }}>전체 합계 · {rows.length}건</div>
+                      <div style={{ fontSize: 11, color: blue, fontWeight: 600 }}>전체 합계 · {rows.length}건{totMissing > 0 && <span style={{ color: "#C2410C" }}> · 금액 미입력 {totMissing}</span>}</div>
                       <div style={{ fontSize: 19, fontWeight: 800, color: blue, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.5px" }}>{fmtUsd(totUsd)}</div>
                       <div style={{ fontSize: 12, color: blue, fontVariantNumeric: "tabular-nums" }}>{fmtKrw(totKrw)}</div>
                     </div>
                     {sortedKeys.map(k => {
                       const rel = relLabel(k);
                       const isNow = rel === "이번달" || rel === "이번주";
+                      const g = groups[k];
+                      const allMissing = g.missing === g.n;
                       return (
                         <div key={k} style={{ borderRadius: 10, padding: "11px 13px", background: "var(--card-bg-subtle)", border: `1px solid ${isNow ? "rgba(0,120,212,.35)" : "var(--line)"}` }}>
-                          <div style={{ fontSize: 11, color: "var(--muted)", display: "flex", alignItems: "center", gap: 5 }}>
+                          <div style={{ fontSize: 11, color: "var(--muted)", display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
                             {rel && <span style={{ fontWeight: 700, color: isNow ? blue : "var(--text)" }}>{rel}</span>}
                             <span style={{ fontVariantNumeric: "tabular-nums" }}>{expenseGran === "week" ? `${k} 주` : k}</span>
-                            <span>· {groups[k].n}건</span>
+                            <span>· {g.n}건</span>
+                            {g.missing > 0 && <span style={{ color: "#C2410C" }}>· 미입력 {g.missing}</span>}
                           </div>
-                          <div style={{ fontSize: 19, fontWeight: 800, color: "var(--text)", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.5px" }}>{fmtUsd(groups[k].usd)}</div>
-                          <div style={{ fontSize: 12, color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>{fmtKrw(groups[k].krw)}</div>
+                          {allMissing ? (
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "#C2410C", marginTop: 4 }}>금액 미입력</div>
+                          ) : (<>
+                            <div style={{ fontSize: 19, fontWeight: 800, color: "var(--text)", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.5px" }}>{fmtUsd(g.usd)}</div>
+                            <div style={{ fontSize: 12, color: "var(--muted)", fontVariantNumeric: "tabular-nums" }}>{fmtKrw(g.krw)}</div>
+                          </>)}
                         </div>
                       );
                     })}
