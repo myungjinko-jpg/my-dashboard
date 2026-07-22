@@ -1556,8 +1556,10 @@ export default function Contracts() {
 
       {/* ── 지출 예정 합산 (지급예정일 기준 · 월별/주별) ── */}
       {!loading && !error && (() => {
+        // 지급예정일이 잡힌 지출기안은 프로젝트 상태(드랍/종료)와 무관하게 모두 포함
+        // — 테스트 후 드랍이어도 개발·기안이 진행됐으면 지급 의무가 남기 때문
         const rows = items
-          .filter(i => i.구분 === "지출기안" && i.지급예정일 && !itemMuted(i))
+          .filter(i => i.구분 === "지출기안" && i.지급예정일)
           .map(i => {
             const proj = i.프로젝트 || "";
             const isProto = (i.이터레이션구분 || "") === "프로토타입" || !(i.이터레이션구분 || "");
@@ -1568,7 +1570,7 @@ export default function Contracts() {
             return { date: i.지급예정일, usd: both.usd, krw: both.krw, missing: both.usd == null, partner: i.파트너사, proj, label: i.제목 };
           });
         // 활성 지출기안이 하나도 없으면 패널 자체를 숨김. 있으면(지급예정일 미입력이어도) 안내와 함께 노출
-        const anyExpense = items.some(i => i.구분 === "지출기안" && !itemMuted(i));
+        const anyExpense = items.some(i => i.구분 === "지출기안");
         if (!anyExpense) return null;
 
         const monKey = (d) => d.slice(0, 7);                       // YYYY-MM
@@ -1601,7 +1603,7 @@ export default function Contracts() {
             <div onClick={() => setExpenseOpen(o => !o)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", background: SB_HEADER_BG, padding: "9px 18px" }}>
               <span style={{ fontSize: 12, color: SB_HEADER_MUTED, transform: expenseOpen ? "none" : "rotate(-90deg)", transition: "transform .15s" }}>▾</span>
               <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: SB_HEADER_TEXT }}>💸 지출 예정</span>
-              <span style={{ fontSize: 10, color: SB_HEADER_MUTED }}>지급예정일 기준 · 환율 ₩{USD_KRW.toLocaleString()}/$ 고정 · 종료·드랍 제외</span>
+              <span style={{ fontSize: 10, color: SB_HEADER_MUTED }}>지급예정일 기준 · 환율 ₩{USD_KRW.toLocaleString()}/$ 고정 · 드랍·종료 포함</span>
               <div onClick={e => e.stopPropagation()} style={{ marginLeft: "auto", display: "inline-flex", border: "1px solid #4a4e57", borderRadius: 6, overflow: "hidden" }}>
                 {[["month", "월별"], ["week", "주별"]].map(([g, lbl]) => (
                   <button key={g} onClick={() => setExpenseGran(g)}
