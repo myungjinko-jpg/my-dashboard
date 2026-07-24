@@ -1829,7 +1829,8 @@ export default function Contracts() {
                     const proj = newPartnerProject.trim();
                     const country = newPartnerCountry.trim();
                     const owner = newPartnerOwner.trim();
-                    if (!name || !proj) return;  // 파트너사·첫 프로젝트 모두 필수
+                    if (!name) return;  // 파트너사명만 필수 (프로젝트명은 미입력 시 자동 플레이스홀더)
+                    const projName = proj || "프로젝트명 기입 필요";
                     setPartners(prev => prev.includes(name) ? prev : [...prev, name]);
                     setSelected(name);
                     setAddingPartner(false);
@@ -1843,8 +1844,8 @@ export default function Contracts() {
                       createRows([
                         { 제목: `[${name}] 파트너십계약`, 파트너사: name, 구분: "파트너십계약", 상태: "요청전", ...ownerF },
                         { 제목: `[${name}] 거래처등록`, 파트너사: name, 구분: "거래처등록", 상태: "요청전", ...(country ? { 개발소재지: country } : {}), ...ownerF },
-                        { 제목: `[${proj}] 부속합의서`, 파트너사: name, 프로젝트: proj, 구분: "부속합의서", 상태: "완료", 파트너십계약포함: true, ...ownerF },
-                        { 제목: `[${proj}] 프로토타입 지출기안`, 파트너사: name, 프로젝트: proj, 구분: "지출기안", 이터레이션구분: "프로토타입", 상태: "요청전", ...ownerF },
+                        { 제목: `[${projName}] 부속합의서`, 파트너사: name, 프로젝트: projName, 구분: "부속합의서", 상태: "완료", 파트너십계약포함: true, ...ownerF },
+                        { 제목: `[${projName}] 프로토타입 지출기안`, 파트너사: name, 프로젝트: projName, 구분: "지출기안", 이터레이션구분: "프로토타입", 상태: "요청전", ...ownerF },
                       ]);
                     }
                   }}>
@@ -1853,7 +1854,7 @@ export default function Contracts() {
                     style={{ width: "100%", padding: "6px 9px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", boxSizing: "border-box" }} />
                   <div style={{ display: "flex", gap: 6 }}>
                     <input value={newPartnerProject} onChange={e => setNewPartnerProject(e.target.value)}
-                      placeholder="첫 프로젝트명 * (필수)"
+                      placeholder="첫 프로젝트명 (선택 · 미입력 시 '프로젝트명 기입 필요')"
                       style={{ flex: 1.2, padding: "6px 9px", fontSize: 12, border: "1px solid var(--line)", borderRadius: 4, background: "var(--card)", color: "var(--text)", boxSizing: "border-box", minWidth: 0 }} />
                     <input value={newPartnerCountry} onChange={e => setNewPartnerCountry(e.target.value)} list="country-list"
                       placeholder="개발 소재지 (예: Vietnam)"
@@ -1865,8 +1866,8 @@ export default function Contracts() {
                   <div style={{ display: "flex", gap: 6 }}>
                     <button type="button" className="pill-btn" onClick={() => { setAddingPartner(false); setNewPartnerName(""); setNewPartnerProject(""); }}
                       style={{ ...addBtn(false), flex: 1, justifyContent: "center" }}>취소</button>
-                    <button type="submit" className="pill-btn" disabled={!newPartnerName.trim() || !newPartnerProject.trim() || creatingTpl}
-                      style={{ ...addBtn(true), flex: 2, justifyContent: "center", opacity: !newPartnerName.trim() || !newPartnerProject.trim() || creatingTpl ? 0.5 : 1 }}>
+                    <button type="submit" className="pill-btn" disabled={!newPartnerName.trim() || creatingTpl}
+                      style={{ ...addBtn(true), flex: 2, justifyContent: "center", opacity: !newPartnerName.trim() || creatingTpl ? 0.5 : 1 }}>
                       {creatingTpl ? "생성 중…" : "생성 (Enter)"}
                     </button>
                   </div>
