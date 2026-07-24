@@ -142,7 +142,7 @@ const EMPTY_FORM = {
   제목: "", 파트너사: "", 프로젝트: "", 구분: "파트너십계약", 상태: "요청전", 메모: "", 담당자: "", 개발소재지: "", 프로젝트상태: "",
   체결일: "", 만료일: "", 자동갱신: false, 계약서URL: "", 기안링크: "", 이터레이션구분: "", 파트너십계약포함: false,
   법인등록증: false, 법인통장: false, 부속합의서: false, 스펙내용: false, 인보이스: false, 우선처리: false,
-  법인등록증링크: "", 법인통장링크: "", 부속합의서링크: "", 스펙내용링크: "", 인보이스링크: "",
+  법인등록증링크: "", 법인통장링크: "", 부속합의서링크: "", 스펙내용링크: "", 인보이스링크: "", 소싱정보링크: "",
   거래처식별번호: "", 거래처명: "", 거래처국가: "", 거래처주소: "", 거래처대표: "", 거래처담당자: "", 거래처Email: "", 거래처계좌번호: "",
   BankName: "", BranchName: "", BankAddress: "", SWIFT: "", BeneficiaryName: "", AccountNumber: "",
   프로토타입비용: "", 이터레이션비용: "", 개발완료일: "", 지급예정일: "", 비용통화: "USD",
@@ -194,8 +194,8 @@ function staleDaysOf(item) {
 // 완료 조건 검사 — 완료인데 필수 데이터 없으면 경고 문구 반환 (PROCESS.md 단계별 완료 조건)
 // 완료 조건 미충족 시 사유 반환(상태 무관). 완료 저장 차단·완료 항목 경고 공용.
 function missingForComplete(i) {
-  if ((i.구분 === "파트너십계약" || i.구분 === "NDA") && !i.계약서URL) return "계약서 파일 URL(서명본) 미등록";
-  if (i.구분 === "부속합의서" && !i.파트너십계약포함 && !i.계약서URL) return "계약서 파일 URL 미등록";
+  if ((i.구분 === "파트너십계약" || i.구분 === "NDA") && !i.기안링크) return "계약서 기안 URL 미등록";
+  if (i.구분 === "부속합의서" && !i.파트너십계약포함 && !i.기안링크) return "계약서 기안 URL 미등록";
   if (i.구분 === "지출기안" && !i.기안링크) return "기안 링크 미등록";
   if (i.구분 === "거래처등록") {
     const docsMissing = (DOCS_BY_KIND.거래처등록 || []).some(doc => !i[doc] && !i[`${doc}링크`]);
@@ -978,35 +978,26 @@ export default function Contracts() {
               </div>
             );
           })()}
-          {/* 계약서 기안 URL — 네이버웍스 */}
+          {/* 파트너사 소싱정보 DB URL */}
           {!coveredForm && (
             <div>
-              <span style={label}>계약서 기안 URL <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 네이버웍스</span></span>
+              <span style={label}>파트너사 소싱정보 DB <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 소싱 배경·경로 링크</span></span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input style={{ ...input, flex: 1 }} value={vals.소싱정보링크} onChange={e => upd(f => ({ ...f, 소싱정보링크: e.target.value }))} placeholder="https:// (소싱정보 DB 링크)" />
+                {vals.소싱정보링크 && <LinkOpen href={vals.소싱정보링크} />}
+              </div>
+            </div>
+          )}
+          {/* 계약서 기안 URL — 네이버웍스 (완료 기준) */}
+          {!coveredForm && (
+            <div>
+              <span style={label}>계약서 기안 URL <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 네이버웍스 · 완료 기준</span></span>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input style={{ ...input, flex: 1 }} value={vals.기안링크} onChange={e => upd(f => ({ ...f, 기안링크: e.target.value }))} placeholder="https:// (네이버웍스 기안)" />
                 {vals.기안링크 && <LinkOpen href={vals.기안링크} />}
               </div>
             </div>
           )}
-          {/* 계약서 파일 URL — 원드라이브 최종 서명본 */}
-          <div>
-            <span style={label}>계약서 파일 URL <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 원드라이브 서명본</span></span>
-            {coveredForm ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 33 }}>
-                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".03em", color: "#B45309", background: amberFaint, border: "1px solid rgba(245,180,0,.3)", borderRadius: 3, padding: "1px 6px", flexShrink: 0 }}>파트너십계약 연동</span>
-                {masterUrlForm ? (
-                  <a href={masterUrlForm} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: blue, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{masterUrlForm} ↗</a>
-                ) : (
-                  <span style={{ fontSize: 11, color: "var(--muted)" }}>파트너십계약서 링크 미등록</span>
-                )}
-              </div>
-            ) : (
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input style={{ ...input, flex: 1 }} value={vals.계약서URL} onChange={e => upd(f => ({ ...f, 계약서URL: e.target.value }))} placeholder="https:// (원드라이브 최종 전자서명본)" />
-                {vals.계약서URL && <LinkOpen href={vals.계약서URL} />}
-              </div>
-            )}
-          </div>
         </>)}
 
         {vals.구분 === "지출기안" && (
