@@ -1533,9 +1533,28 @@ export default function Contracts() {
 
       {/* ── ① 확인 존: 담당자 필터 · 상태 카운트 · 알림 칩 · 액션 ── */}
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
-      <div style={{ background: SB_HEADER_BG, padding: "9px 18px", display: "flex", alignItems: "center", gap: 7 }}>
+      <div style={{ background: SB_HEADER_BG, padding: "8px 14px 8px 18px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: SB_HEADER_TEXT }}>개요</span>
         <span style={{ fontSize: 11, fontWeight: 400, color: SB_HEADER_MUTED }}>담당 · 현황 · 알림 한눈에</span>
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+          {[
+            { t: "Notion DB", url: NOTION_DB_URL, tip: "통합 계약 DB 열기 — 가급적 여기서 직접 수정하지 말고 대시보드로 관리하세요" },
+            { t: "기안", url: DRAFT_URL, tip: "네이버웍스 결재함 열기" },
+            { t: "계약서", url: CONTRACT_DRIVE_URL, tip: "원드라이브 파트너십 계약서(서명본) 폴더 열기" },
+            { t: "파트너사 서류", url: PARTNER_DOCS_URL, tip: "구글드라이브 파트너사 서류함 열기" },
+          ].map(l => (
+            <a key={l.t} href={l.url} target="_blank" rel="noopener noreferrer" title={l.tip}
+              style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 9px", borderRadius: 6, border: "1px solid rgba(255,255,255,.18)", background: "rgba(255,255,255,.06)", color: SB_HEADER_TEXT, fontSize: 10.5, fontWeight: 600, textDecoration: "none", fontFamily: "inherit", whiteSpace: "nowrap" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,.16)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,.06)"; }}>
+              {l.t} <span style={{ fontSize: 9, color: SB_HEADER_MUTED }}>↗</span>
+            </a>
+          ))}
+          <button disabled title="Slack 자동 알림 — 준비 중인 기능입니다"
+            style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 9px", borderRadius: 6, border: "1px solid rgba(255,255,255,.12)", background: "transparent", color: SB_HEADER_MUTED, fontSize: 10.5, fontWeight: 600, cursor: "not-allowed", opacity: 0.7, fontFamily: "inherit" }}>
+            Slack 알림 <span style={{ fontSize: 9 }}>(준비중)</span>
+          </button>
+        </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "12px 18px" }}>
         {/* 담당자 타일 = 필터 겸 담당 규모. PC에서 한 줄 유지되게 폭 축소 */}
@@ -1579,26 +1598,6 @@ export default function Contracts() {
           );
         })}
 
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          {[
-            { t: "Notion DB", url: NOTION_DB_URL, tip: "통합 계약 DB 열기 — 가급적 여기서 직접 수정하지 말고 대시보드로 관리하세요" },
-            { t: "기안", url: DRAFT_URL, tip: "네이버웍스 결재함 열기" },
-            { t: "계약서", url: CONTRACT_DRIVE_URL, tip: "원드라이브 파트너십 계약서(서명본) 폴더 열기" },
-            { t: "파트너사 서류", url: PARTNER_DOCS_URL, tip: "구글드라이브 파트너사 서류함 열기" },
-          ].map(l => (
-            <a key={l.t} href={l.url} target="_blank" rel="noopener noreferrer"
-              title={l.tip}
-              style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "8px 13px", borderRadius: 7, border: "1px solid var(--line)", background: "var(--card)", color: "var(--text)", fontSize: 12, fontWeight: 600, textDecoration: "none", fontFamily: "inherit", whiteSpace: "nowrap", boxShadow: BTN_SHADOW }}
-              onMouseEnter={e => { e.currentTarget.style.background = "rgba(120,124,135,.08)"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "var(--card)"; }}>
-              {l.t} <span style={{ fontSize: 10, fontWeight: 400, color: "var(--muted)" }}>↗</span>
-            </a>
-          ))}
-          <button disabled title="Slack 자동 알림 — 준비 중인 기능입니다"
-            style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 13px", borderRadius: 7, border: "1px solid var(--line)", background: "var(--card)", color: "var(--muted)", fontSize: 12, fontWeight: 600, cursor: "not-allowed", opacity: 0.5, fontFamily: "inherit" }}>
-            Slack 알림 <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.85 }}>(준비중)</span>
-          </button>
-        </div>
         </div>
       </div>
       </div>
