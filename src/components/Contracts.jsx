@@ -409,9 +409,6 @@ export default function Contracts() {
     return map;
   }, [items, allPartners]);
 
-  const totalDone     = items.filter(i => i.상태 === "완료").length;
-  const totalActive   = items.filter(i => i.상태 === "진행중").length;
-  const totalWaiting  = items.filter(i => (i.상태 || "요청전") === "요청전").length;
 
   const patch = async (pageId, fields) => {
     setBusy(b => ({ ...b, [pageId]: true }));
@@ -570,6 +567,11 @@ export default function Contracts() {
     const any = items.find(i => i.파트너사 === partner && i.담당자);
     return any ? any.담당자 : "";
   };
+  // 상단 현황 카운트 — 담당자 필터 반영 (전체면 전체, 담당자 선택 시 해당 담당자 항목만)
+  const ownerItems = ownerFilter ? items.filter(i => partnerOwner(i.파트너사) === ownerFilter) : items;
+  const totalDone    = ownerItems.filter(i => i.상태 === "완료").length;
+  const totalActive  = ownerItems.filter(i => i.상태 === "진행중").length;
+  const totalWaiting = ownerItems.filter(i => (i.상태 || "요청전") === "요청전").length;
   // 서류 수령 여부 — 파트너 공통 서류는 거래처등록 상태를 따름
   const docReceived = (item, doc) => {
     if (item.구분 !== "거래처등록" && PARTNER_DOCS.includes(doc)) {
@@ -660,13 +662,16 @@ export default function Contracts() {
     return out.sort((a, b) => (a.prio - b.prio) || ((b.stale || 0) - (a.stale || 0)));
   }, [items, allPartners]); // eslint-disable-line
 
-  // 알림 종류별 카운트 (상단 칩)
-  const alertCounts = useMemo(() => ({
-    expire: todoQueue.filter(a => a.kind === "expire").length,
-    warn: todoQueue.filter(a => a.kind === "warn").length,
-    stale: todoQueue.filter(a => a.stale).length,
-    heal: todoQueue.filter(a => a.kind === "heal").length,
-  }), [todoQueue]);
+  // 알림 종류별 카운트 (상단 칩) — 담당자 필터 반영
+  const alertCounts = useMemo(() => {
+    const q = ownerFilter ? todoQueue.filter(a => partnerOwner(a.partner) === ownerFilter) : todoQueue;
+    return {
+      expire: q.filter(a => a.kind === "expire").length,
+      warn: q.filter(a => a.kind === "warn").length,
+      stale: q.filter(a => a.stale).length,
+      heal: q.filter(a => a.kind === "heal").length,
+    };
+  }, [todoQueue, ownerFilter]); // eslint-disable-line
 
   // 담당자·종류 필터 적용된 큐 (자동). 우선처리로 지정된 항목은 오른쪽 수동 큐로 빠짐(중복 제거)
   const filteredQueue = useMemo(() => todoQueue.filter(a => {
