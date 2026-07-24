@@ -1535,7 +1535,26 @@ export default function Contracts() {
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", overflow: "hidden" }}>
       <div style={{ background: SB_HEADER_BG, padding: "8px 14px 8px 18px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: SB_HEADER_TEXT }}>개요</span>
-        <span style={{ fontSize: 11, fontWeight: 400, color: SB_HEADER_MUTED }}>담당 · 현황 · 알림 한눈에</span>
+        {/* 현황 카운트 (담당자 필터 반영) */}
+        <div style={{ display: "flex", alignItems: "center", gap: 11, fontSize: 11, color: SB_HEADER_MUTED, marginLeft: 4 }}>
+          <span><b style={{ color: "#EFA637", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{totalActive}</b> 진행중</span>
+          <span><b style={{ color: SB_HEADER_TEXT, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{totalWaiting}</b> 대기</span>
+          <span><b style={{ color: "#5DCAA5", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{totalDone}</b> 완료</span>
+        </div>
+        {[
+          { k: "expire", t: "만료", n: alertCounts.expire, c: "#DC2626", bg: "rgba(220,38,38,.08)" },
+          { k: "warn", t: "경고", n: alertCounts.warn, c: "#C2410C", bg: "rgba(194,65,29,.10)" },
+          { k: "stale", t: "정체", n: alertCounts.stale, c: blue, bg: blueFaint },
+          { k: "heal", t: "누락", n: alertCounts.heal, c: "#B45309", bg: amberFaint },
+        ].filter(a => a.n > 0).map(a => {
+          const active = queueFilter === a.k;
+          return (
+            <button key={a.k} onClick={() => { setQueueFilter(active ? null : a.k); setQueueOpen(true); }}
+              title="클릭 시 큐 필터" style={{ fontSize: 10.5, fontWeight: 700, padding: "3px 9px", borderRadius: 99, border: `1px solid ${active ? a.c : "transparent"}`, background: a.bg, color: a.c, cursor: "pointer", fontFamily: "inherit" }}>
+              {a.t} {a.n}
+            </button>
+          );
+        })}
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
           {[
             { t: "Notion DB", url: NOTION_DB_URL, tip: "통합 계약 DB 열기 — 가급적 여기서 직접 수정하지 말고 대시보드로 관리하세요" },
@@ -1574,31 +1593,6 @@ export default function Contracts() {
             })}
           </div>
         )}
-
-        {/* 현황 · 알림 · 링크 */}
-        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px 12px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11, color: "var(--muted)" }}>
-          <span><b style={{ color: amber, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{totalActive}</b> 진행중</span>
-          <span><b style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "var(--text)" }}>{totalWaiting}</b> 대기</span>
-          <span><b style={{ color: green, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{totalDone}</b> 완료</span>
-        </div>
-
-        {[
-          { k: "expire", t: "만료", n: alertCounts.expire, c: "#DC2626", bg: "rgba(220,38,38,.08)" },
-          { k: "warn", t: "경고", n: alertCounts.warn, c: "#C2410C", bg: "rgba(194,65,29,.10)" },
-          { k: "stale", t: "정체", n: alertCounts.stale, c: blue, bg: blueFaint },
-          { k: "heal", t: "누락", n: alertCounts.heal, c: "#B45309", bg: amberFaint },
-        ].filter(a => a.n > 0).map(a => {
-          const active = queueFilter === a.k;
-          return (
-            <button key={a.k} onClick={() => { setQueueFilter(active ? null : a.k); setQueueOpen(true); }}
-              title="클릭 시 큐 필터" style={{ fontSize: 11, fontWeight: 700, padding: "4px 11px", borderRadius: 99, border: `1px solid ${active ? a.c : "transparent"}`, background: a.bg, color: a.c, cursor: "pointer", fontFamily: "inherit" }}>
-              {a.t} {a.n}
-            </button>
-          );
-        })}
-
-        </div>
       </div>
       </div>
 
