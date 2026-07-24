@@ -15,7 +15,7 @@ const CONTRACT_KINDS = ["파트너십계약", "부속합의서", "NDA"];
 const PARTNER_LEVEL_KINDS = ["파트너십계약", "NDA", "거래처등록"];
 const PROJECT_LEVEL_KINDS = ["부속합의서", "지출기안"];
 const ALL_KINDS = ["파트너십계약", "NDA", "거래처등록", "부속합의서", "지출기안"];
-const STATUS_ORDER = ["요청전", "진행중", "완료"];
+const STATUS_ORDER = ["요청전", "진행중", "준비완료", "완료"];
 
 // 순차 흐름 정렬 순서 (그룹 내에서 이 순서로 진행)
 const KIND_ORDER = { 파트너십계약: 1, NDA: 2, 거래처등록: 3, 부속합의서: 1, 지출기안: 2 };
@@ -235,6 +235,7 @@ function LinkOpen({ href }) {
 function StatusBadge({ 상태 }) {
   if (상태 === "완료") return <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".03em", padding: "2px 7px", borderRadius: 3, background: greenFaint, color: green }}>완료</span>;
   if (상태 === "진행중") return <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".03em", padding: "2px 7px", borderRadius: 3, background: amberFaint, color: amber }}>진행중</span>;
+  if (상태 === "준비완료") return <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".03em", padding: "2px 7px", borderRadius: 3, background: "rgba(232,120,55,.13)", color: "#B0480F", border: "1px solid rgba(232,120,55,.4)" }}>준비완료</span>;
   return <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: ".03em", padding: "2px 7px", borderRadius: 3, background: "var(--card)", color: "var(--muted)", border: "1px solid var(--line)" }}>요청전</span>;
 }
 
@@ -839,7 +840,7 @@ export default function Contracts() {
   };
 
   // 인라인 저장 (complete=true → 완료 처리 후 다음 단계로)
-  // targetStatus: "진행중" | "상신대기" | "완료" (완료만 완료 조건 검사·다음 단계 이동)
+  // targetStatus: "진행중" | "준비완료" | "완료" (완료만 완료 조건 검사·다음 단계 이동)
   const saveStep = async (item, targetStatus) => {
     if (!draft) return;
     const fields = { ...draft, 제목: (draft.제목 || "").trim(), 파트너사: (draft.파트너사 || item.파트너사).trim(), 프로젝트: (draft.프로젝트 || "").trim() };
@@ -847,8 +848,8 @@ export default function Contracts() {
     if (targetStatus === "완료") {
       if (reason) { alert(`완료할 수 없습니다 — ${reason}.\n조건을 채운 뒤 완료해주세요.`); return; }
       fields.상태 = "완료";
-    } else if (targetStatus === "상신대기") {
-      fields.상태 = "상신대기";
+    } else if (targetStatus === "준비완료") {
+      fields.상태 = "준비완료";
     } else if (item.상태 === "완료") {
       // 완료 항목 수정 저장 — 조건 미충족이면 진행중으로 자동 강등(모순 방지)
       fields.상태 = reason ? "진행중" : "완료";
@@ -1348,6 +1349,7 @@ export default function Contracts() {
   const renderStep = (item, seq, reached) => {
     const done = item.상태 === "완료";
     const inProgress = item.상태 === "진행중";
+    const ready = item.상태 === "준비완료"; // 준비 완료 — 실행자 처리 대기
     const isBusy = !!busy[item.id];
     const isOpen = effectiveOpen === item.id;
     const docs = DOCS_BY_KIND[item.구분] || [];
@@ -1359,7 +1361,7 @@ export default function Contracts() {
     const dim = !isOpen && !done && !reached; // 대기 단계
     const locked = done && editingStep !== item.id; // 완료 항목은 '수정' 전까지 읽기 전용
 
-    const accent = done ? green : inProgress ? amber : reached ? blue : "var(--line)";
+    const accent = done ? green : ready ? "#E87837" : inProgress ? amber : reached ? blue : "var(--line)";
     const headBg = isOpen ? "var(--card)" : done ? greenFaint : "var(--card)";
 
     return (
@@ -1381,9 +1383,9 @@ export default function Contracts() {
               fontSize: 10, fontWeight: 700, fontVariantNumeric: "tabular-nums",
               cursor: isBusy ? "wait" : locked ? "default" : "pointer",
               border: `1.5px solid ${accent === "var(--line)" ? "var(--line)" : accent}`,
-              background: done ? greenFaint : inProgress ? amberFaint : "transparent",
-              color: done ? green : inProgress ? amber : "var(--muted)",
-            }}>{done ? "✓" : seq}</div>
+              background: done ? greenFaint : ready ? "rgba(232,120,55,.13)" : inProgress ? amberFaint : "transparent",
+              color: done ? green : ready ? "#B0480F" : inProgress ? amber : "var(--muted)",
+            }}>{done ? "✓" : ready ? "↑" : seq}</div>
 
           {/* 제목 + 구분 */}
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -1462,19 +1464,25 @@ export default function Contracts() {
               {locked ? (
                 <button className="pill-btn" onClick={() => setEditingStep(item.id)} disabled={isBusy}
                   style={pillStyle("green")}>✎ 수정</button>
+              ) : done ? (
+                <button className="pill-btn" onClick={() => saveStep(item, "진행중")} disabled={isBusy}
+                  style={pillStyle("green")}>저장</button>
               ) : (<>
                 {(() => { const cb = missingForComplete(draft); return (<>
-                  {!done && cb && (
+                  {cb && (
                     <span style={{ fontSize: 10.5, color: "#C2410C", marginRight: 4 }} title={cb}>완료 조건: {cb}</span>
                   )}
-                  {!done && (
-                    <button className="pill-btn" onClick={() => saveStep(item, "진행중")} disabled={isBusy}
-                      style={pillStyle("amber")}>저장 (진행중)</button>
-                  )}
-                  <button className="pill-btn" onClick={() => saveStep(item, done ? "진행중" : "완료")} disabled={isBusy || (!done && !!cb)}
-                    title={!done && cb ? `완료하려면: ${cb}` : ""}
-                    style={{ ...pillStyle(done ? "green" : "amberSolid"), cursor: (!done && cb) ? "not-allowed" : "pointer", opacity: (!done && cb) ? 0.5 : 1 }}>
-                    {done ? "저장" : "완료하고 다음 단계 →"}
+                  {/* 임시 저장 (진행중) */}
+                  <button className="pill-btn" onClick={() => saveStep(item, "진행중")} disabled={isBusy}
+                    style={pillStyle("default")}>저장</button>
+                  {/* 준비자: 준비 완료 (완료 조건 무관, 실행자에게 넘김) */}
+                  <button className="pill-btn" onClick={() => saveStep(item, "준비완료")} disabled={isBusy}
+                    style={pillStyle("amber")}>준비 완료</button>
+                  {/* 실행자: 처리 완료 → 다음 (완료 조건 충족 필요) */}
+                  <button className="pill-btn" onClick={() => saveStep(item, "완료")} disabled={isBusy || !!cb}
+                    title={cb ? `처리 완료하려면: ${cb}` : "거래처 등록·기안 상신 등 실제 처리 완료"}
+                    style={{ ...pillStyle("amberSolid"), cursor: cb ? "not-allowed" : "pointer", opacity: cb ? 0.5 : 1 }}>
+                    처리 완료 →
                   </button>
                 </>); })()}
               </>)}
