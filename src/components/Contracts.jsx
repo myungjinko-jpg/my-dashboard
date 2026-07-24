@@ -244,6 +244,9 @@ export default function Contracts() {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState("");
   const [selected, setSelected]   = useState(null);
+  const [vendorFiles, setVendorFiles] = useState({ 법인등록증: null, 법인통장: null }); // AI 추출용 업로드
+  const [vendorExtracting, setVendorExtracting] = useState(false);
+  const [vendorExtractMsg, setVendorExtractMsg] = useState("");
   const [showForm, setShowForm]   = useState(false);
   const [form, setForm]           = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
@@ -292,6 +295,41 @@ export default function Contracts() {
     navigator.clipboard?.writeText(text);
     setGenCopied(key);
     setTimeout(() => setGenCopied(k => k === key ? "" : k), 2000);
+  };
+
+  // 서류(법인등록증·법인통장) → Claude API 추출 → 초안 폼에 채움 (저장은 사람이)
+  const fileToBase64 = (file) => new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(String(fr.result).split(",")[1] || "");
+    fr.onerror = reject;
+    fr.readAsDataURL(file);
+  });
+  const runVendorExtract = async (upd) => {
+    const entries = Object.entries(vendorFiles).filter(([, f]) => f);
+    if (!entries.length) { setVendorExtractMsg("법인등록증 또는 법인통장 파일을 올려주세요."); return; }
+    setVendorExtracting(true); setVendorExtractMsg("추출 중…");
+    try {
+      const docs = [];
+      for (const [kind, file] of entries) {
+        docs.push({ kind, mediaType: file.type || "image/png", data: await fileToBase64(file) });
+      }
+      const r = await fetch(`${API_BASE}/api/extract-vendor`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ docs }),
+      });
+      const j = await r.json();
+      if (!r.ok) { setVendorExtractMsg(j.error || "추출 실패"); setVendorExtracting(false); return; }
+      const f = j.fields || {};
+      upd(prev => {
+        const next = { ...prev };
+        Object.entries(f).forEach(([k, v]) => { if (v && String(v).trim()) next[k] = v; });
+        return next;
+      });
+      const filled = Object.values(f).filter(v => v && String(v).trim()).length;
+      setVendorExtractMsg(filled ? `✓ ${filled}개 필드 채움 — 검토 후 저장하세요` : "읽어낸 값이 없습니다. 서류가 선명한지 확인해주세요.");
+    } catch (e) {
+      setVendorExtractMsg("오류: " + String(e.message || e));
+    }
+    setVendorExtracting(false);
   };
 
   const sendAlert = async () => {
@@ -758,6 +796,7 @@ export default function Contracts() {
     const item = items.find(i => i.id === effectiveOpen);
     setDraft(item ? itemToForm(item) : null);
     setGenCopied("");
+    setVendorFiles({ 법인등록증: null, 법인통장: null }); setVendorExtractMsg("");
   }, [effectiveOpen]); // eslint-disable-line
 
   const openStep = (item) => { setOpenId(item.id); setEditingStep(null); };
@@ -1029,32 +1068,59 @@ export default function Contracts() {
           </div>
         )}
 
-        {vals.구분 === "거래처등록" && (<>
-          <div>
-            <span style={{ ...label, marginTop: 4 }}>거래처 정보</span>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {VENDOR_FIELDS.map(([field, hint, lbl]) => (
-                <div key={field} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-                  <span style={fieldLabelStyle}>{lbl}</span>
-                  <input style={{ ...input, flex: 1 }} value={vals[field]} placeholder={hint || ""}
-                    onChange={e => upd(f => ({ ...f, [field]: e.target.value }))} />
+        {vals.구분 === "거래처등록" && (
+          <div className="vendor-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 260px", gap: 16, alignItems: "start" }}>
+            {/* 좌: 입력 필드 */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+              <div>
+                <span style={{ ...label, marginTop: 4 }}>거래처 정보</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {VENDOR_FIELDS.map(([field, hint, lbl]) => (
+                    <div key={field} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                      <span style={fieldLabelStyle}>{lbl}</span>
+                      <input style={{ ...input, flex: 1 }} value={vals[field]} placeholder={hint || ""}
+                        onChange={e => upd(f => ({ ...f, [field]: e.target.value }))} />
+                    </div>
+                  ))}
                 </div>
+              </div>
+              <div>
+                <span style={{ ...label, marginTop: 4 }}>해외 송금 정보 <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 지출기안에 연동됨</span></span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {BANK_FIELDS.map(field => (
+                    <div key={field} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                      <span style={fieldLabelStyle}>{BANK_LABELS[field]}</span>
+                      <input style={{ ...input, flex: 1 }} value={vals[field]} placeholder={field}
+                        onChange={e => upd(f => ({ ...f, [field]: e.target.value }))} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* 우: 서류 업로드 → AI 자동 채우기 */}
+            <div style={{ border: `1px solid ${blue}`, borderRadius: 10, background: blueFaint, padding: 13, display: "flex", flexDirection: "column", gap: 9 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#0c447c" }}>✨ 서류로 자동 채우기</div>
+              <div style={{ fontSize: 10.5, color: "#0c447c", lineHeight: 1.5 }}>법인등록증·통장을 올리면 AI가 왼쪽 칸을 채웁니다. (검토 후 저장)</div>
+              {[["법인등록증", "거래처 정보"], ["법인통장", "송금 정보"]].map(([kind, what]) => (
+                <label key={kind} style={{ display: "block", border: `1.5px dashed ${vendorFiles[kind] ? green : "rgba(0,120,212,.5)"}`, borderRadius: 8, background: "var(--card)", padding: "10px", textAlign: "center", cursor: "pointer" }}>
+                  <input type="file" accept=".pdf,image/*" style={{ display: "none" }}
+                    onChange={e => { const file = e.target.files?.[0] || null; setVendorFiles(v => ({ ...v, [kind]: file })); }} />
+                  <div style={{ fontSize: 12, fontWeight: 600, color: vendorFiles[kind] ? green : "var(--text)" }}>
+                    {vendorFiles[kind] ? `✓ ${vendorFiles[kind].name.slice(0, 22)}` : kind}
+                  </div>
+                  <div style={{ fontSize: 9.5, color: "var(--muted)", marginTop: 2 }}>{vendorFiles[kind] ? "다시 선택" : `${what} · PDF/이미지`}</div>
+                </label>
               ))}
+              <button type="button" onClick={() => runVendorExtract(upd)} disabled={vendorExtracting}
+                style={{ ...pillStyle("blue"), justifyContent: "center", padding: "8px", opacity: vendorExtracting ? 0.6 : 1, cursor: vendorExtracting ? "wait" : "pointer" }}>
+                {vendorExtracting ? "⏳ 추출 중…" : "AI로 자동 채우기"}
+              </button>
+              {vendorExtractMsg && <div style={{ fontSize: 10.5, color: vendorExtractMsg.startsWith("✓") ? green : "#C2410C", lineHeight: 1.4 }}>{vendorExtractMsg}</div>}
+              <div style={{ fontSize: 9.5, color: "var(--muted)", textAlign: "center" }}>Claude · 추정 없이 읽은 값만</div>
             </div>
           </div>
-          <div>
-            <span style={{ ...label, marginTop: 4 }}>해외 송금 정보 <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 지출기안에 연동됨</span></span>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {BANK_FIELDS.map(field => (
-                <div key={field} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-                  <span style={fieldLabelStyle}>{BANK_LABELS[field]}</span>
-                  <input style={{ ...input, flex: 1 }} value={vals[field]} placeholder={field}
-                    onChange={e => upd(f => ({ ...f, [field]: e.target.value }))} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </>)}
+        )}
 
         {vals.구분 === "부속합의서" && (() => {
           const cur = vals.비용통화 || "USD";

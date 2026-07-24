@@ -1263,6 +1263,7 @@ tbody tr.row-highlight td:first-child {
 @media (max-width: 900px) {
   .ltv-kpi-row { grid-template-columns: repeat(3, 1fr); }
   .ltv-body { grid-template-columns: 1fr; }
+  .vendor-grid { grid-template-columns: 1fr !important; }
 }
 @media (max-width: 540px) {
   .ltv-kpi-row { grid-template-columns: repeat(2, 1fr); }
