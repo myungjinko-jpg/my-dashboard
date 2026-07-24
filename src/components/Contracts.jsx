@@ -572,6 +572,27 @@ export default function Contracts() {
   const totalDone    = ownerItems.filter(i => i.상태 === "완료").length;
   const totalActive  = ownerItems.filter(i => i.상태 === "진행중").length;
   const totalWaiting = ownerItems.filter(i => (i.상태 || "요청전") === "요청전").length;
+
+  // 담당자별 담당 규모 — 파트너사 수(고유), 프로젝트 수(파트너사×프로젝트 고유). "전체" 포함
+  const ownerStats = (() => {
+    const stat = { 전체: { partners: new Set(), projects: new Set() } };
+    const bucket = (k) => (stat[k] || (stat[k] = { partners: new Set(), projects: new Set() }));
+    allPartners.forEach(p => {
+      stat.전체.partners.add(p);
+      const o = partnerOwner(p);
+      if (o) bucket(o).partners.add(p);
+    });
+    items.forEach(i => {
+      if (!i.프로젝트) return;
+      const key = `${i.파트너사}|${i.프로젝트}`;
+      stat.전체.projects.add(key);
+      const o = partnerOwner(i.파트너사);
+      if (o) bucket(o).projects.add(key);
+    });
+    const out = {};
+    Object.entries(stat).forEach(([k, v]) => { out[k] = { partners: v.partners.size, projects: v.projects.size }; });
+    return out;
+  })();
   // 서류 수령 여부 — 파트너 공통 서류는 거래처등록 상태를 따름
   const docReceived = (item, doc) => {
     if (item.구분 !== "거래처등록" && PARTNER_DOCS.includes(doc)) {
@@ -1516,21 +1537,27 @@ export default function Contracts() {
         <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: SB_HEADER_TEXT }}>개요</span>
         <span style={{ fontSize: 11, fontWeight: 400, color: SB_HEADER_MUTED }}>담당 · 현황 · 알림 한눈에</span>
       </div>
-      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px 12px", padding: "12px 18px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "12px 18px" }}>
+        {/* 담당자 타일 = 필터 겸 담당 규모. PC에서 한 줄 유지되게 폭 축소 */}
         {owners.length > 0 && (
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 700, letterSpacing: ".05em" }}>담당자</span>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(122px, 1fr))", gap: 8 }}>
             {["전체", ...owners].map(o => {
               const active = (o === "전체" && !ownerFilter) || ownerFilter === o;
+              const st = ownerStats[o] || { partners: 0, projects: 0 };
               return (
                 <button key={o} onClick={() => setOwnerFilter(o === "전체" ? null : o)}
-                  style={{ fontSize: 11, padding: "4px 10px", borderRadius: 99, border: `1px solid ${active ? amber : "var(--line)"}`, background: active ? amberFaint : "transparent", color: active ? "#B45309" : "var(--muted)", cursor: "pointer", fontFamily: "inherit", fontWeight: active ? 700 : 400 }}>{o}</button>
+                  style={{ textAlign: "left", padding: "8px 11px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
+                    border: `1px solid ${active ? amber : "var(--line)"}`, background: active ? amberFaint : "var(--card)" }}>
+                  <div style={{ fontSize: 12.5, fontWeight: active ? 700 : 600, color: active ? "#B45309" : "var(--text)" }}>{o}</div>
+                  <div style={{ fontSize: 10.5, color: active ? "#B45309" : "var(--muted)", fontVariantNumeric: "tabular-nums", marginTop: 2, whiteSpace: "nowrap" }}>파트너 {st.partners} · 프로젝트 {st.projects}</div>
+                </button>
               );
             })}
-            <span style={{ width: 1, height: 16, background: "var(--line)", margin: "0 2px" }} />
           </div>
         )}
 
+        {/* 현황 · 알림 · 링크 */}
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 11, color: "var(--muted)" }}>
           <span><b style={{ color: amber, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{totalActive}</b> 진행중</span>
           <span><b style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "var(--text)" }}>{totalWaiting}</b> 대기</span>
@@ -1571,6 +1598,7 @@ export default function Contracts() {
             style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 13px", borderRadius: 7, border: "1px solid var(--line)", background: "var(--card)", color: "var(--muted)", fontSize: 12, fontWeight: 600, cursor: "not-allowed", opacity: 0.5, fontFamily: "inherit" }}>
             Slack 알림 <span style={{ fontSize: 10, fontWeight: 500, opacity: 0.85 }}>(준비중)</span>
           </button>
+        </div>
         </div>
       </div>
       </div>
