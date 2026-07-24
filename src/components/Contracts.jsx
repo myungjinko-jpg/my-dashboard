@@ -134,7 +134,7 @@ const VENDOR_FIELDS = [
 ];
 // 거래처담당자(내부 담당 PM)는 거래처 정보에서 입력하지 않는다 — 파트너사에 설정된 '담당자'로 자동 관리(상세 헤더 칩).
 const BANK_FIELDS = ["BankName", "BranchName", "BankAddress", "SWIFT", "BeneficiaryName", "AccountNumber"];
-const BANK_LABELS = { BankName: "은행명", BranchName: "지점", BankAddress: "은행주소", SWIFT: "SWIFT", BeneficiaryName: "수취인", AccountNumber: "계좌·IBAN" };
+const BANK_LABELS = { BankName: "은행명", BranchName: "지점", BankAddress: "은행주소", SWIFT: "SWIFT", BeneficiaryName: "예금주", AccountNumber: "계좌·IBAN" };
 // 좌측 라벨 + 입력 한 줄 (라벨 고정폭, 1열)
 const fieldLabelStyle = { fontSize: 11, color: "var(--muted)", width: 64, flexShrink: 0, textAlign: "right", paddingTop: 8 };
 
