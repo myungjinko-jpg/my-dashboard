@@ -573,26 +573,6 @@ export default function Contracts() {
   const totalActive  = ownerItems.filter(i => i.상태 === "진행중").length;
   const totalWaiting = ownerItems.filter(i => (i.상태 || "요청전") === "요청전").length;
 
-  // 담당자별 담당 규모 — 파트너사 수(고유), 프로젝트 수(파트너사×프로젝트 고유). "전체" 포함
-  const ownerStats = (() => {
-    const stat = { 전체: { partners: new Set(), projects: new Set() } };
-    const bucket = (k) => (stat[k] || (stat[k] = { partners: new Set(), projects: new Set() }));
-    allPartners.forEach(p => {
-      stat.전체.partners.add(p);
-      const o = partnerOwner(p);
-      if (o) bucket(o).partners.add(p);
-    });
-    items.forEach(i => {
-      if (!i.프로젝트) return;
-      const key = `${i.파트너사}|${i.프로젝트}`;
-      stat.전체.projects.add(key);
-      const o = partnerOwner(i.파트너사);
-      if (o) bucket(o).projects.add(key);
-    });
-    const out = {};
-    Object.entries(stat).forEach(([k, v]) => { out[k] = { partners: v.partners.size, projects: v.projects.size }; });
-    return out;
-  })();
   // 서류 수령 여부 — 파트너 공통 서류는 거래처등록 상태를 따름
   const docReceived = (item, doc) => {
     if (item.구분 !== "거래처등록" && PARTNER_DOCS.includes(doc)) {
@@ -616,6 +596,28 @@ export default function Contracts() {
   };
   const projectMuted = (partner, proj) => projectStatusOf(partner, proj) !== "진행중"; // 종료·드랍 = 알림/큐 제외
   const itemMuted = (i) => PROJECT_LEVEL_KINDS.includes(i.구분) && projectMuted(i.파트너사, i.프로젝트 || "(프로젝트 미지정)");
+
+  // 담당자별 담당 규모 — 파트너사 수(등록 전체 고유), 프로젝트 수(진행중만, 드랍·종료 제외). "전체" 포함
+  const ownerStats = (() => {
+    const stat = { 전체: { partners: new Set(), projects: new Set() } };
+    const bucket = (k) => (stat[k] || (stat[k] = { partners: new Set(), projects: new Set() }));
+    allPartners.forEach(p => {
+      stat.전체.partners.add(p);
+      const o = partnerOwner(p);
+      if (o) bucket(o).partners.add(p);
+    });
+    items.forEach(i => {
+      if (!i.프로젝트) return;
+      if (projectStatusOf(i.파트너사, i.프로젝트) !== "진행중") return; // 진행중만 (드랍·종료 제외)
+      const key = `${i.파트너사}|${i.프로젝트}`;
+      stat.전체.projects.add(key);
+      const o = partnerOwner(i.파트너사);
+      if (o) bucket(o).projects.add(key);
+    });
+    const out = {};
+    Object.entries(stat).forEach(([k, v]) => { out[k] = { partners: v.partners.size, projects: v.projects.size }; });
+    return out;
+  })();
   const setProjectStatus = async (partner, proj, status) => {
     const rows = items.filter(i => i.파트너사 === partner && PROJECT_LEVEL_KINDS.includes(i.구분) && (i.프로젝트 || "(프로젝트 미지정)") === proj);
     setItems(list => list.map(i => rows.some(r => r.id === i.id) ? { ...i, 프로젝트상태: status } : i));
