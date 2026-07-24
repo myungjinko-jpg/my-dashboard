@@ -941,34 +941,41 @@ export default function Contracts() {
         )}
 
         {isContract && (<>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {["체결일", "만료일"].map(field => {
-              const master = coveredForm ? partnerMaster(vals.파트너사) : null;
-              const linkedVal = master ? (master[field] || "") : "";
-              if (coveredForm) {
-                return (
-                  <div key={field}>
-                    <span style={label}>{field} <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 파트너십계약 연동</span></span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 33 }}>
-                      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".03em", color: "#B45309", background: amberFaint, border: "1px solid rgba(245,180,0,.3)", borderRadius: 3, padding: "1px 6px", flexShrink: 0 }}>본계약</span>
-                      <span style={{ fontSize: 12, color: linkedVal ? "var(--text)" : "var(--muted)" }}>{linkedVal || "본계약에 날짜 미등록"}</span>
-                    </div>
-                  </div>
-                );
-              }
+          {(() => {
+            // 체결일만 표시 (만료일 UI 제거 — 컬럼은 유지). 체결일 옆에 경과일·개월째 표기
+            if (coveredForm) {
+              const linkedVal = (partnerMaster(vals.파트너사) || {}).체결일 || "";
               return (
-              <div key={field}>
+                <div>
+                  <span style={label}>체결일 <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 파트너십계약 연동</span></span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 33 }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".03em", color: "#B45309", background: amberFaint, border: "1px solid rgba(245,180,0,.3)", borderRadius: 3, padding: "1px 6px", flexShrink: 0 }}>본계약</span>
+                    <span style={{ fontSize: 12, color: linkedVal ? "var(--text)" : "var(--muted)" }}>{linkedVal || "본계약에 날짜 미등록"}</span>
+                  </div>
+                </div>
+              );
+            }
+            const ch = vals.체결일 ? new Date(vals.체결일) : null;
+            let elapsed = "";
+            if (ch && !isNaN(ch.getTime())) {
+              const t = new Date(); t.setHours(0, 0, 0, 0); ch.setHours(0, 0, 0, 0);
+              const days = Math.round((t - ch) / 86400000);
+              if (days >= 0) elapsed = `체결 후 ${days.toLocaleString()}일 · ${Math.floor(days / 30) + 1}개월째`;
+            }
+            return (
+              <div style={{ maxWidth: 420 }}>
                 <span style={label}>
-                  {field}
-                  {vals[field] && (
-                    <button onClick={() => upd(f => ({ ...f, [field]: "" }))}
+                  체결일
+                  {vals.체결일 && (
+                    <button onClick={() => upd(f => ({ ...f, 체결일: "" }))}
                       style={{ marginLeft: 6, fontSize: 10, padding: "0 5px", border: "1px solid var(--line)", borderRadius: 3, background: "transparent", color: "var(--muted)", cursor: "pointer" }}>없음</button>
                   )}
+                  {elapsed && <span style={{ marginLeft: 8, fontSize: 10.5, fontWeight: 600, color: blue }}>{elapsed}</span>}
                 </span>
-                <input type="date" style={input} value={vals[field]} onChange={e => upd(f => ({ ...f, [field]: e.target.value }))} />
+                <input type="date" style={input} value={vals.체결일} onChange={e => upd(f => ({ ...f, 체결일: e.target.value }))} />
               </div>
-            );})}
-          </div>
+            );
+          })()}
           {/* 계약서 기안 URL — 네이버웍스 */}
           {!coveredForm && (
             <div>
