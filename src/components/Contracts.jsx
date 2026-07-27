@@ -122,6 +122,65 @@ const KIND_GUIDE = {
   },
 };
 
+// 개발사에 보낼 거래처 정보 요청 문구 (한/영 병기) — '정보 요청 템플릿 복사' 버튼
+const VENDOR_REQUEST_TEMPLATE = `안녕하세요!
+
+추후 대금 지급을 위해 귀사의 거래처 정보 등록을 미리 진행하고자 합니다. 지금 등록해두면 지급 시점에 곧바로 지급을 진행할 수 있습니다. 아래 정보와 공식 서류 2개(사업자등록증, 계좌 사본)를 함께 제출해 주시면 감사하겠습니다.
+
+※ 서류에 대부분의 정보가 담겨 있지만, 서류 양식에 따라 누락되는 항목이 있어 아래에 별도로 기재를 요청드립니다. 모든 항목은 공식 서류와 정확히 일치하게 기재 부탁드립니다.
+
+1. 회사 정보
+- 회사명 (사업자등록증상 정식 명칭)
+- 사업자/법인 등록번호
+- 등록 국가
+- 정식 주소 (우편번호 포함)
+- 대표자(CEO)명
+
+2. 담당자
+- 이름 / 이메일 / 연락처
+
+3. 은행 정보 (해외 송금용)
+- 은행명 (지점 제외, 예: "Citibank N.A.")
+- 지점명 (예: "Singapore Branch", 숫자 코드 아님)
+- 은행/지점 주소
+- SWIFT / BIC 코드
+- 계좌번호 / IBAN
+- 예금주명
+
+4. 제출 서류 (PDF)
+- 사업자등록증
+- 계좌 사본 (통장 사본 / 계좌 확인서 등)
+
+────────────────────
+
+Hi there,
+
+We'd like to complete your vendor registration in advance so that future payments can be processed without delay — once you're set up, we can release payment promptly when it's due. Please send us the details below along with two official documents (business registration certificate & bank account copy).
+
+Note: Most of this information is contained in the documents, but some items may be missing depending on the document format — so we're asking you to fill them in separately below. Kindly make sure every value matches your official documents exactly.
+
+1. Company
+- Registered company name (as on the business registration certificate)
+- Business/corporate registration number
+- Country of registration
+- Full registered address (incl. postal code)
+- Representative (CEO) name
+
+2. Contact
+- Name / Email / Phone
+
+3. Bank (for international wire)
+- Bank name (bank only, e.g. "Citibank N.A.")
+- Branch name (e.g. "Singapore Branch", not a code)
+- Bank/branch address
+- SWIFT / BIC
+- Account number / IBAN
+- Account holder name
+
+4. Documents (PDF)
+- Business registration certificate
+- Bank account copy (bankbook copy / account confirmation letter)`;
+
 // [필드, 힌트(빈칸일 때 placeholder), 좌측 라벨]
 const VENDOR_FIELDS = [
   ["거래처식별번호", "법인등록증 내 기재", "식별번호"],
@@ -248,7 +307,17 @@ export default function Contracts() {
   const [vendorFiles, setVendorFiles] = useState({ 법인등록증: null, 법인통장: null }); // AI 추출용 업로드
   const [vendorExtracting, setVendorExtracting] = useState(false);
   const [vendorExtractMsg, setVendorExtractMsg] = useState("");
+  const [tplCopied, setTplCopied] = useState(false);
   const [showForm, setShowForm]   = useState(false);
+
+  // 개발사에 보낼 거래처 정보 요청 템플릿 (한/영 병기)
+  const copyVendorRequestTemplate = async () => {
+    try {
+      await navigator.clipboard.writeText(VENDOR_REQUEST_TEMPLATE);
+      setTplCopied(true);
+      setTimeout(() => setTplCopied(false), 2000);
+    } catch { alert("복사에 실패했습니다. 수동으로 복사해주세요."); }
+  };
   const [form, setForm]           = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving]       = useState(false);
@@ -1127,7 +1196,14 @@ export default function Contracts() {
               </div>
             </div>
 
-            {/* 우: 서류 업로드 → AI 자동 채우기 */}
+            {/* 우: 정보 요청 템플릿 복사 + 서류 업로드 → AI 자동 채우기 */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {/* 정보 요청 템플릿 복사 */}
+            <button type="button" onClick={copyVendorRequestTemplate}
+              title="개발사에 보낼 거래처 정보 요청 문구(한/영)를 클립보드에 복사"
+              style={{ ...pillStyle(tplCopied ? "green" : "default"), justifyContent: "center", padding: "10px", width: "100%" }}>
+              {tplCopied ? "✓ 복사됨 — 붙여넣기" : "📋 정보 요청 템플릿 복사"}
+            </button>
             <div style={{ border: `1px solid ${blue}`, borderRadius: 10, background: blueFaint, padding: 13, display: "flex", flexDirection: "column", gap: 9 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#0c447c" }}>✨ 서류로 자동 채우기</div>
               <div style={{ fontSize: 10.5, color: "#0c447c", lineHeight: 1.5 }}>법인등록증·통장을 올리면 AI가 왼쪽 칸을 채웁니다. (검토 후 저장)</div>
@@ -1147,6 +1223,7 @@ export default function Contracts() {
               </button>
               {vendorExtractMsg && <div style={{ fontSize: 10.5, color: vendorExtractMsg.startsWith("✓") ? green : "#C2410C", lineHeight: 1.4 }}>{vendorExtractMsg}</div>}
               <div style={{ fontSize: 9.5, color: "var(--muted)", textAlign: "center" }}>Claude · 추정 없이 읽은 값만</div>
+            </div>
             </div>
           </div>
         )}
