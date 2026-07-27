@@ -15,8 +15,8 @@ const FIELDS = [
   { formKey: "거래처대표", schemaKey: "vendor_ceo", desc: "대표자명" },
   { formKey: "거래처Email", schemaKey: "vendor_email", desc: "이메일 (있을 때만)" },
   { formKey: "거래처계좌번호", schemaKey: "vendor_account_number_domestic", desc: "법인통장 계좌번호" },
-  { formKey: "BankName", schemaKey: "bank_name", desc: "은행명 (통장/송금정보 기준)" },
-  { formKey: "BranchName", schemaKey: "branch_name", desc: "지점명" },
+  { formKey: "BankName", schemaKey: "bank_name", desc: "은행 이름만 (예: 'Citibank N.A.', 'DBS Bank Ltd'). 지점명(Branch)은 제외하고 여기 넣지 말 것." },
+  { formKey: "BranchName", schemaKey: "branch_name", desc: "지점명 — 사람이 읽는 지점 이름만 (예: 'Singapore Branch', '강남지점'). 숫자/영숫자 코드(001, 지점코드, sort code, routing 등)는 지점명이 아니므로 넣지 말고, 지점 이름이 없으면 빈 문자열." },
   { formKey: "BankAddress", schemaKey: "bank_address", desc: "은행 주소" },
   { formKey: "SWIFT", schemaKey: "swift", desc: "SWIFT/BIC 코드" },
   { formKey: "BeneficiaryName", schemaKey: "beneficiary_name", desc: "예금주명 (Beneficiary)" },
@@ -31,6 +31,7 @@ const SYSTEM_PROMPT = [
   "2) 국내 문서는 한글 그대로, 해외 문서는 영문 그대로 표기한다. 임의 번역/음역 금지.",
   "3) 거래처국가는 반드시 법인등록증(사업자등록증)의 등록국 기준. 개발 소재지나 은행 소재지와 혼동하지 말 것. 국내면 '대한민국'.",
   "4) 법인등록증 → 거래처 식별번호/명/국가/주소/대표. 법인통장 → 은행명/지점/은행주소/SWIFT/예금주/계좌번호.",
+  "4-1) 은행명과 지점명을 분리한다. 'Citibank N.A., Singapore Branch'면 은행명='Citibank N.A.', 지점명='Singapore Branch'. 지점명 칸에는 사람이 읽는 지점 이름만 넣고, 숫자/코드(001, 지점코드, sort code 등)는 지점명이 아니므로 넣지 않는다(없으면 빈 문자열).",
   "5) 개인 계약(개인사업자·개인)일 경우 여권/신분증 기준 영문명 등을 그대로.",
   "반드시 vendor_info 도구를 호출해 결과를 반환한다.",
 ].join("\n");
