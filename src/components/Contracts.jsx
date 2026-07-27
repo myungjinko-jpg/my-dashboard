@@ -339,6 +339,8 @@ export default function Contracts() {
   const [expenseGran, setExpenseGran] = useState("month"); // month | week
   const [renamingPartner, setRenamingPartner] = useState(false);
   const [renameValue, setRenameValue] = useState("");
+  const [renamingProject, setRenamingProject] = useState(null); // 이름 변경 중인 프로젝트명
+  const [renameProjectValue, setRenameProjectValue] = useState("");
   const [partnerBusy, setPartnerBusy] = useState(false);
   const [editingHeaderField, setEditingHeaderField] = useState(null); // "거래처국가" | "담당자"
   const [headerFieldValue, setHeaderFieldValue] = useState("");
@@ -841,6 +843,21 @@ export default function Contracts() {
       setRenamingPartner(false);
     } catch (e) { alert(`이름 변경 실패: ${e.message}`); }
     finally { setPartnerBusy(false); }
+  };
+
+  // 프로젝트 이름 변경 — 해당 프로젝트 소속 모든 항목의 프로젝트 필드 + 제목의 [기존명] 갱신
+  const renameProject = async (from, to) => {
+    const name = (to || "").trim();
+    if (!name || name === from || from === "(프로젝트 미지정)") { setRenamingProject(null); return; }
+    const rows = items.filter(i => i.파트너사 === selected && (i.프로젝트 || "") === from);
+    if (!rows.length) { setRenamingProject(null); return; }
+    setRenamingProject(null);
+    try {
+      for (const r of rows) {
+        const 제목 = (r.제목 || "").split(`[${from}]`).join(`[${name}]`);
+        await patch(r.id, { 프로젝트: name, 제목 });
+      }
+    } catch (e) { alert(`프로젝트명 변경 실패: ${e.message || e}`); }
   };
 
   // 파트너 국가·담당자를 거래처등록(원본)에 직접 저장 — 상세 헤더 인라인 편집용
@@ -2141,7 +2158,22 @@ export default function Contracts() {
                     <div key={proj}>
                       {renderDivider(
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
-                          <span style={{ textDecoration: muted ? "line-through" : "none" }}>{proj}</span>
+                          {renamingProject === proj ? (
+                            <form onSubmit={e => { e.preventDefault(); renameProject(proj, renameProjectValue); }} style={{ display: "inline-flex", gap: 4 }}>
+                              <input autoFocus value={renameProjectValue} onChange={e => setRenameProjectValue(e.target.value)}
+                                onBlur={() => renameProject(proj, renameProjectValue)}
+                                onKeyDown={e => { if (e.key === "Escape") setRenamingProject(null); }}
+                                style={{ fontSize: 12, fontWeight: 700, padding: "2px 6px", borderRadius: 4, border: `1px solid ${blue}`, fontFamily: "inherit", width: 160 }} />
+                            </form>
+                          ) : (
+                            <>
+                              <span style={{ textDecoration: muted ? "line-through" : "none" }}>{proj}</span>
+                              {proj !== "(프로젝트 미지정)" && (
+                                <button onMouseDown={e => e.preventDefault()} onClick={() => { setRenameProjectValue(proj); setRenamingProject(proj); }}
+                                  title="프로젝트명 변경" style={{ fontSize: 10, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", padding: 1, opacity: 0.6, fontFamily: "inherit" }}>✎</button>
+                              )}
+                            </>
+                          )}
                           <select value={pstatus} onChange={e => setProjectStatus(selected, proj, e.target.value)}
                             title="프로젝트 상태" onClick={e => e.stopPropagation()}
                             style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".03em", borderRadius: 3, padding: "1px 4px", cursor: "pointer", fontFamily: "inherit", ...statusStyle }}>
