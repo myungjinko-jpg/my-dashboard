@@ -326,6 +326,7 @@ export default function Contracts() {
   const [saving, setSaving]       = useState(false);
   const [busy, setBusy]           = useState({});
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [partnerDeleteConfirm, setPartnerDeleteConfirm] = useState(false);
   const [addingPartner, setAddingPartner] = useState(false);
   const [newPartnerName, setNewPartnerName] = useState("");
   const [newPartnerProject, setNewPartnerProject] = useState("");
@@ -804,8 +805,7 @@ export default function Contracts() {
 
   // 파트너 삭제 — 항목 전체 아카이브 + 노션 select 옵션 제거 (빈/유령 파트너도 정리 가능)
   const deletePartner = async () => {
-    const n = (byPartner[selected] || []).length;
-    if (!window.confirm(`파트너사 "${selected}"${n ? `와 항목 ${n}건이` : "가"} 모두 삭제됩니다. 계속할까요?`)) return;
+    setPartnerDeleteConfirm(false);
     setPartnerBusy(true);
     try {
       const r = await fetch(`${API_BASE}/api/partner-admin`, {
@@ -2057,10 +2057,33 @@ export default function Contracts() {
                         )}
                         <button onMouseDown={e => e.preventDefault()} onClick={() => { setRenameValue(selected); setRenamingPartner(true); }} disabled={partnerBusy}
                           title="파트너사명 변경" style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", padding: 2, opacity: 0.6, fontFamily: "inherit" }}>✎</button>
-                        <button onClick={deletePartner} disabled={partnerBusy}
+                        <button onClick={() => setPartnerDeleteConfirm(true)} disabled={partnerBusy}
                           title="파트너사 삭제 (항목 전체)" style={{ fontSize: 11, border: "none", background: "transparent", color: red, cursor: "pointer", padding: 2, opacity: 0.5, fontFamily: "inherit" }}>
                           {partnerBusy ? "…" : "🗑"}
                         </button>
+                        {partnerDeleteConfirm && (
+                          <div onClick={() => setPartnerDeleteConfirm(false)}
+                            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+                            <div onClick={e => e.stopPropagation()}
+                              style={{ background: "var(--card)", borderRadius: 12, padding: "22px 24px", width: 400, maxWidth: "90vw", boxShadow: "0 12px 40px rgba(0,0,0,.3)", border: "1px solid var(--line)" }}>
+                              <div style={{ fontSize: 15, fontWeight: 700, color: red, marginBottom: 8 }}>⚠ 파트너사 삭제</div>
+                              <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.6, marginBottom: 6 }}>
+                                파트너사 <b>“{selected}”</b>{(byPartner[selected] || []).length ? <> 와 소속 항목 <b>{(byPartner[selected] || []).length}건</b></> : null}
+                              </div>
+                              <div style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.6, marginBottom: 18 }}>
+                                파트너십계약·거래처등록·부속합의서·지출기안 등 <b>모든 항목이 함께 삭제</b>되며 <b style={{ color: red }}>되돌릴 수 없습니다</b>. 정말 삭제하시겠습니까?
+                              </div>
+                              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                                <button className="pill-btn" onClick={() => setPartnerDeleteConfirm(false)} disabled={partnerBusy}
+                                  style={pillStyle("default")}>취소</button>
+                                <button className="pill-btn" onClick={deletePartner} disabled={partnerBusy}
+                                  style={{ ...pillStyle("default"), background: red, color: "#fff", border: "none" }}>
+                                  {partnerBusy ? "삭제 중…" : "영구 삭제"}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </>
                     )}
                     {projectNames.filter(p => p !== "(프로젝트 미지정)").length > 0 && (
