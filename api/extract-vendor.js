@@ -5,26 +5,24 @@ const MODEL = "claude-sonnet-5";
 const ANTHROPIC_VERSION = "2023-06-01";
 
 // 추출 대상 필드 (Contracts 폼과 1:1) — 값은 문서에서 읽은 것만, 추정 금지, 없으면 ""
-const FIELD_KEYS = [
-  "거래처식별번호", "거래처명", "거래처국가", "거래처주소", "거래처대표", "거래처Email", "거래처계좌번호",
-  "BankName", "BranchName", "BankAddress", "SWIFT", "BeneficiaryName", "AccountNumber",
+// Claude tool input_schema의 property 키는 영문(^[a-zA-Z0-9_.-]{1,64}$)만 허용 →
+// schema 키는 ASCII(schemaKey), 폼 필드명은 한글(formKey)로 두고 응답을 매핑한다.
+const FIELDS = [
+  { formKey: "거래처식별번호", schemaKey: "vendor_reg_number", desc: "법인등록번호/사업자등록번호 등 등록증상 식별번호" },
+  { formKey: "거래처명", schemaKey: "vendor_name", desc: "법인/사업자명 (국내=한글 그대로, 해외=영문 그대로)" },
+  { formKey: "거래처국가", schemaKey: "vendor_country", desc: "법인 등록국 — 반드시 법인등록증(사업자등록증) 기준. 국내면 '대한민국'" },
+  { formKey: "거래처주소", schemaKey: "vendor_address", desc: "등록증상 주소" },
+  { formKey: "거래처대표", schemaKey: "vendor_ceo", desc: "대표자명" },
+  { formKey: "거래처Email", schemaKey: "vendor_email", desc: "이메일 (있을 때만)" },
+  { formKey: "거래처계좌번호", schemaKey: "vendor_account_number_domestic", desc: "법인통장 계좌번호" },
+  { formKey: "BankName", schemaKey: "bank_name", desc: "은행명 (통장/송금정보 기준)" },
+  { formKey: "BranchName", schemaKey: "branch_name", desc: "지점명" },
+  { formKey: "BankAddress", schemaKey: "bank_address", desc: "은행 주소" },
+  { formKey: "SWIFT", schemaKey: "swift", desc: "SWIFT/BIC 코드" },
+  { formKey: "BeneficiaryName", schemaKey: "beneficiary_name", desc: "예금주명 (Beneficiary)" },
+  { formKey: "AccountNumber", schemaKey: "account_number", desc: "계좌번호/IBAN (해외 송금용)" },
 ];
-
-const FIELD_DESC = {
-  거래처식별번호: "법인등록번호/사업자등록번호 등 등록증상 식별번호",
-  거래처명: "법인/사업자명 (국내=한글 그대로, 해외=영문 그대로)",
-  거래처국가: "법인 등록국 — 반드시 법인등록증(사업자등록증) 기준. 국내면 '대한민국'",
-  거래처주소: "등록증상 주소",
-  거래처대표: "대표자명",
-  거래처Email: "이메일 (있을 때만)",
-  거래처계좌번호: "법인통장 계좌번호",
-  BankName: "은행명 (통장/송금정보 기준)",
-  BranchName: "지점명",
-  BankAddress: "은행 주소",
-  SWIFT: "SWIFT/BIC 코드",
-  BeneficiaryName: "예금주명 (Beneficiary)",
-  AccountNumber: "계좌번호/IBAN (해외 송금용)",
-};
+const SCHEMA_KEYS = FIELDS.map(f => f.schemaKey);
 
 const SYSTEM_PROMPT = [
   "너는 계약 담당자를 돕는 거래처 정보 추출기다. 업로드된 법인등록증(사업자등록증)과 법인통장 이미지/PDF에서 거래처 정보와 해외 송금 정보를 읽어 구조화한다.",
@@ -67,7 +65,7 @@ export default async function handler(req, res) {
   content.push({ type: "text", text: "위 서류에서 거래처 정보와 해외 송금 정보를 추출해 vendor_info 도구로 반환해줘. 없는 값은 빈 문자열." });
 
   const properties = {};
-  for (const k of FIELD_KEYS) properties[k] = { type: "string", description: FIELD_DESC[k] || k };
+  for (const f of FIELDS) properties[f.schemaKey] = { type: "string", description: f.desc };
 
   try {
     const r = await fetch("https://api.anthropic.com/v1/messages", {
@@ -85,7 +83,7 @@ export default async function handler(req, res) {
         tools: [{
           name: "vendor_info",
           description: "추출한 거래처 정보와 해외 송금 정보. 없는 값은 빈 문자열.",
-          input_schema: { type: "object", properties, required: FIELD_KEYS, additionalProperties: false },
+          input_schema: { type: "object", properties, required: SCHEMA_KEYS, additionalProperties: false },
         }],
         tool_choice: { type: "tool", name: "vendor_info" },
         messages: [{ role: "user", content }],
@@ -99,9 +97,12 @@ export default async function handler(req, res) {
     const toolUse = (data.content || []).find(b => b.type === "tool_use");
     if (!toolUse) return res.status(502).json({ error: "추출 결과를 받지 못했습니다.", detail: data });
 
-    // 알려진 필드만 통과
+    // 응답(ASCII 키) → 폼 필드(한글 키)로 매핑
     const fields = {};
-    for (const k of FIELD_KEYS) fields[k] = typeof toolUse.input?.[k] === "string" ? toolUse.input[k].trim() : "";
+    for (const f of FIELDS) {
+      const v = toolUse.input?.[f.schemaKey];
+      fields[f.formKey] = typeof v === "string" ? v.trim() : "";
+    }
     return res.status(200).json({ fields });
   } catch (e) {
     return res.status(500).json({ error: String(e.message || e) });
