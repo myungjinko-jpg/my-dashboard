@@ -123,11 +123,43 @@ const KIND_GUIDE = {
 };
 
 // 개발사에 보낼 거래처 정보 요청 문구 (한/영 병기) — '정보 요청 템플릿 복사' 버튼
-const VENDOR_REQUEST_TEMPLATE = `[Vendor Registration] Business & Bank Information Request / 거래처 등록 정보 요청
+const VENDOR_REQUEST_TEMPLATE = `[Business & Bank Information Request]
+
+Hi ,
+
+We'd like to complete your vendor registration in advance so that future payments can be processed without delay — once you're set up, we can release payment promptly when it's due.
+Please send us the details below along with two official documents (business registration certificate & bank account copy).
+
+※ Note: Most of this information is contained in the documents, but some items may be missing depending on the document format — so we're asking you to fill them in separately below. Kindly make sure every value matches your official documents exactly.
+
+1. Company
+- Registered company name (as on the business registration certificate)
+- Business/corporate registration number
+- Country of registration
+- Full registered address (incl. postal code)
+- Representative (CEO) name
+- E-mail
+
+2. Bank (for international wire)
+- Bank name (bank only, e.g. "Citibank N.A.")
+- Branch name (e.g. "Singapore Branch", not a code)
+- Bank/branch address
+- SWIFT / BIC
+- Account number / IBAN
+- Account holder name
+
+3. Documents (PDF)
+- Business registration certificate
+- Bank account copy (bankbook copy / account confirmation letter)
+
+────────────────────
+
+[거래처 등록 정보 요청]
 
 안녕하세요!
 
-추후 대금 지급을 위해 귀사의 거래처 정보 등록을 미리 진행하고자 합니다. 지금 등록해두면 지급 시점에 곧바로 지급을 진행할 수 있습니다. 아래 정보와 공식 서류 2개(사업자등록증, 계좌 사본)를 함께 제출해 주시면 감사하겠습니다.
+추후 대금 지급을 위해 귀사의 거래처 정보 등록을 미리 진행하고자 합니다. 지금 등록해두면 지급 시점에 곧바로 지급을 진행할 수 있습니다.
+아래 정보와 공식 서류 2개(사업자등록증, 계좌 사본)를 함께 제출해 주시면 감사하겠습니다.
 
 ※ 서류에 대부분의 정보가 담겨 있지만, 서류 양식에 따라 누락되는 항목이 있어 아래에 별도로 기재를 요청드립니다. 모든 항목은 공식 서류와 정확히 일치하게 기재 부탁드립니다.
 
@@ -137,51 +169,19 @@ const VENDOR_REQUEST_TEMPLATE = `[Vendor Registration] Business & Bank Informati
 - 등록 국가
 - 정식 주소 (우편번호 포함)
 - 대표자(CEO)명
+- 이메일
 
-2. 담당자
-- 이름 / 이메일 / 연락처
-
-3. 은행 정보 (해외 송금용)
+2. 은행 정보 (해외 송금용)
 - 은행명 (지점 제외, 예: "Citibank N.A.")
 - 지점명 (예: "Singapore Branch", 숫자 코드 아님)
 - 은행/지점 주소
-- SWIFT / BIC 코드
+- SWIFT / BIC
 - 계좌번호 / IBAN
 - 예금주명
 
-4. 제출 서류 (PDF)
+3. 제출 서류 (PDF)
 - 사업자등록증
-- 계좌 사본 (통장 사본 / 계좌 확인서 등)
-
-────────────────────
-
-Hi there,
-
-We'd like to complete your vendor registration in advance so that future payments can be processed without delay — once you're set up, we can release payment promptly when it's due. Please send us the details below along with two official documents (business registration certificate & bank account copy).
-
-Note: Most of this information is contained in the documents, but some items may be missing depending on the document format — so we're asking you to fill them in separately below. Kindly make sure every value matches your official documents exactly.
-
-1. Company
-- Registered company name (as on the business registration certificate)
-- Business/corporate registration number
-- Country of registration
-- Full registered address (incl. postal code)
-- Representative (CEO) name
-
-2. Contact
-- Name / Email / Phone
-
-3. Bank (for international wire)
-- Bank name (bank only, e.g. "Citibank N.A.")
-- Branch name (e.g. "Singapore Branch", not a code)
-- Bank/branch address
-- SWIFT / BIC
-- Account number / IBAN
-- Account holder name
-
-4. Documents (PDF)
-- Business registration certificate
-- Bank account copy (bankbook copy / account confirmation letter)`;
+- 계좌 사본 (통장 사본 / 계좌 확인서 등)`;
 
 // [필드, 힌트(빈칸일 때 placeholder), 좌측 라벨]
 const VENDOR_FIELDS = [
