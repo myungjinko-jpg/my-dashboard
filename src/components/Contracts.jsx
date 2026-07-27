@@ -123,7 +123,9 @@ const KIND_GUIDE = {
 };
 
 // 개발사에 보낼 거래처 정보 요청 문구 (한/영 병기) — '정보 요청 템플릿 복사' 버튼
-const VENDOR_REQUEST_TEMPLATE = `안녕하세요!
+const VENDOR_REQUEST_TEMPLATE = `[Vendor Registration] Business & Bank Information Request / 거래처 등록 정보 요청
+
+안녕하세요!
 
 추후 대금 지급을 위해 귀사의 거래처 정보 등록을 미리 진행하고자 합니다. 지금 등록해두면 지급 시점에 곧바로 지급을 진행할 수 있습니다. 아래 정보와 공식 서류 2개(사업자등록증, 계좌 사본)를 함께 제출해 주시면 감사하겠습니다.
 
