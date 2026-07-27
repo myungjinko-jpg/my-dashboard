@@ -310,6 +310,7 @@ export default function Contracts() {
   const [vendorExtracting, setVendorExtracting] = useState(false);
   const [vendorExtractMsg, setVendorExtractMsg] = useState("");
   const [tplCopied, setTplCopied] = useState(false);
+  const [dragKind, setDragKind]   = useState(null); // 드래그 오버 중인 업로드 슬롯
   const [showForm, setShowForm]   = useState(false);
 
   // 개발사에 보낼 거래처 정보 요청 템플릿 (한/영 병기)
@@ -1208,17 +1209,24 @@ export default function Contracts() {
             </button>
             <div style={{ border: `1px solid ${blue}`, borderRadius: 10, background: blueFaint, padding: 13, display: "flex", flexDirection: "column", gap: 9 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#0c447c" }}>✨ 서류로 자동 채우기</div>
-              <div style={{ fontSize: 10.5, color: "#0c447c", lineHeight: 1.5 }}>법인등록증·통장을 올리면 AI가 왼쪽 칸을 채웁니다. (검토 후 저장)</div>
-              {[["법인등록증", "거래처 정보"], ["법인통장", "송금 정보"]].map(([kind, what]) => (
-                <label key={kind} style={{ display: "block", border: `1.5px dashed ${vendorFiles[kind] ? green : "rgba(0,120,212,.5)"}`, borderRadius: 8, background: "var(--card)", padding: "10px", textAlign: "center", cursor: "pointer" }}>
+              <div style={{ fontSize: 10.5, color: "#0c447c", lineHeight: 1.5 }}>법인등록증·통장을 올리거나 끌어다 놓으면 AI가 왼쪽 칸을 채웁니다. (검토 후 저장)</div>
+              {[["법인등록증", "거래처 정보"], ["법인통장", "송금 정보"]].map(([kind, what]) => {
+                const dragging = dragKind === kind;
+                return (
+                <label key={kind}
+                  onDragOver={e => { e.preventDefault(); if (dragKind !== kind) setDragKind(kind); }}
+                  onDragLeave={e => { e.preventDefault(); setDragKind(k => (k === kind ? null : k)); }}
+                  onDrop={e => { e.preventDefault(); setDragKind(null); const file = e.dataTransfer?.files?.[0] || null; if (file) setVendorFiles(v => ({ ...v, [kind]: file })); }}
+                  style={{ display: "block", border: `1.5px dashed ${dragging ? blue : vendorFiles[kind] ? green : "rgba(0,120,212,.5)"}`, borderRadius: 8, background: dragging ? blueFaint : "var(--card)", padding: "10px", textAlign: "center", cursor: "pointer", transition: "background .1s, border-color .1s" }}>
                   <input type="file" accept=".pdf,image/*" style={{ display: "none" }}
                     onChange={e => { const file = e.target.files?.[0] || null; setVendorFiles(v => ({ ...v, [kind]: file })); }} />
-                  <div style={{ fontSize: 12, fontWeight: 600, color: vendorFiles[kind] ? green : "var(--text)" }}>
-                    {vendorFiles[kind] ? `✓ ${vendorFiles[kind].name.slice(0, 22)}` : kind}
+                  <div style={{ fontSize: 12, fontWeight: 600, color: dragging ? "#0c447c" : vendorFiles[kind] ? green : "var(--text)" }}>
+                    {dragging ? "여기에 놓기" : vendorFiles[kind] ? `✓ ${vendorFiles[kind].name.slice(0, 22)}` : kind}
                   </div>
-                  <div style={{ fontSize: 9.5, color: "var(--muted)", marginTop: 2 }}>{vendorFiles[kind] ? "다시 선택" : `${what} · PDF/이미지`}</div>
+                  <div style={{ fontSize: 9.5, color: "var(--muted)", marginTop: 2 }}>{vendorFiles[kind] ? "다시 선택 · 드래그도 가능" : `${what} · 클릭/드래그 · PDF/이미지`}</div>
                 </label>
-              ))}
+                );
+              })}
               <button type="button" onClick={() => runVendorExtract(upd)} disabled={vendorExtracting}
                 style={{ ...pillStyle("blue"), justifyContent: "center", padding: "8px", opacity: vendorExtracting ? 0.6 : 1, cursor: vendorExtracting ? "wait" : "pointer" }}>
                 {vendorExtracting ? "⏳ 추출 중…" : "AI로 자동 채우기"}
