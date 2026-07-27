@@ -1205,7 +1205,7 @@ export default function Contracts() {
             <button type="button" onClick={copyVendorRequestTemplate}
               title="개발사에 보낼 거래처 정보 요청 문구(한/영)를 클립보드에 복사"
               style={{ ...pillStyle(tplCopied ? "green" : "default"), justifyContent: "center", padding: "10px", width: "100%" }}>
-              {tplCopied ? "✓ 복사됨 — 붙여넣기" : "📋 정보 요청 템플릿 복사"}
+              {tplCopied ? "✓ 복사됨 — 붙여넣기" : "📋 거래처 정보 요청 템플릿 복사"}
             </button>
             <div style={{ border: `1px solid ${blue}`, borderRadius: 10, background: blueFaint, padding: 13, display: "flex", flexDirection: "column", gap: 9 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#0c447c" }}>✨ 서류로 자동 채우기</div>
