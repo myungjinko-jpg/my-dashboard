@@ -8,7 +8,7 @@ const ANTHROPIC_VERSION = "2023-06-01";
 // Claude tool input_schema의 property 키는 영문(^[a-zA-Z0-9_.-]{1,64}$)만 허용 →
 // schema 키는 ASCII(schemaKey), 폼 필드명은 한글(formKey)로 두고 응답을 매핑한다.
 const FIELDS = [
-  { formKey: "거래처식별번호", schemaKey: "vendor_reg_number", desc: "법인 자체의 등록/식별번호. 국내=사업자등록번호/법인등록번호, 해외=Company Number/Registration No./UEN/EIN/미국 델라웨어 등의 'File Number' 등. 주의: 문서 접수번호·서류번호·transaction/SR/receipt/filing 번호(예: 'SR 20240129217')는 식별번호가 아니므로 넣지 말 것. 법인 고유번호가 확실치 않으면 빈 문자열." },
+  { formKey: "거래처식별번호", schemaKey: "vendor_reg_number", desc: "사업자/법인 식별번호. 국내=사업자등록번호/법인등록번호. 미국 델라웨어 Certificate of Formation 등에서는 'SR' 번호(예: 'SR 20240129217')를 식별번호로 사용한다. 주의: 'File Number'(예: 4232790)는 여기 넣지 말 것. 식별번호가 확실치 않으면 빈 문자열." },
   { formKey: "거래처명", schemaKey: "vendor_name", desc: "법인/사업자명 (국내=한글 그대로, 해외=영문 그대로)" },
   { formKey: "거래처국가", schemaKey: "vendor_country", desc: "법인 등록국 — 반드시 법인등록증(사업자등록증) 기준. 국내면 '대한민국'" },
   { formKey: "거래처주소", schemaKey: "vendor_address", desc: "등록증상 주소" },
@@ -30,7 +30,7 @@ const SYSTEM_PROMPT = [
   "2) 국내 문서는 한글 그대로, 해외 문서는 영문 그대로 표기한다. 임의 번역/음역 금지.",
   "3) 거래처국가는 반드시 법인등록증(사업자등록증)의 등록국 기준. 개발 소재지나 은행 소재지와 혼동하지 말 것. 국내면 '대한민국'.",
   "4) 법인등록증 → 거래처 식별번호/명/국가/주소/대표. 법인통장 → 은행명/지점/은행주소/SWIFT/예금주/계좌번호.",
-  "3-1) 거래처식별번호는 법인 '자체'의 등록번호(사업자등록번호/법인등록번호/Company Number/File Number 등)만 넣는다. 서류의 접수번호·문서번호·transaction/SR/receipt/filing 번호(예: 'SR 20240129217')는 식별번호가 아니다. 미국 Certificate of Formation이면 'File Number'가 식별번호이고 상단/하단의 SR·접수번호는 아니다. 확실치 않으면 빈 문자열.",
+  "3-1) 거래처식별번호는 사업자/법인 식별번호다. 국내는 사업자등록번호/법인등록번호. 미국 델라웨어 Certificate of Formation 등에서는 'SR' 번호(예: 'SR 20240129217')를 식별번호로 넣는다. 'File Number'(예: 4232790)는 식별번호가 아니므로 넣지 않는다. 확실치 않으면 빈 문자열.",
   "4-1) 은행명과 지점명을 분리한다. 'Citibank N.A., Singapore Branch'면 은행명='Citibank N.A.', 지점명='Singapore Branch'. 지점명 칸에는 사람이 읽는 지점 이름만 넣고, 숫자/코드(001, 지점코드, sort code 등)는 지점명이 아니므로 넣지 않는다(없으면 빈 문자열).",
   "5) 개인 계약(개인사업자·개인)일 경우 여권/신분증 기준 영문명 등을 그대로.",
   "반드시 vendor_info 도구를 호출해 결과를 반환한다.",
