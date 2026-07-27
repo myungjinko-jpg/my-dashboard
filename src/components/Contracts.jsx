@@ -1575,13 +1575,32 @@ export default function Contracts() {
                   </button>
                 </>); })()}
               </>)}
-              {deleteConfirm === item.id ? (
-                <button onClick={() => remove(item)} style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: red, border: "none", borderRadius: 4, padding: "6px 9px", cursor: "pointer" }}>삭제 확인</button>
-              ) : (
-                <button onClick={() => { setDeleteConfirm(item.id); setTimeout(() => setDeleteConfirm(c => c === item.id ? null : c), 3000); }}
-                  style={{ fontSize: 12, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", opacity: 0.4, fontFamily: "inherit" }} title="삭제">✕</button>
-              )}
+              <button onClick={() => setDeleteConfirm(item.id)}
+                style={{ fontSize: 12, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", opacity: 0.4, fontFamily: "inherit" }} title="삭제">✕</button>
             </div>
+            {deleteConfirm === item.id && (
+              <div onClick={() => setDeleteConfirm(null)}
+                style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+                <div onClick={e => e.stopPropagation()}
+                  style={{ background: "var(--card)", borderRadius: 12, padding: "22px 24px", width: 380, maxWidth: "90vw", boxShadow: "0 12px 40px rgba(0,0,0,.3)", border: "1px solid var(--line)" }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: red, marginBottom: 8 }}>⚠ 항목 삭제</div>
+                  <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.6, marginBottom: 6 }}>
+                    <b>{item.구분}</b> — “{item.제목}”
+                  </div>
+                  <div style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.6, marginBottom: 18 }}>
+                    이 항목을 삭제하면 입력된 정보가 함께 사라지며 <b style={{ color: red }}>되돌릴 수 없습니다</b>. 정말 삭제하시겠습니까?
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                    <button className="pill-btn" onClick={() => setDeleteConfirm(null)} disabled={isBusy}
+                      style={pillStyle("default")}>취소</button>
+                    <button className="pill-btn" onClick={() => remove(item)} disabled={isBusy}
+                      style={{ ...pillStyle("default"), background: red, color: "#fff", border: "none" }}>
+                      {isBusy ? "삭제 중…" : "영구 삭제"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
