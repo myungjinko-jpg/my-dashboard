@@ -14,7 +14,6 @@ const FIELDS = [
   { formKey: "거래처주소", schemaKey: "vendor_address", desc: "등록증상 주소" },
   { formKey: "거래처대표", schemaKey: "vendor_ceo", desc: "대표자명" },
   { formKey: "거래처Email", schemaKey: "vendor_email", desc: "이메일 (있을 때만)" },
-  { formKey: "거래처계좌번호", schemaKey: "vendor_account_number_domestic", desc: "법인통장 계좌번호" },
   { formKey: "BankName", schemaKey: "bank_name", desc: "은행 이름만 (예: 'Citibank N.A.', 'DBS Bank Ltd'). 지점명(Branch)은 제외하고 여기 넣지 말 것." },
   { formKey: "BranchName", schemaKey: "branch_name", desc: "지점명 — 사람이 읽는 지점 이름만 (예: 'Singapore Branch', '강남지점'). 숫자/영숫자 코드(001, 지점코드, sort code, routing 등)는 지점명이 아니므로 넣지 말고, 지점 이름이 없으면 빈 문자열." },
   { formKey: "BankAddress", schemaKey: "bank_address", desc: "은행 주소" },
