@@ -1548,10 +1548,12 @@ export default function Contracts() {
               <button onClick={() => openEdit(item)} style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", fontFamily: "inherit", marginRight: "auto" }}>전체 편집 창 ↗</button>
               <button className="pill-btn" onClick={collapseStep} disabled={isBusy}
                 style={pillStyle("default")}>접기</button>
-              {locked ? (
+              {locked ? (<>
+                <button className="pill-btn" onClick={async () => { if (window.confirm(`"${item.제목}" 완료를 취소하고 진행중으로 되돌릴까요?`)) { await patch(item.id, { 상태: "진행중" }); } }} disabled={isBusy}
+                  style={pillStyle("default")} title="완료를 취소하고 진행중 상태로 되돌립니다">↩ 완료 취소</button>
                 <button className="pill-btn" onClick={() => setEditingStep(item.id)} disabled={isBusy}
                   style={pillStyle("green")}>✎ 수정</button>
-              ) : done ? (
+              </>) : done ? (
                 <button className="pill-btn" onClick={() => saveStep(item, "진행중")} disabled={isBusy}
                   style={pillStyle("green")}>저장</button>
               ) : (<>
