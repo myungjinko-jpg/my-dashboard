@@ -327,6 +327,8 @@ export default function Contracts() {
   const [busy, setBusy]           = useState({});
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [partnerDeleteConfirm, setPartnerDeleteConfirm] = useState(false);
+  const [partnerArchiveConfirm, setPartnerArchiveConfirm] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const [addingPartner, setAddingPartner] = useState(false);
   const [newPartnerName, setNewPartnerName] = useState("");
   const [newPartnerProject, setNewPartnerProject] = useState("");
@@ -438,6 +440,17 @@ export default function Contracts() {
     return [...set].sort();
   }, [items, partners]);
 
+  // 아카이브(협업 종료·보관)된 파트너 — 파트너상태는 앵커(거래처등록) 행에 저장
+  const archivedSet = useMemo(() => {
+    const s = new Set();
+    allPartners.forEach(p => {
+      const anchor = items.find(i => i.파트너사 === p && i.구분 === "거래처등록");
+      if (anchor && anchor.파트너상태 === "아카이브") s.add(p);
+    });
+    return s;
+  }, [items, allPartners]);
+  const partnerArchived = (p) => archivedSet.has(p);
+
   // 등록된 담당자 목록 (필터 칩용)
   const owners = useMemo(() => {
     const set = new Set();
@@ -453,11 +466,14 @@ export default function Contracts() {
       const any = items.find(i => i.파트너사 === p && i.담당자);
       return any ? any.담당자 : "";
     };
-    let list = ownerFilter ? allPartners.filter(p => ownerOf(p) === ownerFilter) : allPartners;
+    let list = (ownerFilter ? allPartners.filter(p => ownerOf(p) === ownerFilter) : allPartners).filter(p => !archivedSet.has(p));
     const has = list.filter(p => items.some(i => i.파트너사 === p));
     const empty = list.filter(p => !items.some(i => i.파트너사 === p));
     return [...has, ...empty];
-  }, [allPartners, items, ownerFilter]);
+  }, [allPartners, items, ownerFilter, archivedSet]);
+
+  // 아카이브된 파트너 목록 (사이드바 하단 접기 섹션)
+  const archivedPartnerList = useMemo(() => [...archivedSet].sort(), [archivedSet]);
 
   // 초기 파트너 선택 — 딥링크(?item=)가 있으면 그 항목의 파트너 우선, 없으면 첫 파트너.
   // 단일 이펙트로 처리해 자동선택과 딥링크가 경쟁하지 않도록 함.
@@ -644,7 +660,7 @@ export default function Contracts() {
     return any ? any.담당자 : "";
   };
   // 상단 현황 카운트 — 담당자 필터 반영 (전체면 전체, 담당자 선택 시 해당 담당자 항목만)
-  const ownerItems = ownerFilter ? items.filter(i => partnerOwner(i.파트너사) === ownerFilter) : items;
+  const ownerItems = (ownerFilter ? items.filter(i => partnerOwner(i.파트너사) === ownerFilter) : items).filter(i => !archivedSet.has(i.파트너사));
   const totalDone    = ownerItems.filter(i => i.상태 === "완료").length;
   const totalActive  = ownerItems.filter(i => i.상태 === "진행중").length;
   const totalWaiting = ownerItems.filter(i => (i.상태 || "요청전") === "요청전").length;
@@ -678,12 +694,14 @@ export default function Contracts() {
     const stat = { 전체: { partners: new Set(), projects: new Set() } };
     const bucket = (k) => (stat[k] || (stat[k] = { partners: new Set(), projects: new Set() }));
     allPartners.forEach(p => {
+      if (archivedSet.has(p)) return; // 아카이브 파트너 제외
       stat.전체.partners.add(p);
       const o = partnerOwner(p);
       if (o) bucket(o).partners.add(p);
     });
     items.forEach(i => {
       if (!i.프로젝트) return;
+      if (archivedSet.has(i.파트너사)) return; // 아카이브 파트너 제외
       if (projectStatusOf(i.파트너사, i.프로젝트) !== "진행중") return; // 진행중만 (드랍·종료 제외)
       const key = `${i.파트너사}|${i.프로젝트}`;
       stat.전체.projects.add(key);
@@ -715,6 +733,7 @@ export default function Contracts() {
   const todoQueue = useMemo(() => {
     const out = [];
     allPartners.forEach(p => {
+      if (archivedSet.has(p)) return; // 아카이브 파트너는 할 일 큐·알림에서 제외
       const rows = items.filter(i => i.파트너사 === p);
       if (rows.length === 0) return;
       const pushNext = (item) => {
@@ -759,7 +778,7 @@ export default function Contracts() {
       });
     });
     return out.sort((a, b) => (a.prio - b.prio) || ((b.stale || 0) - (a.stale || 0)));
-  }, [items, allPartners]); // eslint-disable-line
+  }, [items, allPartners, archivedSet]); // eslint-disable-line
 
   // 알림 종류별 카운트 (상단 칩) — 담당자 필터 반영
   const alertCounts = useMemo(() => {
@@ -803,6 +822,20 @@ export default function Contracts() {
     createRows([a.firstProject
       ? { 제목: `[${a.proj}] 부속합의서`, 파트너사: a.partner, ...projField, 구분: "부속합의서", 상태: "완료", 파트너십계약포함: true }
       : { 제목: `[${a.proj}] 부속합의서`, 파트너사: a.partner, ...projField, 구분: "부속합의서", 상태: "요청전" }]);
+  };
+
+  // 파트너 아카이브/복원 — 앵커(거래처등록) 행의 파트너상태에 저장. 앵커 없으면 아무 행에나 저장
+  const setPartnerArchive = async (partner, archive) => {
+    setPartnerArchiveConfirm(false);
+    const anchor = partnerVendor(partner) || items.find(i => i.파트너사 === partner);
+    if (!anchor) { alert("파트너 항목이 없어 상태를 저장할 수 없습니다."); return; }
+    const value = archive ? "아카이브" : "활성";
+    setPartnerBusy(true);
+    try {
+      await patch(anchor.id, { 파트너상태: value });
+      if (archive && selected === partner) setSelected(null); // 아카이브하면 활성 목록에서 사라지므로 선택 해제
+    } catch (e) { alert(`상태 변경 실패: ${e.message || e}`); }
+    finally { setPartnerBusy(false); }
   };
 
   // 파트너 삭제 — 항목 전체 아카이브 + 노션 select 옵션 제거 (빈/유령 파트너도 정리 가능)
@@ -1796,7 +1829,7 @@ export default function Contracts() {
         // 지급예정일이 잡힌 지출기안은 프로젝트 상태(드랍/종료)와 무관하게 모두 포함
         // — 테스트 후 드랍이어도 개발·기안이 진행됐으면 지급 의무가 남기 때문
         const rows = items
-          .filter(i => i.구분 === "지출기안" && i.지급예정일)
+          .filter(i => i.구분 === "지출기안" && i.지급예정일 && !archivedSet.has(i.파트너사))
           .map(i => {
             const proj = i.프로젝트 || "";
             const isProto = (i.이터레이션구분 || "") === "프로토타입" || !(i.이터레이션구분 || "");
@@ -1807,7 +1840,7 @@ export default function Contracts() {
             return { date: i.지급예정일, usd: both.usd, krw: both.krw, missing: both.usd == null, partner: i.파트너사, proj, label: i.제목 };
           });
         // 활성 지출기안이 하나도 없으면 패널 자체를 숨김. 있으면(지급예정일 미입력이어도) 안내와 함께 노출
-        const anyExpense = items.some(i => i.구분 === "지출기안");
+        const anyExpense = items.some(i => i.구분 === "지출기안" && !archivedSet.has(i.파트너사));
         if (!anyExpense) return null;
 
         const monKey = (d) => d.slice(0, 7);                       // YYYY-MM
@@ -1944,6 +1977,25 @@ export default function Contracts() {
                   </div>
                 ));
               })()}
+
+              {/* 아카이브(협업 종료·보관) 파트너 — 접기 섹션 */}
+              {archivedPartnerList.length > 0 && (
+                <div style={{ borderTop: `1px solid ${SB_LINE}`, marginTop: 4 }}>
+                  <button onClick={() => setShowArchived(v => !v)}
+                    style={{ width: "100%", display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit", color: SB_HEADER_MUTED, fontSize: 10, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase" }}>
+                    <span style={{ transform: showArchived ? "rotate(90deg)" : "none", transition: "transform .12s" }}>▸</span>
+                    <span>📦 아카이브</span>
+                    <span style={{ fontWeight: 400 }}>· {archivedPartnerList.length}</span>
+                  </button>
+                  {showArchived && archivedPartnerList.map(p => (
+                    <button key={p} onClick={() => setSelected(p)}
+                      title="보관됨 — 열람 가능, 헤더에서 복원"
+                      style={{ width: "100%", textAlign: "left", padding: "7px 14px 7px 26px", background: selected === p ? SB_ACTIVE_BG : "transparent", border: "none", borderLeft: selected === p ? `2px solid ${SB_ACTIVE_BORDER}` : "2px solid transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 12, color: SB_HEADER_MUTED, display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div style={{ padding: 8, borderTop: `1px solid ${SB_LINE}` }}>
@@ -2024,6 +2076,9 @@ export default function Contracts() {
                     ) : (
                       <>
                         <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{selected}</span>
+                        {partnerArchived(selected) && (
+                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".03em", color: "var(--muted)", background: "var(--card-bg-subtle)", border: "1px solid var(--line)", borderRadius: 3, padding: "1px 6px" }}>📦 보관됨</span>
+                        )}
 
                         {/* 개발 소재지 — 사이드바·국기·KST 기준 (클릭 인라인 편집) */}
                         {editingHeaderField === "개발소재지" ? (
@@ -2074,6 +2129,36 @@ export default function Contracts() {
                         )}
                         <button onMouseDown={e => e.preventDefault()} onClick={() => { setRenameValue(selected); setRenamingPartner(true); }} disabled={partnerBusy}
                           title="파트너사명 변경" style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", padding: 2, opacity: 0.6, fontFamily: "inherit" }}>✎</button>
+                        {partnerArchived(selected) ? (
+                          <button onClick={() => setPartnerArchive(selected, false)} disabled={partnerBusy}
+                            title="활성으로 복원" style={{ fontSize: 11, fontWeight: 600, border: "1px solid var(--line)", borderRadius: 4, background: "transparent", color: "var(--muted)", cursor: "pointer", padding: "2px 7px", fontFamily: "inherit" }}>
+                            {partnerBusy ? "…" : "↩ 복원"}
+                          </button>
+                        ) : (
+                          <button onClick={() => setPartnerArchiveConfirm(true)} disabled={partnerBusy}
+                            title="협업 종료 — 보관(활성 목록에서 숨김, 복원 가능)" style={{ fontSize: 11, border: "none", background: "transparent", color: "var(--muted)", cursor: "pointer", padding: 2, opacity: 0.6, fontFamily: "inherit" }}>📦</button>
+                        )}
+                        {partnerArchiveConfirm && (
+                          <div onClick={() => setPartnerArchiveConfirm(false)}
+                            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+                            <div onClick={e => e.stopPropagation()}
+                              style={{ background: "var(--card)", borderRadius: 12, padding: "22px 24px", width: 400, maxWidth: "90vw", boxShadow: "0 12px 40px rgba(0,0,0,.3)", border: "1px solid var(--line)" }}>
+                              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>📦 파트너사 아카이브</div>
+                              <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.6, marginBottom: 6 }}>
+                                파트너사 <b>“{selected}”</b>
+                              </div>
+                              <div style={{ fontSize: 12.5, color: "var(--muted)", lineHeight: 1.6, marginBottom: 18 }}>
+                                협업 종료로 <b>보관</b>합니다. 데이터는 유지되지만 <b>활성 목록·할 일·알림·지출 예정·현황 집계에서 제외</b>되고, 사이드바 하단 “아카이브”에서 언제든 <b>복원</b>할 수 있습니다.
+                              </div>
+                              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                                <button className="pill-btn" onClick={() => setPartnerArchiveConfirm(false)} disabled={partnerBusy}
+                                  style={pillStyle("default")}>취소</button>
+                                <button className="pill-btn" onClick={() => setPartnerArchive(selected, true)} disabled={partnerBusy}
+                                  style={pillStyle("green")}>{partnerBusy ? "처리 중…" : "아카이브"}</button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                         <button onClick={() => setPartnerDeleteConfirm(true)} disabled={partnerBusy}
                           title="파트너사 삭제 (항목 전체)" style={{ fontSize: 11, border: "none", background: "transparent", color: red, cursor: "pointer", padding: 2, opacity: 0.5, fontFamily: "inherit" }}>
                           {partnerBusy ? "…" : "🗑"}
