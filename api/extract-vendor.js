@@ -8,7 +8,7 @@ const ANTHROPIC_VERSION = "2023-06-01";
 // Claude tool input_schema의 property 키는 영문(^[a-zA-Z0-9_.-]{1,64}$)만 허용 →
 // schema 키는 ASCII(schemaKey), 폼 필드명은 한글(formKey)로 두고 응답을 매핑한다.
 const FIELDS = [
-  { formKey: "거래처식별번호", schemaKey: "vendor_reg_number", desc: "사업자/법인 식별번호. 국내=사업자등록번호/법인등록번호. 미국 델라웨어 Certificate of Formation 등에서는 'SR' 번호(예: 'SR 20240129217')를 식별번호로 사용한다. 주의: 'File Number'(예: 4232790)는 여기 넣지 말 것. 식별번호가 확실치 않으면 빈 문자열." },
+  { formKey: "거래처식별번호", schemaKey: "vendor_reg_number", desc: "거래처(고객사) 자체의 사업자/법인 식별번호를 '있는 그대로 전부' 정확히 옮긴다(자릿수 누락·앞뒤 잘림 금지). 국내=사업자등록번호/법인등록번호. 미국 델라웨어=‘SR’ 번호(예 'SR 20240129217'), 'File Number'는 제외. 튀르키예=MERSİS 번호(16자리, 예 '0729120341500001') 또는 Ticaret Sicil/Dosya No(예 '405800-5'). 매우 중요: 은행 통장·레터의 letterhead에 적힌 '은행 자체'의 등록번호(Mersis/Ticari Sicil 등)는 거래처 식별번호가 아니므로 절대 쓰지 말 것. 확실치 않으면 빈 문자열." },
   { formKey: "거래처명", schemaKey: "vendor_name", desc: "법인/사업자명 (국내=한글 그대로, 해외=영문 그대로)" },
   { formKey: "거래처국가", schemaKey: "vendor_country", desc: "법인 등록국 — 반드시 법인등록증(사업자등록증) 기준. 국내면 '대한민국'" },
   { formKey: "거래처주소", schemaKey: "vendor_address", desc: "등록증상 주소" },
@@ -16,10 +16,10 @@ const FIELDS = [
   { formKey: "거래처Email", schemaKey: "vendor_email", desc: "이메일 (있을 때만)" },
   { formKey: "BankName", schemaKey: "bank_name", desc: "은행 이름만 (예: 'Citibank N.A.', 'DBS Bank Ltd'). 지점명(Branch)은 제외하고 여기 넣지 말 것." },
   { formKey: "BranchName", schemaKey: "branch_name", desc: "지점명 — 사람이 읽는 지점 이름만 (예: 'Singapore Branch', '강남지점'). 숫자/영숫자 코드(001, 지점코드, sort code, routing 등)는 지점명이 아니므로 넣지 말고, 지점 이름이 없으면 빈 문자열." },
-  { formKey: "BankAddress", schemaKey: "bank_address", desc: "은행 주소" },
+  { formKey: "BankAddress", schemaKey: "bank_address", desc: "계좌가 개설된 '지점(Şube/Branch)'의 주소. 통장·레터 머리글에 반복 인쇄된 은행 본점(Genel Müdürlük/Head Office) 보일러플레이트 주소는 넣지 말 것. 지점 주소가 문서에 없으면 빈 문자열." },
   { formKey: "SWIFT", schemaKey: "swift", desc: "SWIFT/BIC 코드" },
   { formKey: "BeneficiaryName", schemaKey: "beneficiary_name", desc: "예금주명 (Beneficiary)" },
-  { formKey: "AccountNumber", schemaKey: "account_number", desc: "계좌번호/IBAN (해외 송금용)" },
+  { formKey: "AccountNumber", schemaKey: "account_number", desc: "해외 송금용 IBAN을 우선(국가코드 2자+숫자, 예 'TR10 0006 2001 0890 0009 0472 33'). IBAN이 문서에 없으면 계좌번호. 통장/cüzdan 내부 표기(예 '9047233 T 152770')처럼 IBAN이 아닌 내부 계좌·통장 번호를 IBAN 칸처럼 쓰지 말 것 — 그럴 땐 순수 계좌번호만 남긴다." },
 ];
 const SCHEMA_KEYS = FIELDS.map(f => f.schemaKey);
 
@@ -32,6 +32,8 @@ const SYSTEM_PROMPT = [
   "4) 각 서류의 [법인등록증]/[법인통장] 라벨은 참고용 힌트일 뿐이다. 어느 서류에 있든, 제공된 모든 서류를 통틀어 읽어낼 수 있는 필드는 전부 채운다. 예: [법인통장]으로 올라온 문서라도 회사명·등록번호·주소·대표가 보이면 거래처 정보를 채우고, [법인등록증] 문서에 은행 정보가 있으면 송금 정보를 채운다. 라벨 때문에 실제로 보이는 값을 비워두지 말 것. (홍콩 Annual Return(NAR1), 미국 Certificate of Formation, 사업자등록증 등은 은행 정보가 없을 수 있고, 그 경우 송금 필드만 빈 문자열로 둔다.)",
   "3-1) 거래처식별번호는 사업자/법인 식별번호다. 국내는 사업자등록번호/법인등록번호. 미국 델라웨어 Certificate of Formation 등에서는 'SR' 번호(예: 'SR 20240129217')를 식별번호로 넣는다. 'File Number'(예: 4232790)는 식별번호가 아니므로 넣지 않는다. 확실치 않으면 빈 문자열.",
   "4-1) 은행명과 지점명을 분리한다. 'Citibank N.A., Singapore Branch'면 은행명='Citibank N.A.', 지점명='Singapore Branch'. 지점명 칸에는 사람이 읽는 지점 이름만 넣고, 숫자/코드(001, 지점코드, sort code 등)는 지점명이 아니므로 넣지 않는다(없으면 빈 문자열).",
+  "4-2) 은행 서류의 letterhead(머리글/꼬리글)에는 '은행 자체'의 정보가 인쇄돼 있다(은행 Mersis/Ticari Sicil 번호, 본점 Genel Müdürlük 주소 등). 이건 거래처(고객)의 정보가 아니므로 식별번호·주소에 쓰지 말 것. 계좌 개설 지점(Şube)명·번호와 혼동 금지.",
+  "4-3) 식별번호·계좌번호·IBAN·SWIFT 등 숫자·코드는 문서에 적힌 그대로 한 글자도 빠짐없이 옮긴다. 앞자리 0 유지, 중간 생략 금지. 문서에 없으면 만들어내지 말고 빈 문자열.",
   "5) 개인 계약(개인사업자·개인)일 경우 여권/신분증 기준 영문명 등을 그대로.",
   "반드시 vendor_info 도구를 호출해 결과를 반환한다.",
 ].join("\n");
