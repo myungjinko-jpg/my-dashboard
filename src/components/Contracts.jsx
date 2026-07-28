@@ -385,6 +385,14 @@ export default function Contracts() {
   const runVendorExtract = async (upd) => {
     const entries = Object.entries(vendorFiles).filter(([, f]) => f);
     if (!entries.length) { setVendorExtractMsg("법인등록증 또는 법인통장 파일을 올려주세요."); return; }
+    // 서버(Vercel) 요청 본문 한도 4.5MB — base64는 원본보다 ~37% 커지므로 원본 합계 3MB로 제한
+    const MAX_RAW = 3 * 1024 * 1024;
+    const totalRaw = entries.reduce((s, [, f]) => s + (f.size || 0), 0);
+    if (totalRaw > MAX_RAW) {
+      const big = entries.map(([k, f]) => `${k} ${(f.size / (1024 * 1024)).toFixed(1)}MB`).join(", ");
+      setVendorExtractMsg(`파일이 너무 큽니다 (${big}). 서버 한도(약 3MB)·AI PDF 100페이지 제한을 넘습니다. 통장은 계좌·SWIFT가 보이는 페이지만 잘라서(1~2장) 올려주세요.`);
+      return;
+    }
     setVendorExtracting(true); setVendorExtractMsg("추출 중…");
     try {
       const docs = [];
@@ -394,8 +402,15 @@ export default function Contracts() {
       const r = await fetch(`${API_BASE}/api/extract-vendor`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ docs }),
       });
-      const j = await r.json();
-      if (!r.ok) { setVendorExtractMsg(j.error || "추출 실패"); setVendorExtracting(false); return; }
+      // 서버가 413 등에서 JSON이 아닌 평문을 반환할 수 있어 안전 파싱
+      const raw = await r.text();
+      let j; try { j = JSON.parse(raw); } catch { j = null; }
+      if (!r.ok || !j) {
+        const msg = r.status === 413
+          ? "파일이 너무 커서 서버가 거부했습니다 (본문 4.5MB 한도). 통장은 계좌 페이지만 잘라서 올려주세요."
+          : (j?.error || `추출 실패 (HTTP ${r.status})`);
+        setVendorExtractMsg(msg); setVendorExtracting(false); return;
+      }
       const f = j.fields || {};
       upd(prev => {
         const next = { ...prev };
