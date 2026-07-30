@@ -1118,8 +1118,8 @@ export default function Contracts() {
               </div>
             );
           })()}
-          {/* 파트너사 소싱정보 DB URL */}
-          {!coveredForm && (
+          {/* 파트너사 소싱정보 DB URL — 파트너십계약에 저장, 나머지(부속합의서/NDA)는 연동 표시 */}
+          {vals.구분 === "파트너십계약" ? (
             <div>
               <span style={label}>파트너사 소싱정보 DB <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 소싱 배경·경로 링크</span></span>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1127,7 +1127,20 @@ export default function Contracts() {
                 {vals.소싱정보링크 && <LinkOpen href={vals.소싱정보링크} />}
               </div>
             </div>
-          )}
+          ) : (() => {
+            const linked = (partnerMaster(vals.파트너사) || {}).소싱정보링크 || "";
+            return (
+              <div>
+                <span style={label}>파트너사 소싱정보 DB <span style={{ fontWeight: 400, color: "var(--muted)" }}>· 파트너십계약 연동</span></span>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 33 }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".03em", color: "#B45309", background: amberFaint, border: "1px solid rgba(245,180,0,.3)", borderRadius: 3, padding: "1px 6px", flexShrink: 0 }}>본계약</span>
+                  {linked
+                    ? <><span style={{ fontSize: 12, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{linked}</span><LinkOpen href={linked} /></>
+                    : <span style={{ fontSize: 12, color: "var(--muted)" }}>파트너십계약에 소싱정보 링크 미등록</span>}
+                </div>
+              </div>
+            );
+          })()}
           {/* 계약서 기안 URL — 네이버웍스 (완료 기준) */}
           {!coveredForm && (
             <div>
